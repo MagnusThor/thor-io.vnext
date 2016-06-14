@@ -135,10 +135,7 @@ export namespace ThorIO {
             this.ws["$connectionId"] = this.id;
 
             this.ws.onmessage = (message: MessageEvent) => {
-
                 var json = JSON.parse(message.data);
-
-                
                 var controller = this.locateController(json.C);
                 try {
                     if (!json.T.startsWith("$set_")) {
@@ -148,16 +145,13 @@ export namespace ThorIO {
                         controller[prop] = JSON.parse(json.D);
                     }
                 } catch (ex) {
-                    console.log("log the error", JSON.stringify(json))
+                // todo:log error
+                // console.log("log the error", JSON.stringify(json))
                 }
             };
-
             this.queue = new Array < Message > ();
             this.controllerInstances = new Array < Controller > ();
-
-
         }
-
         hasController(alias: string): boolean {
             var match = this.controllerInstances.filter((pre: Controller) => {
                 return pre.alias == alias;
@@ -167,24 +161,19 @@ export namespace ThorIO {
 
         removeController(alias:string){
                 var index = this.controllerInstances.indexOf(this.getController(alias));
-                console.log("remove ", alias,index);
+                if(index > -1)
                 this.controllerInstances.splice(index,1);
         }
-
-        getController(alias: string) {
-            var match = this.controllerInstances.filter((pre: Controller) => {
-                return pre.alias == alias;
-            });
-          
-            return match[0];
-        }
-
-        addSubscription(alias:string,subscription:Subscription){
-                this.getController(alias).subscriptions.push(subscription);
-        }
-
-        removeSubsription(topic:string){
-            console.log("remove" ,topic);  
+        getController(alias: string):Controller {
+            try {
+                var match = this.controllerInstances.filter((pre: Controller) => {
+                    return pre.alias == alias;
+                });
+                return match[0];
+            } catch (error) {
+                // todo:log error
+                return null
+            }
         }
 
         locateController(alias: string): Controller {

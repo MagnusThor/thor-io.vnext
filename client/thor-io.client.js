@@ -1,24 +1,3 @@
-if (!Array.prototype.find) {
-    Array.prototype.find = function (predicate) {
-        if (this === null) {
-            throw new TypeError('Array.prototype.find called on null or undefined');
-        }
-        if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be a function');
-        }
-        var list = Object(this);
-        var length = list.length >>> 0;
-        var thisArg = arguments[1];
-        var value;
-        for (var i = 0; i < length; i++) {
-            value = list[i];
-            if (predicate.call(thisArg, value, i, list)) {
-                return value;
-            }
-        }
-        return undefined;
-    };
-}
 var ThorIOClient;
 (function (ThorIOClient) {
     var Factory = (function () {
@@ -48,8 +27,8 @@ var ThorIOClient;
         };
         ;
         Factory.prototype.GetChannel = function (alias) {
-            var channel = this.channels.find(function (pre) { return (pre.alias === alias); });
-            return channel;
+            var channel = this.channels.filter(function (pre) { return (pre.alias === alias); });
+            return channel[0];
         };
         ;
         Factory.prototype.RemoveChannel = function () {
@@ -124,7 +103,7 @@ var ThorIOClient;
             this.listeners = new Array();
             this.alias = alias;
             this.ws = ws;
-            this.isConnected = false;
+            this.IsConnected = false;
         }
         Channel.prototype.Connect = function () {
             this.ws.send(new ThorIOClient.Message("$connect_", {}, this.alias));
@@ -152,12 +131,14 @@ var ThorIOClient;
             return this;
         };
         ;
+        Channel.prototype.findListener = function (t) {
+            var listener = this.listeners.filter(function (pre) { return (pre.topic === t); })[0];
+            return listener[0];
+        };
         Channel.prototype.Off = function (t) {
-            var index = this.listeners.findIndex(function (pre) {
-                return pre.topic === t;
-            });
+            var index = this.listeners.indexOf(this.findListener(t));
             if (index >= 0)
-                this.listeners.slice(index, 1);
+                this.listeners.splice(index, 1);
             return this;
         };
         ;
@@ -176,18 +157,18 @@ var ThorIOClient;
             if (t === "$open_") {
                 d = JSON.parse(d);
                 localStorage.setItem("pid", d.PI);
-                this.isConnected = true;
+                this.IsConnected = true;
                 this.OnOpen(d);
                 return;
             }
             else if (t === "$close_") {
                 this.OnClose([JSON.parse(d)]);
-                this.isConnected = false;
+                this.IsConnected = false;
             }
             else if (this.hasOwnProperty(t)) {
             }
             else {
-                var listener = this.listeners.find(function (pre) { return (pre.topic === t); });
+                var listener = this.findListener(t);
                 if (listener)
                     listener.fn(JSON.parse(d));
             }

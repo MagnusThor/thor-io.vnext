@@ -1,25 +1,3 @@
-if (!Array.prototype.find) {
-  Array.prototype.find = function(predicate) {
-    if (this === null) {
-      throw new TypeError('Array.prototype.find called on null or undefined');
-    }
-    if (typeof predicate !== 'function') {
-      throw new TypeError('predicate must be a function');
-    }
-    var list = Object(this);
-    var length = list.length >>> 0;
-    var thisArg = arguments[1];
-    var value;
-
-    for (var i = 0; i < length; i++) {
-      value = list[i];
-      if (predicate.call(thisArg, value, i, list)) {
-        return value;
-      }
-    }
-    return undefined;
-  };
-}
 
  namespace ThorIOClient {
     export class Factory {
@@ -58,8 +36,8 @@ if (!Array.prototype.find) {
             this.ws.close();
         };
         GetChannel(alias: string):ThorIOClient.Channel {
-            var channel = this.channels.find(pre => (pre.alias === alias));
-            return channel;
+            var channel = this.channels.filter(pre => (pre.alias === alias));
+            return channel[0];
         };
         RemoveChannel() {
             throw "Not yet implemented";
@@ -112,15 +90,15 @@ if (!Array.prototype.find) {
     }
 
     export class Channel {
-        alias: string;
-        ws: WebSocket;
-        isConnected: boolean;
+        public alias: string;
+        private ws: WebSocket;
+        public IsConnected: boolean;
         listeners: Array<ThorIOClient.Listener>;
         constructor(alias: string, ws: WebSocket) {
             this.listeners = new Array<ThorIOClient.Listener>();
             this.alias = alias;
             this.ws = ws;
-            this.isConnected = false;
+            this.IsConnected = false;
         }
         Connect() {
             this.ws.send(new ThorIOClient.Message("$connect_", {}, this.alias));
@@ -139,18 +117,20 @@ if (!Array.prototype.find) {
             this.ws.send(new ThorIOClient.Message("unsubscribe", { topic: t, controller: this.alias }, this.alias));
             return this;
         };
-      
-        
         On(t: string, fn: any) {
             this.listeners.push(new ThorIOClient.Listener(t, fn));
             return this;
         };
+        private findListener(t:string):Listener{
+            var listener =
+                 this.listeners.filter(pre => (pre.topic === t))[0];
+                 return listener[0];
+        }
         Off(t: string) {
+        
             var index =
-                this.listeners.findIndex(function(pre: Listener) {
-                    return pre.topic === t;
-                })
-            if (index >= 0) this.listeners.slice(index, 1);
+                this.listeners.indexOf(this.findListener(t));
+            if (index >= 0) this.listeners.splice(index, 1);
             return this;
         };
         Invoke(t: string, d: any, c?: string) {
@@ -166,16 +146,16 @@ if (!Array.prototype.find) {
             if (t === "$open_") {
                 d = JSON.parse(d);
                 localStorage.setItem("pid", d.PI);
-                this.isConnected = true;
+                this.IsConnected = true;
                 this.OnOpen(d);
                 return;
             } else if (t === "$close_") {
                 this.OnClose([JSON.parse(d)]);
-                this.isConnected = false;
+                this.IsConnected = false;
             } else if (this.hasOwnProperty(t)) {
                 // this[t].apply(this, [JSON.parse(d)]);
             } else {
-                var listener = this.listeners.find(pre => (pre.topic === t));
+                var listener = this.findListener(t);
                 if (listener) listener.fn(JSON.parse(d));
             }
         };

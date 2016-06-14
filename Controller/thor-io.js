@@ -50,16 +50,13 @@ var ThorIO;
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
                 var connection = this.connections.filter(function (pre) {
-                    console.log(pre.id, ws["$connectionId"]);
                     return pre.id === ws["$connectionId"];
                 })[0];
                 var index = this.connections.indexOf(connection);
-                console.log("remove Connection", index);
                 if (index >= 0)
                     this.connections.splice(index, 1);
             }
             catch (error) {
-                var p = error;
             }
         };
         ;
@@ -79,38 +76,6 @@ var ThorIO;
             this.T = topic;
             this.C = controller;
         }
-        Object.defineProperty(Message.prototype, "T", {
-            get: function () {
-                return this._T;
-            },
-            set: function (v) {
-                this._T = v;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Message.prototype, "D", {
-            get: function () {
-                return this._D;
-            },
-            set: function (v) {
-                this._D = v;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Message.prototype, "C", {
-            get: function () {
-                return this._C;
-            },
-            set: function (value) {
-                this._C = value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        ;
-        ;
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
                 return {
@@ -167,7 +132,6 @@ var ThorIO;
                     }
                 }
                 catch (ex) {
-                    console.log("log the error", JSON.stringify(json));
                 }
             };
             this.queue = new Array();
@@ -181,20 +145,20 @@ var ThorIO;
         };
         Connection.prototype.removeController = function (alias) {
             var index = this.controllerInstances.indexOf(this.getController(alias));
-            console.log("remove ", alias, index);
-            this.controllerInstances.splice(index, 1);
+            if (index > -1)
+                this.controllerInstances.splice(index, 1);
         };
         Connection.prototype.getController = function (alias) {
-            var match = this.controllerInstances.filter(function (pre) {
-                return pre.alias == alias;
-            });
-            return match[0];
-        };
-        Connection.prototype.addSubscription = function (alias, subscription) {
-            this.getController(alias).subscriptions.push(subscription);
-        };
-        Connection.prototype.removeSubsription = function (topic) {
-            console.log("remove", topic);
+            try {
+                var match = this.controllerInstances.filter(function (pre) {
+                    return pre.alias == alias;
+                });
+                return match[0];
+            }
+            catch (error) {
+                // todo:log error
+                return null;
+            }
         };
         Connection.prototype.locateController = function (alias) {
             var match = this.controllerInstances.filter(function (pre) {
