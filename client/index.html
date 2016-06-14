@@ -1,0 +1,37 @@
+<html>
+
+<body>
+    <h1>Test</h1>
+     <script src="thor-io.client.js">
+    </script>
+    <script>
+        var temp1;
+        document.addEventListener("DOMContentLoaded", function(){
+           var client = new ThorIOClient.Factory("ws://localhost:1337", ["generic"],{});
+      
+                client.OnOpen = function(generic){
+                        
+                        temp1 = generic;
+
+                 
+                        generic.Subscribe("sub",function(message){
+                                console.log("sub",message);
+                        });
+
+                        generic.On("invoke",function(){
+                                console.log("invoke",arguments);
+                        });
+
+                        generic.OnOpen = function(ci){
+                                
+                                console.log("foo",ci);
+                        };
+
+                        generic.Connect();
+                };
+        });
+        </script>
+
+</body>
+
+</html>
