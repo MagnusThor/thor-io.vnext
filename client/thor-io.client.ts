@@ -7,26 +7,24 @@
                 encodeURIComponent(obj[key]))).join("&")}`;
         }
         private channels: Array<ThorIOClient.Channel>;
+        public IsConnected: boolean;
         constructor(url: string, controllers: Array<string>, params: any) {
             var self = this;
             this.channels = new Array<ThorIOClient.Channel>();
             this.ws = new WebSocket(url + this.toQuery(params));
-
-
-
-
             this.ws.onmessage = event => {
                 var message = JSON.parse(event.data);
-                console.log(message);
-                this.GetChannel(message.C).Dispatch(message.T, message.D);
+               this.GetChannel(message.C).Dispatch(message.T, message.D);
             };
             this.ws.onclose = event => {
+                this.IsConnected = false;
                   this.OnClose.apply(this,[event]);
             }
             this.ws.onerror = error => {
                 this.OnError.apply(this,[error]);
             }
             this.ws.onopen = event => {
+                this.IsConnected = true;
                 this.OnOpen.apply(this, this.channels);
             };
             controllers.forEach(alias => {

@@ -1,48 +1,43 @@
 <html>
 
 <body>
-    <h1>Test</h1>
-    
-     <script src="thor-io.client.js">
-    </script>
-    <script>
-        var temp1;
-        document.addEventListener("DOMContentLoaded", function(){
-           var client = new ThorIOClient.Factory("ws://localhost:1337", ["example"],{});
-      
-                client.OnOpen = function(exampleChannel){
-                        
-                        temp1 = exampleChannel;
+        <h1>Test</h1>
+        <script src="thor-io.client.js">
+        </script>
+        <script>
+                var temp1;
+                document.addEventListener("DOMContentLoaded", function() {
 
-                        exampleChannel.Subscribe("mySub",function(message){
-                                console.log("got a message on the subscrition 'mySubs'",message);
-                        });
+                        var client = new ThorIOClient.Factory("ws://localhost:1337", ["example"], {});
+                        client.OnOpen = function(exampleChannel) {
+                                temp1 = exampleChannel;
+                                exampleChannel.Subscribe("mySub", function(message) {
+                                        console.log("got a message on the subscrition 'mySubs'", message);
+                                });
+                                exampleChannel.On("chatMessage-one", function() {
+                                        console.log(arguments);
+                                });
+                                exampleChannel.On("chatMessage-all", function() {
+                                        s
+                                        console.log(arguments);
+                                });
+                                exampleChannel.On("chatMessage-to", function() {
+                                        s
+                                        console.log(arguments);
+                                });
+                                exampleChannel.OnOpen = function(ci) {
+                                        console.log("channel is open", ci);
+                                        setInterval(function() {
+                                                exampleChannel.Invoke("sendMessage", {
+                                                        dt: new Date(),
+                                                        txt: "Hello World!"
+                                                }, "example");
+                                        }, 5000);
 
-                        exampleChannel.On("chatMessage-one",function(){s
-                               console.log(arguments);
-                        });
-                        exampleChannel.On("chatMessage-all",function(){s
-                               console.log(arguments);
-                        });
-                          exampleChannel.On("chatMessage-to",function(){s
-                               console.log(arguments);
-                        });
-
-                        exampleChannel.OnOpen = function(ci){
-                                console.log("channel is open",ci);
-
-                                setInterval(function(){
-                                         exampleChannel.Invoke("sendMessage",{
-                                                 dt: new Date(),
-                                                 txt: "Hello World!"
-                                         },"example");       
-                                },5000);
-
+                                };
+                                exampleChannel.Connect();
                         };
-
-                        exampleChannel.Connect();
-                };
-        });
+                });
         </script>
 
 </body>

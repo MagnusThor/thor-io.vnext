@@ -3,11 +3,14 @@ declare namespace ThorIOClient {
         private ws;
         private toQuery(obj);
         private channels;
+        IsConnected: boolean;
         constructor(url: string, controllers: Array<string>, params: any);
         Close(): void;
         GetChannel(alias: string): ThorIOClient.Channel;
         RemoveChannel(): void;
         OnOpen(event: any): void;
+        OnError(error: any): void;
+        OnClose(event: any): void;
     }
     class Message {
         private _T;

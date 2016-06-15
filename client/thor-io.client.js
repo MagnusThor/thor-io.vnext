@@ -8,16 +8,17 @@ var ThorIOClient;
             this.ws = new WebSocket(url + this.toQuery(params));
             this.ws.onmessage = function (event) {
                 var message = JSON.parse(event.data);
-                console.log(message);
                 _this.GetChannel(message.C).Dispatch(message.T, message.D);
             };
             this.ws.onclose = function (event) {
+                _this.IsConnected = false;
                 _this.OnClose.apply(_this, [event]);
             };
             this.ws.onerror = function (error) {
                 _this.OnError.apply(_this, [error]);
             };
             this.ws.onopen = function (event) {
+                _this.IsConnected = true;
                 _this.OnOpen.apply(_this, _this.channels);
             };
             controllers.forEach(function (alias) {

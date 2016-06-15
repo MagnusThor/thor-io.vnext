@@ -189,10 +189,9 @@ var ThorIO;
     }());
     ThorIO.Connection = Connection;
     var Subscription = (function () {
-        function Subscription(topic, controller, connectionId) {
+        function Subscription(topic, controller) {
             this.topic = topic;
             this.controller = controller;
-            this.connectionId = connectionId;
         }
         return Subscription;
     }());
@@ -246,22 +245,18 @@ var ThorIO;
             if (this.hasSubscription(subscription.topic)) {
                 return;
             }
-            console.log("adding", subscription.topic);
             this.subscriptions.push(subscription);
-            //        console.log("___",this.subscriptions);
-            return null;
+            return subscription;
         };
         ;
-        Controller.prototype.unsubscribe = function (topic) {
-            this.subscriptions.splice(0, 1);
-            // var subscription = this.getSubscription(topic);
-            // console.log("subscription",this.subscriptions.length,subscription);
-            // var index = this.subscriptions.indexOf(subscription);
-            // console.log("index is = ",index);
-            // if(index >= 0)
-            //     console.log("this.subscriptions",this.subscriptions.length);
-            //     this.subscriptions.splice(index, 1);
-            //         console.log("this.subscriptions",this.subscriptions.length);
+        Controller.prototype.unsubscribe = function (subscription) {
+            var index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
+            if (index >= 0) {
+                var result = this.subscriptions.splice(index, 1);
+                return true;
+            }
+            else
+                return false;
         };
         ;
         Controller.prototype.publish = function (data, topic, controller) {
@@ -288,7 +283,8 @@ var ThorIO;
         };
         Controller.prototype.getSubscription = function (topic) {
             var subscription = this.subscriptions.filter(function (pre) {
-                //   console.log(pre.topic,topic);
+                console.log(pre.topic, topic, pre);
+                ;
                 return pre.topic === topic;
             });
             return subscription[0];

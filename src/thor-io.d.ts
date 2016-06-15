@@ -53,8 +53,7 @@ export declare namespace ThorIO {
     class Subscription {
         topic: string;
         controller: string;
-        connectionId: string;
-        constructor(topic: string, controller: string, connectionId: string);
+        constructor(topic: string, controller: string);
     }
     class Controller {
         alias: string;
@@ -64,11 +63,11 @@ export declare namespace ThorIO {
         getConnections(alias?: string): Connection[];
         onopen(): void;
         invokeToAll(data: any, topic: string, controller: string): void;
-        protected filterControllers(what: Array<Controller>, pre: any): any[];
+        private filterControllers(what, pre);
         invokeTo(expression: Function, data: any, topic: string, controller: string): void;
         invoke(data: any, topic: string, controller: string): void;
         subscribe(subscription: Subscription, topic: string, controller: string): Subscription;
-        unsubscribe(topic: string): void;
+        unsubscribe(subscription: Subscription): boolean;
         publish(data: any, topic: string, controller: string): void;
         publishToAll(data: any, topic: string, controller: string): void;
         hasSubscription(topic: string): boolean;
@@ -76,13 +75,4 @@ export declare namespace ThorIO {
         $connect_(): void;
         $close_(): void;
     }
-}
-export declare class Generic extends ThorIO.Controller {
-    alias: string;
-    clientInfo: any;
-    room: string;
-    constructor(client: ThorIO.Connection);
-    sendMessage(data: any, controller: any, topic: any): void;
-    onopen(): void;
-    onclose(): void;
 }
