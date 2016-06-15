@@ -1,18 +1,16 @@
 var express = require("express");
 app = express();
-var rt = require("./src/thor-io.js");
+var thorio = require("./src/thor-io.js").ThorIO;
+var controllers = require("./example/Sample.Controller.js")
 
 var controllers = [{
-    alias: "generic",
-    instance: rt.Generic
+    alias: "example",
+    instance: controllers.Generic
 }];
 
-
-var thorIO = new rt.ThorIO.Engine(controllers);
-
+var thorIO = new thorio.Engine(controllers);
 
 var expressWs = require("express-ws")(app);
-
 app.use('/client', express.static('client'));
 
 app.ws("/", function(ws, req) {

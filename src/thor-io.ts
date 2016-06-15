@@ -177,6 +177,7 @@ export namespace ThorIO {
         }
 
         locateController(alias: string): Controller {
+            try {
             var match = this.controllerInstances.filter((pre) => {
                 return pre.alias === alias;
             });
@@ -192,6 +193,12 @@ export namespace ThorIO {
                 controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                 controllerInstance.onopen();
                 return controllerInstance;
+            }
+            } catch (error) {
+                    // todo: log error
+                    this.ws.close(1011,"Cannot locate the specified controller '" + alias + "'. Connection closed")   
+                    
+                    return null;
             }
         }
     }
@@ -334,33 +341,5 @@ export namespace ThorIO {
                 this.invoke({},"$close_",this.alias);
         }
 
-    }
-}
-
-export class Generic extends ThorIO.Controller {
-    public alias: string;
-    public clientInfo: any;
-    public room: string;
-    constructor(client: ThorIO.Connection) {
-        super(client);
-        this.room = "foo";
-        this.alias = "generic";
-    }
-    sendMessage(data, controller, topic) {
-        this.invoke(data, "invoke", this.alias);
-        this.invokeToAll(data, "invokeToAll", this.alias);
-        var expression =
-            (pre: Generic) => {
-                if (pre.room === "foo") return pre;
-            };
-
-        this.invokeTo(expression, data, "invokeTo", this.alias);
-        this.publishToAll(data, "sub", this.alias);
-    }
-    onopen() {
-        console.log("called on open")
-    }
-    onclose() {
-        console.log("called on close")
     }
 }

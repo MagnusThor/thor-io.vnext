@@ -20,10 +20,13 @@
                 console.log(message);
                 this.GetChannel(message.C).Dispatch(message.T, message.D);
             };
+            this.ws.onclose = event => {
+                  this.OnClose.apply(this,[event]);
+            }
+            this.ws.onerror = error => {
+                this.OnError.apply(this,[error]);
+            }
             this.ws.onopen = event => {
-
-
-
                 this.OnOpen.apply(this, this.channels);
             };
             controllers.forEach(alias => {
@@ -44,6 +47,12 @@
         }
         OnOpen(event: any) {
         };
+        OnError(error:any){
+            console.error(error);
+        }
+        OnClose(event:any){
+            console.error(event);
+        }
     }
     export class Message {
         private _T: string;

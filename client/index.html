@@ -7,27 +7,26 @@
     <script>
         var temp1;
         document.addEventListener("DOMContentLoaded", function(){
-           var client = new ThorIOClient.Factory("ws://localhost:1337", ["generic"],{});
+           var client = new ThorIOClient.Factory("ws://localhost:1337", ["example2"],{});
       
-                client.OnOpen = function(generic){
+                client.OnOpen = function(exampleChannel){
                         
-                        temp1 = generic;
+                        temp1 = exampleChannel;
 
                  
-                        generic.Subscribe("sub",function(message){
+                        exampleChannel.Subscribe("sub",function(message){
                                 console.log("sub",message);
                         });
 
-                        generic.On("invoke",function(){
+                        exampleChannel.On("invoke",function(){
                                 console.log("invoke",arguments);
                         });
 
-                        generic.OnOpen = function(ci){
-                                
+                        exampleChannel.OnOpen = function(ci){
                                 console.log("foo",ci);
                         };
 
-                        generic.Connect();
+                        exampleChannel.Connect();
                 };
         });
         </script>

@@ -11,6 +11,12 @@ var ThorIOClient;
                 console.log(message);
                 _this.GetChannel(message.C).Dispatch(message.T, message.D);
             };
+            this.ws.onclose = function (event) {
+                _this.OnClose.apply(_this, [event]);
+            };
+            this.ws.onerror = function (error) {
+                _this.OnError.apply(_this, [error]);
+            };
             this.ws.onopen = function (event) {
                 _this.OnOpen.apply(_this, _this.channels);
             };
@@ -37,6 +43,12 @@ var ThorIOClient;
         Factory.prototype.OnOpen = function (event) {
         };
         ;
+        Factory.prototype.OnError = function (error) {
+            console.error(error);
+        };
+        Factory.prototype.OnClose = function (event) {
+            console.error(event);
+        };
         return Factory;
     })();
     ThorIOClient.Factory = Factory;
