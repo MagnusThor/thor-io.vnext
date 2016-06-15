@@ -7,23 +7,20 @@
         <script>
                 var temp1;
                 document.addEventListener("DOMContentLoaded", function() {
-
                         var client = new ThorIOClient.Factory("ws://localhost:1337", ["example"], {});
                         client.OnOpen = function(exampleChannel) {
                                 temp1 = exampleChannel;
                                 exampleChannel.Subscribe("mySub", function(message) {
-                                        console.log("got a message on the subscrition 'mySubs'", message);
+                                        console.log("mySubs", arguments);
                                 });
                                 exampleChannel.On("chatMessage-one", function() {
-                                        console.log(arguments);
+                                        console.log("chatMessage-one",arguments);
                                 });
                                 exampleChannel.On("chatMessage-all", function() {
-                                        s
-                                        console.log(arguments);
+                                        console.log("chatMessage-all",arguments);
                                 });
                                 exampleChannel.On("chatMessage-to", function() {
-                                        s
-                                        console.log(arguments);
+                                        console.log("chatMessage-to",arguments);
                                 });
                                 exampleChannel.OnOpen = function(ci) {
                                         console.log("channel is open", ci);
@@ -32,8 +29,7 @@
                                                         dt: new Date(),
                                                         txt: "Hello World!"
                                                 }, "example");
-                                        }, 5000);
-
+                                        }, 15000);
                                 };
                                 exampleChannel.Connect();
                         };

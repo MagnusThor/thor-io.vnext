@@ -41,8 +41,7 @@ var ThorIOClient;
         Factory.prototype.RemoveChannel = function () {
             throw "Not yet implemented";
         };
-        Factory.prototype.OnOpen = function (event) {
-        };
+        Factory.prototype.OnOpen = function (event) { };
         ;
         Factory.prototype.OnError = function (error) {
             console.error(error);
@@ -80,8 +79,12 @@ var ThorIOClient;
             configurable: true
         });
         Object.defineProperty(Message.prototype, "C", {
-            get: function () { return this._C; },
-            set: function (value) { this._C = value; },
+            get: function () {
+                return this._C;
+            },
+            set: function (value) {
+                this._C = value;
+            },
             enumerable: true,
             configurable: true
         });
@@ -90,7 +93,9 @@ var ThorIOClient;
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
                 return {
-                    T: this.T, D: JSON.stringify(this.D), C: this.C
+                    T: this.T,
+                    D: JSON.stringify(this.D),
+                    C: this.C
                 };
             },
             enumerable: true,
@@ -130,12 +135,18 @@ var ThorIOClient;
         ;
         Channel.prototype.Subscribe = function (t, fn) {
             this.On(t, fn);
-            this.ws.send(new ThorIOClient.Message("subscribe", { topic: t, controller: this.alias }, this.alias));
+            this.ws.send(new ThorIOClient.Message("subscribe", {
+                topic: t,
+                controller: this.alias
+            }, this.alias));
             return this;
         };
         ;
         Channel.prototype.Unsubscribe = function (t) {
-            this.ws.send(new ThorIOClient.Message("unsubscribe", { topic: t, controller: this.alias }, this.alias));
+            this.ws.send(new ThorIOClient.Message("unsubscribe", {
+                topic: t,
+                controller: this.alias
+            }, this.alias));
             return this;
         };
         ;
@@ -145,7 +156,9 @@ var ThorIOClient;
         };
         ;
         Channel.prototype.findListener = function (t) {
-            var listener = this.listeners.filter(function (pre) { return (pre.topic === t); })[0];
+            var listener = this.listeners.filter(function (pre) {
+                return pre.topic === t;
+            });
             return listener[0];
         };
         Channel.prototype.Off = function (t) {
@@ -178,8 +191,6 @@ var ThorIOClient;
                 this.OnClose([JSON.parse(d)]);
                 this.IsConnected = false;
             }
-            else if (this.hasOwnProperty(t)) {
-            }
             else {
                 var listener = this.findListener(t);
                 if (listener)
@@ -187,11 +198,9 @@ var ThorIOClient;
             }
         };
         ;
-        Channel.prototype.OnOpen = function (message) {
-        };
+        Channel.prototype.OnOpen = function (message) { };
         ;
-        Channel.prototype.OnClose = function (message) {
-        };
+        Channel.prototype.OnClose = function (message) { };
         ;
         return Channel;
     }());
