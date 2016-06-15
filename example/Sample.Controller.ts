@@ -10,15 +10,15 @@ export class Generic extends ThorIO.Controller {
         this.alias = "example";
     }
     sendMessage(data, controller, topic) {
-        this.invoke(data, "invoke", this.alias);
-        this.invokeToAll(data, "invokeToAll", this.alias);
+        this.invoke(data, "chatMessage-one", this.alias);
+        this.invokeToAll(data, "chatMessage-all", this.alias);
         var expression =
             (pre: Generic) => {
                 if (pre.room === "foo") return pre;
             };
 
-        this.invokeTo(expression, data, "invokeTo", this.alias);
-        this.publishToAll(data, "sub", this.alias);
+        this.invokeTo(expression, data, "chatMessage-to", this.alias);
+        this.publishToAll(data, "mySub", this.alias);
     }
     onopen() {
         console.log("called on open")

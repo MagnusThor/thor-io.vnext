@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -12,14 +13,14 @@ var Generic = (function (_super) {
         this.alias = "example";
     }
     Generic.prototype.sendMessage = function (data, controller, topic) {
-        this.invoke(data, "invoke", this.alias);
-        this.invokeToAll(data, "invokeToAll", this.alias);
+        this.invoke(data, "chatMessage-one", this.alias);
+        this.invokeToAll(data, "chatMessage-all", this.alias);
         var expression = function (pre) {
             if (pre.room === "foo")
                 return pre;
         };
-        this.invokeTo(expression, data, "invokeTo", this.alias);
-        this.publishToAll(data, "sub", this.alias);
+        this.invokeTo(expression, data, "chatMessage-to", this.alias);
+        this.publishToAll(data, "mySub", this.alias);
     };
     Generic.prototype.onopen = function () {
         console.log("called on open");
@@ -28,6 +29,6 @@ var Generic = (function (_super) {
         console.log("called on close");
     };
     return Generic;
-})(thor_io_1.ThorIO.Controller);
+}(thor_io_1.ThorIO.Controller));
 exports.Generic = Generic;
 //# sourceMappingURL=Sample.Controller.js.map

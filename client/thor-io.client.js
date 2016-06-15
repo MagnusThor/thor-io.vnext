@@ -50,7 +50,7 @@ var ThorIOClient;
             console.error(event);
         };
         return Factory;
-    })();
+    }());
     ThorIOClient.Factory = Factory;
     var Message = (function () {
         function Message(topic, object, controller) {
@@ -100,7 +100,7 @@ var ThorIOClient;
             return JSON.stringify(this.JSON);
         };
         return Message;
-    })();
+    }());
     ThorIOClient.Message = Message;
     var Listener = (function () {
         function Listener(topic, fn) {
@@ -108,7 +108,7 @@ var ThorIOClient;
             this.topic = topic;
         }
         return Listener;
-    })();
+    }());
     ThorIOClient.Listener = Listener;
     var Channel = (function () {
         function Channel(alias, ws) {
@@ -193,7 +193,7 @@ var ThorIOClient;
         };
         ;
         return Channel;
-    })();
+    }());
     ThorIOClient.Channel = Channel;
 })(ThorIOClient || (ThorIOClient = {}));
 //# sourceMappingURL=thor-io.client.js.map

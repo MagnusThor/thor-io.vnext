@@ -6,7 +6,6 @@
   "dependencies": {
     "systemjs": "0.19.27",
     "core-js": "^2.4.0",
-    "thorio": "git://github.com/MagnusThor/thorio.git#master",
     "express": "^4.13.4",
     "express-ws": "^1.0.0"
   },

@@ -1,3 +1,4 @@
+"use strict";
 var ThorIO;
 (function (ThorIO) {
     var Utils = (function () {
@@ -10,13 +11,13 @@ var ThorIO;
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         };
         return Utils;
-    })();
+    }());
     ThorIO.Utils = Utils;
     var Plugin = (function () {
         function Plugin() {
         }
         return Plugin;
-    })();
+    }());
     ThorIO.Plugin = Plugin;
     var Engine = (function () {
         function Engine(controllers) {
@@ -63,7 +64,7 @@ var ThorIO;
             });
         };
         return Engine;
-    })();
+    }());
     ThorIO.Engine = Engine;
     var Message = (function () {
         function Message(topic, object, controller) {
@@ -87,7 +88,7 @@ var ThorIO;
             return JSON.stringify(this.JSON);
         };
         return Message;
-    })();
+    }());
     ThorIO.Message = Message;
     var Listener = (function () {
         function Listener(topic, fn) {
@@ -95,7 +96,7 @@ var ThorIO;
             this.topic = topic;
         }
         return Listener;
-    })();
+    }());
     ThorIO.Listener = Listener;
     var ClientInfo = (function () {
         function ClientInfo(ci, controller) {
@@ -103,7 +104,7 @@ var ThorIO;
             this.C = controller;
         }
         return ClientInfo;
-    })();
+    }());
     ThorIO.ClientInfo = ClientInfo;
     var Connection = (function () {
         function Connection(ws, connections, controllers) {
@@ -119,11 +120,14 @@ var ThorIO;
                 var controller = _this.locateController(json.C);
                 try {
                     if (!json.T.startsWith("$set_")) {
-                        controller[json.T].apply(controller, [JSON.parse(json.D), json.C]);
+                        if (typeof (controller[json.T] === "function"))
+                            controller[json.T].apply(controller, [JSON.parse(json.D), json.C]);
                     }
                     else {
                         var prop = json.T.replace("$set_", "");
-                        controller[prop] = JSON.parse(json.D);
+                        var propValue = JSON.parse(json.D);
+                        if (typeof (prop) === typeof (propValue))
+                            controller[prop] = propValue;
                     }
                 }
                 catch (ex) {
@@ -182,7 +186,7 @@ var ThorIO;
             }
         };
         return Connection;
-    })();
+    }());
     ThorIO.Connection = Connection;
     var Subscription = (function () {
         function Subscription(topic, controller, connectionId) {
@@ -191,7 +195,7 @@ var ThorIO;
             this.connectionId = connectionId;
         }
         return Subscription;
-    })();
+    }());
     ThorIO.Subscription = Subscription;
     var Controller = (function () {
         function Controller(client) {
@@ -202,7 +206,6 @@ var ThorIO;
             return this.client.connections;
         };
         Controller.prototype.onopen = function () {
-            console.log("onopen");
         };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
@@ -273,7 +276,6 @@ var ThorIO;
             this.getConnections().forEach(function (connection) {
                 var controller = connection.getController(_this.alias);
                 if (controller.getSubscription(topic)) {
-                    console.log(connection.id, " has a sub  for", topic, controller.subscriptions.length);
                     connection.ws.send(msg.toString());
                 }
             });
@@ -285,12 +287,10 @@ var ThorIO;
             return !(p.length === 0);
         };
         Controller.prototype.getSubscription = function (topic) {
-            console.log("try find___", this.subscriptions);
             var subscription = this.subscriptions.filter(function (pre) {
                 //   console.log(pre.topic,topic);
                 return pre.topic === topic;
             });
-            console.log("found", subscription);
             return subscription[0];
         };
         // todo: remove this method
@@ -302,7 +302,7 @@ var ThorIO;
             this.invoke({}, "$close_", this.alias);
         };
         return Controller;
-    })();
+    }());
     ThorIO.Controller = Controller;
 })(ThorIO = exports.ThorIO || (exports.ThorIO = {}));
 //# sourceMappingURL=thor-io.js.map
