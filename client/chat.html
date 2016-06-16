@@ -1,0 +1,59 @@
+<html>
+
+<body>
+    <h1>Simple chat</h1>
+    <p>
+        Messages will only be delivered to other client/connections with an age >= the age you specified.
+        </p>
+    Text:<input type="text" id="chat-message">Age:<input type="number" min="1"" max="99" value="1" id="chat-age">
+    <hr>
+    <h2>Messages</h2>
+    <div id="chatMessages"></div>
+    <script src="thor-io.client.js">
+    </script>
+    <script>
+
+        var showMessage = function(text)
+        {
+            var p = document.createElement("p");
+            p.textContent = text;
+            document.querySelector("#chatMessages").appendChild(p);
+        }
+        var age = 1;
+        document.addEventListener("DOMContentLoaded", function() {
+            // ws://localhost:1337
+            var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["chat"], {});
+
+            client.OnOpen = function(chat) {
+
+                document.querySelector("#chat-age").addEventListener("change", function()
+                {
+                        age = parseInt(this.value);
+                        chat.SetProperty("age",age);
+                });
+
+                document.querySelector("#chat-message").addEventListener("keyup", function(evt)
+                {
+                    if(evt.keyCode === 13){
+                        chat.Invoke("sendChatMessage",{
+                            age: age,
+                            message : this.value
+                        },"chat")
+                        this.value = "";
+                    }
+                }
+                );
+
+                console.log("connected to chatController");
+                chat.On("chatMessage", function(data) {
+                        showMessage(data.message);
+                })
+
+                chat.Connect();
+            };
+        });
+    </script>
+
+</body>
+
+</html>

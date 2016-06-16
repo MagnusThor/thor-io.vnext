@@ -1,12 +1,17 @@
 var express = require("express");
 app = express();
 var thorio = require("./src/thor-io.js").ThorIO;
-var controllers = require("./example/Sample.Controller.js")
+var samples = require("./example/Sample.Controller.js")
+var chat = require("./example/Chat.Controller.js")
 
 var controllers = [{
     alias: "example",
-    instance: controllers.Generic
-}];
+    instance: samples.ExampleController
+},{
+    alias: "chat",
+    instance: chat.ChatController
+}
+];
 
 var thorIO = new thorio.Engine(controllers);
 
@@ -17,6 +22,5 @@ app.ws("/", function(ws, req) {
     thorIO.addConnection(ws);
 });
 
-console.log("___",process.env.PORT || 1337);
-
-app.listen(process.env.PORT || 443);
+var port = process.env.PORT || 1337;;
+app.listen(port);

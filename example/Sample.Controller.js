@@ -16,16 +16,16 @@ var Fake;
     }());
     Fake.Storage = Storage;
 })(Fake || (Fake = {}));
-var Generic = (function (_super) {
-    __extends(Generic, _super);
-    function Generic(client) {
+var ExampleController = (function (_super) {
+    __extends(ExampleController, _super);
+    function ExampleController(client) {
         _super.call(this, client);
         this.room = "foo"; // this is used the the expression in the invokeTo call in send Message
         // properties such as "room" can be modified by calling i.e .SetProperty("room","bar") in the 
         // client.
         this.alias = "example";
     }
-    Generic.prototype.sendMessage = function (data, controller, topic) {
+    ExampleController.prototype.sendMessage = function (data, controller, topic) {
         // add the message inbound to the fake 
         Fake.Storage.Messages.push(data);
         this.invoke(data, "chatMessage-one", this.alias);
@@ -37,13 +37,13 @@ var Generic = (function (_super) {
         this.invokeTo(expression, data, "chatMessage-to", this.alias);
         this.publishToAll(data, "mySub", this.alias);
     };
-    Generic.prototype.onopen = function () {
+    ExampleController.prototype.onopen = function () {
         // send the "history" preserved in the fake storage
         this.invoke(Fake.Storage.Messages, "history", this.alias);
     };
-    Generic.prototype.onclose = function () {
+    ExampleController.prototype.onclose = function () {
     };
-    return Generic;
+    return ExampleController;
 }(thor_io_1.ThorIO.Controller));
-exports.Generic = Generic;
+exports.ExampleController = ExampleController;
 //# sourceMappingURL=Sample.Controller.js.map

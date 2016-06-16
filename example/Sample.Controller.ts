@@ -8,7 +8,7 @@ module Fake {
 }
 
 
-export class Generic extends ThorIO.Controller {
+export class ExampleController extends ThorIO.Controller {
     public alias: string;
     public clientInfo: any;
     public room: string;
@@ -31,7 +31,7 @@ export class Generic extends ThorIO.Controller {
         this.invokeToAll(data, "chatMessage-all", this.alias);
 
         var expression =
-            (pre: Generic) => {
+            (pre: ExampleController) => {
                 if (pre.room === "foo") return pre;
             };
 
