@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "license": "ISC",
   "main" :"server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "6.2.0"
+  },
   "dependencies": {
     "systemjs": "0.19.27",
     "core-js": "^2.4.0",
