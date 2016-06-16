@@ -19,7 +19,8 @@
                 };
 
                 document.addEventListener("DOMContentLoaded", function() {
-                        var client = new ThorIOClient.Factory("ws://localhost:1337", ["example"], {});
+                        // ws://localhost:1337
+                        var client = new ThorIOClient.Factory("wss://thorio.herokuapp.com:443", ["example"], {});
                         client.OnOpen = function(exampleChannel) {
                                 temp1 = exampleChannel;
                                 exampleChannel.Subscribe("mySub", function(message) {
