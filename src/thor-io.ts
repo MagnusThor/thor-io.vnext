@@ -143,12 +143,11 @@ export namespace ThorIO {
                     } else {
                         var prop = json.T.replace("$set_", "");
                         var propValue = JSON.parse(json.D)
-                        if (typeof(prop) === typeof(propValue))
+                       if (typeof(controller[prop]) === typeof(propValue))
                             controller[prop] = propValue;
                     }
                 } catch (ex) {
                     // todo:log error
-                    // console.log("log the error", JSON.stringify(json))
                 }
             };
             this.queue = new Array < Message > ();
@@ -207,7 +206,7 @@ export namespace ThorIO {
     export class Subscription {
         public topic: string;
         public controller: string
-      
+
         constructor(topic: string, controller: string) {
             this.topic = topic;
             this.controller = controller;
@@ -225,12 +224,10 @@ export namespace ThorIO {
         getConnections(alias ? : string) {
             return this.client.connections;
         }
-        onopen() {
-        }
+        onopen() {}
         invokeToAll(data: any, topic: string, controller: string) {
             var msg = new Message(topic, data, this.alias).toString();
             this.getConnections().forEach((connection: Connection) => {
-                // console.log("sending",connection.ws);
                 connection.ws.send(msg);
             });
         };
@@ -265,12 +262,12 @@ export namespace ThorIO {
             this.subscriptions.push(subscription);
             return subscription;
         };
-        unsubscribe(subscription:Subscription):boolean {
+        unsubscribe(subscription: Subscription): boolean {
             var index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
-            if(index >=0){
+            if (index >= 0) {
                 var result = this.subscriptions.splice(index, 1);
                 return true;
-            }else 
+            } else
                 return false;
         };
         publish(data: any, topic: string, controller: string) {
@@ -297,11 +294,10 @@ export namespace ThorIO {
         public getSubscription(topic: string): Subscription {
                 var subscription = this.subscriptions.filter(
                     (pre: Subscription) => {
-                      console.log(pre.topic,topic,pre);;
                         return pre.topic === topic;
                     }
                 );
-            
+
                 return subscription[0];
             }
             // todo: remove this method

@@ -126,7 +126,7 @@ var ThorIO;
                     else {
                         var prop = json.T.replace("$set_", "");
                         var propValue = JSON.parse(json.D);
-                        if (typeof (prop) === typeof (propValue))
+                        if (typeof (controller[prop]) === typeof (propValue))
                             controller[prop] = propValue;
                     }
                 }
@@ -204,12 +204,10 @@ var ThorIO;
         Controller.prototype.getConnections = function (alias) {
             return this.client.connections;
         };
-        Controller.prototype.onopen = function () {
-        };
+        Controller.prototype.onopen = function () { };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
             this.getConnections().forEach(function (connection) {
-                // console.log("sending",connection.ws);
                 connection.ws.send(msg);
             });
         };
@@ -283,8 +281,6 @@ var ThorIO;
         };
         Controller.prototype.getSubscription = function (topic) {
             var subscription = this.subscriptions.filter(function (pre) {
-                console.log(pre.topic, topic, pre);
-                ;
                 return pre.topic === topic;
             });
             return subscription[0];
