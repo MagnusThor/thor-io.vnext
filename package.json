@@ -9,6 +9,9 @@
     "express": "^4.13.4",
     "express-ws": "^1.0.0"
   },
+   "engines": {
+    "node": "4.0.0"
+  },
   "devDependencies": {
     "typescript": "^1.8.10",
     "typings":"^0.8.1"
