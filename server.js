@@ -17,6 +17,6 @@ app.ws("/", function(ws, req) {
     thorIO.addConnection(ws);
 });
 
-console.log("___",process.env.port || 1337);
+console.log("___",process.env.PORT || 1337);
 
-app.listen(process.env.port || 1337);
+app.listen(process.env.PORT || 443);
