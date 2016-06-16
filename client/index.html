@@ -2,28 +2,45 @@
 
 <body>
         <h1>Test</h1>
+        <div id="foo"></div>
         <script src="thor-io.client.js">
         </script>
         <script>
+
                 var temp1;
+
+                // to set a new state on the controllers room property, to filter the chatMessage-to
+                // call temp1.SetProperty("room","any string");  setting it to "foo" will make the messages appear again
+
+                var showMessage = function(data) {
+                        var p = document.createElement("pre");
+                        p.innerText = JSON.stringify(data);
+                        document.querySelector("#foo").appendChild(p);
+                };
+
                 document.addEventListener("DOMContentLoaded", function() {
                         var client = new ThorIOClient.Factory("ws://localhost:1337", ["example"], {});
                         client.OnOpen = function(exampleChannel) {
                                 temp1 = exampleChannel;
                                 exampleChannel.Subscribe("mySub", function(message) {
-                                        console.log("mySubs", arguments);
+                                        showMessage(arguments);
+                                });
+                                exampleChannel.On("history", function(history)
+                                {
+                                        showMessage({message:"History length " + history.length});
+                                        showMessage(history);
                                 });
                                 exampleChannel.On("chatMessage-one", function() {
-                                        console.log("chatMessage-one",arguments);
+                                        showMessage(arguments);
                                 });
                                 exampleChannel.On("chatMessage-all", function() {
-                                        console.log("chatMessage-all",arguments);
+                                        showMessage(arguments);
                                 });
                                 exampleChannel.On("chatMessage-to", function() {
-                                        console.log("chatMessage-to",arguments);
+                                        showMessage(arguments);
                                 });
                                 exampleChannel.OnOpen = function(ci) {
-                                        console.log("channel is open", ci);
+                                        showMessage(ci);
                                         setInterval(function() {
                                                 exampleChannel.Invoke("sendMessage", {
                                                         dt: new Date(),

@@ -5,14 +5,29 @@ var __extends = (this && this.__extends) || function (d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var thor_io_1 = require("../src/thor-io");
+// create a module for fale storage
+var Fake;
+(function (Fake) {
+    var Storage = (function () {
+        function Storage() {
+        }
+        Storage.Messages = []; //persist any kind of messages.
+        return Storage;
+    }());
+    Fake.Storage = Storage;
+})(Fake || (Fake = {}));
 var Generic = (function (_super) {
     __extends(Generic, _super);
     function Generic(client) {
         _super.call(this, client);
-        this.room = "foo";
+        this.room = "foo"; // this is used the the expression in the invokeTo call in send Message
+        // properties such as "room" can be modified by calling i.e .SetProperty("room","bar") in the 
+        // client.
         this.alias = "example";
     }
     Generic.prototype.sendMessage = function (data, controller, topic) {
+        // add the message inbound to the fake 
+        Fake.Storage.Messages.push(data);
         this.invoke(data, "chatMessage-one", this.alias);
         this.invokeToAll(data, "chatMessage-all", this.alias);
         var expression = function (pre) {
@@ -23,10 +38,10 @@ var Generic = (function (_super) {
         this.publishToAll(data, "mySub", this.alias);
     };
     Generic.prototype.onopen = function () {
-        console.log("called on open");
+        // send the "history" preserved in the fake storage
+        this.invoke(Fake.Storage.Messages, "history", this.alias);
     };
     Generic.prototype.onclose = function () {
-        console.log("called on close");
     };
     return Generic;
 }(thor_io_1.ThorIO.Controller));
