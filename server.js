@@ -18,4 +18,4 @@ app.ws("/", function(ws, req) {
 });
 
 
-app.listen(443);
+app.listen(process.env.port || 1337);
