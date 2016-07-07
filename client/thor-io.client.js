@@ -1,5 +1,199 @@
 var ThorIOClient;
 (function (ThorIOClient) {
+    var PeerConnection = (function () {
+        function PeerConnection() {
+        }
+        return PeerConnection;
+    }());
+    var Connection = (function () {
+        function Connection(id, rtcPeerConnection) {
+            this.id = id;
+            this.rtcPeerConnection = rtcPeerConnection;
+            this.streams = new Array();
+        }
+        return Connection;
+    }());
+    var WebRTC = (function () {
+        function WebRTC(brokerChannel) {
+            var _this = this;
+            this.brokerChannel = brokerChannel;
+            this.Peers = new Array();
+            this.localSteams = new Array();
+            brokerChannel.On("contextSignal", function (signal) {
+                var msg = JSON.parse(signal.message);
+                switch (msg.type) {
+                    case "offer":
+                        _this.onOffer(signal);
+                        break;
+                    case "answer":
+                        _this.onAnswer(signal);
+                        break;
+                    case "candidate":
+                        _this.onCandidate(signal);
+                        break;
+                }
+            });
+        }
+        WebRTC.prototype.onCandidate = function (event) {
+            var msg = JSON.parse(event.message);
+            var candidate = msg.iceCandidate;
+            var pc = this.getPeerConnection(event.sender);
+            pc.addIceCandidate(new RTCIceCandidate({
+                sdpMLineIndex: candidate.label,
+                candidate: candidate.candidate
+            })).then(function () {
+            }).catch(function (err) {
+                console.log(err);
+            });
+        };
+        WebRTC.prototype.onAnswer = function (event) {
+            var pc = this.getPeerConnection(event.sender);
+            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message))).then(function (p) {
+            });
+        };
+        WebRTC.prototype.onOffer = function (event) {
+            var _this = this;
+            var pc = this.getPeerConnection(event.sender);
+            this.localSteams.forEach(function (stream) {
+                pc.addStream(stream);
+            });
+            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
+            pc.createAnswer(function (description) {
+                pc.setLocalDescription(description);
+                var answer = {
+                    sender: _this.localPeerId,
+                    recipient: event.sender,
+                    message: JSON.stringify(description)
+                };
+                _this.brokerChannel.Invoke("contextSignal", answer, "broker");
+                console.log("answer", answer);
+            }, function (error) {
+                console.log("error", error);
+            }, {
+                mandatory: {
+                    "OfferToReceiveAudio": true,
+                    "OfferToReceiveVideo": true
+                }
+            });
+        };
+        WebRTC.prototype.addLocalStream = function (stream) {
+            this.localSteams.push(stream);
+            return this;
+        };
+        ;
+        WebRTC.prototype.onConnected = function (p) {
+            var pc = this.getPeerConnection(p);
+            // todo: fire event
+        };
+        WebRTC.prototype.onDisconnected = function (p) {
+            var pc = this.getPeerConnection(p);
+            pc.close();
+            this.removePeerConnection(p);
+            // todo: fire event
+        };
+        WebRTC.prototype.remoteStreamlost = function (streamId, peerId) { };
+        WebRTC.prototype.removePeerConnection = function (id) {
+            var _this = this;
+            var connection = this.Peers.filter(function (conn) {
+                return conn.id === id;
+            })[0];
+            connection.streams.forEach(function (stream) {
+                _this.remoteStreamlost(stream.id, connection.id);
+            });
+            var index = this.Peers.indexOf(connection);
+            if (index >= 0)
+                this.Peers.splice(index, 1);
+        };
+        WebRTC.prototype.createPeerConnection = function (id) {
+            var _this = this;
+            var rtcPeerConnection = new webkitRTCPeerConnection(null);
+            rtcPeerConnection.onsignalingstatechange = function (state) { };
+            rtcPeerConnection.onicecandidate = function (event) {
+                if (!event || !event.candidate)
+                    return;
+                if (event.candidate) {
+                    var msg = {
+                        sender: _this.localPeerId,
+                        recipient: id,
+                        message: JSON.stringify({
+                            type: 'candidate',
+                            iceCandidate: event.candidate
+                        })
+                    };
+                    _this.brokerChannel.Invoke("contextSignal", msg);
+                }
+            };
+            rtcPeerConnection.oniceconnectionstatechange = function (event) {
+                switch (event.target.iceConnectionState) {
+                    case "connected":
+                        _this.onConnected(id);
+                        break;
+                    case "disconnected":
+                        _this.onDisconnected(id);
+                        break;
+                }
+                ;
+            };
+            rtcPeerConnection.onaddstream = function (event) {
+                var connection = _this.Peers.filter(function (p) {
+                    return p.id === id;
+                })[0];
+                connection.streams.push(event.stream);
+                _this.onRemoteStream(event.stream, connection);
+            };
+            return rtcPeerConnection;
+        };
+        WebRTC.prototype.onRemoteStream = function (stream, connection) { };
+        ;
+        WebRTC.prototype.getPeerConnection = function (id) {
+            var match = this.Peers.filter(function (connection) {
+                return connection.id === id;
+            });
+            if (match.length === 0) {
+                var pc = new Connection(id, this.createPeerConnection(id));
+                this.Peers.push(pc);
+                return pc.rtcPeerConnection;
+            }
+            return match[0].rtcPeerConnection;
+        };
+        WebRTC.prototype.createOffer = function (peer) {
+            var _this = this;
+            var peerConnection = this.createPeerConnection(peer.peerId);
+            this.localSteams.forEach(function (stream) {
+                peerConnection.addStream(stream);
+            });
+            peerConnection.createOffer(function (localDescription) {
+                peerConnection.setLocalDescription(localDescription, function () {
+                    var offer = {
+                        sender: _this.localPeerId,
+                        recipient: peer.peerId,
+                        message: JSON.stringify(localDescription)
+                    };
+                    console.log("create offer", offer);
+                    _this.brokerChannel.Invoke("contextSignal", offer, "broker");
+                }, function (err) {
+                    console.log("set local error", err);
+                });
+            }, function (err) {
+                console.log("create offer error", err);
+            }, {
+                mandatory: {
+                    "OfferToReceiveAudio": true,
+                    "OfferToReceiveVideo": true
+                }
+            });
+            return peerConnection;
+        };
+        WebRTC.prototype.connect = function (peerConnections) {
+            var _this = this;
+            peerConnections.forEach(function (peer) {
+                var pc = new Connection(peer.peerId, _this.createOffer(peer));
+                _this.Peers.push(pc);
+            });
+        };
+        return WebRTC;
+    }());
+    ThorIOClient.WebRTC = WebRTC;
     var Factory = (function () {
         function Factory(url, controllers, params) {
             var _this = this;

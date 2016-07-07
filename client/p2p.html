@@ -1,0 +1,90 @@
+<html>
+
+<body>
+    <h1>WebRTC</h1>
+    <div>
+    <video id="local" autoplay controls"></video>
+    </div>
+    <button id="call">Call</button>
+    <div id="videos">
+        
+   
+    
+    <script src="thor-io.client.js">
+    </script>
+    <script>
+
+        var attachMediaStream = function (element, stream) {
+        if (typeof element.srcObject !== 'undefined') {
+            element.srcObject = stream;
+        }
+        else if (typeof element.mozSrcObject !== 'undefined') {
+            element.mozSrcObject = stream;
+        }
+        else if (typeof element.src !== 'undefined') {
+            element.src = URL.createObjectURL(stream);
+        }
+        else {
+            console.log('Error attaching stream to element.');
+        }
+    };
+
+    var createVideoElement = function(stream,peer){
+        var el = document.createElement("video");
+        el.setAttribute("id", stream.id);
+        el.setAttribute("autoplay","autoplayß");
+        attachMediaStream(el, stream);
+        return el;
+    };
+
+        var rtc;
+
+        document.addEventListener("DOMContentLoaded", function() {
+          
+            var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["broker"], {});
+              client.OnOpen = function(broker) {
+                rtc = new ThorIOClient.WebRTC(broker);
+                var constraints = {
+                    video: {
+                        mandatory: {
+                            maxWidth: 320,
+                            maxHeight: 180
+                        }
+                    },
+                    audio: false,
+                };
+
+                navigator.webkitGetUserMedia(constraints, function(stream) {
+                    rtc.addLocalStream(s);
+                         attachMediaStream(document.querySelector("#local"),stream);
+
+                }, function(err) { console.lo("gum error", err);
+                });
+
+                document.querySelector("#call").addEventListener("click", function(){
+                    broker.Invoke("connectContext", {}, "broker");
+                });
+                
+                rtc.onRemoteStream = function(stream,connection) {
+                    document.querySelector("#videos").appendChild(createVideoElement(stream,connection));
+                };
+                rtc.remoteStreamlost = function(streamId,peerId){
+                    console.log("streamLost",arguments); // remove the video element
+                };
+                broker.On("contextChanged", function(data) {
+                });
+                broker.On("connectTo", function(peers) {
+                    rtc.connect(peers);
+                });
+                broker.On("contextCreated" , function(data) {
+                    rtc.localPeerId = data.peerId;
+                    broker.Invoke("changeContext",{context:"foo"},"broker");
+                });
+                broker.Connect();
+            };
+        });
+    </script>
+
+</body>
+
+</html>

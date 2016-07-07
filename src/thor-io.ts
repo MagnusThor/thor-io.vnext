@@ -1,6 +1,39 @@
+import net = require("net");
+
 export namespace ThorIO {
+    export class EndPoint {
+        private serializeMessage(data: string):string {
 
-
+            var parts = data.split("|");
+            return new ThorIO.Message(parts[0], parts[2] || {}, parts[1]).toString();
+        };
+        private deserializeMessage(data:any):string {
+            var message =  JSON.parse(data);
+            var parts = new Array<string>();
+            parts.push = message.C;
+            parts.push = message.T;
+            parts.push = message.D;
+            return parts.join("|");
+        }
+        constructor(port: number, private fn ? : Function) {
+            var self = this;
+            var server: net.Server = net.createServer(function(socket: any) {
+                socket.onmessage = function(event: MessageEvent) {
+                };
+                socket.send = function(data: ThorIO.Message) {
+                    socket.write(self.deserializeMessage(data));
+                }
+                socket.on("data", (data: any) => {
+                    var message = self.serializeMessage(data.toString());
+                    socket["onmessage"].apply(socket, [{
+                        data: message
+                    }]);
+                });
+                self.fn(socket);
+            });
+            server.listen(port);
+        }
+    }
 
     export class Utils {
         static newGuid() {
@@ -143,7 +176,7 @@ export namespace ThorIO {
                     } else {
                         var prop = json.T.replace("$set_", "");
                         var propValue = JSON.parse(json.D)
-                       if (typeof(controller[prop]) === typeof(propValue))
+                        if (typeof(controller[prop]) === typeof(propValue))
                             controller[prop] = propValue;
                     }
                 } catch (ex) {
@@ -165,6 +198,7 @@ export namespace ThorIO {
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         }
+     
         getController(alias: string): Controller {
             try {
                 var match = this.controllerInstances.filter((pre: Controller) => {
@@ -241,11 +275,14 @@ export namespace ThorIO {
             return result;
         }
 
+       
+        
         invokeTo(expression: Function, data: any, topic: string, controller: string) {
             var connections = this.getConnections().map((pre: Connection) => {
                 if (pre.hasController(controller)) return pre.getController(controller);
             });
             var filtered = this.filterControllers(connections, expression);
+            console.log("filtered",filtered.length);
             filtered.forEach((instance: Controller) => {
                 instance.invoke(data, topic, this.alias);
             });

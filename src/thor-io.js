@@ -1,6 +1,43 @@
 "use strict";
+var net = require("net");
 var ThorIO;
 (function (ThorIO) {
+    var EndPoint = (function () {
+        function EndPoint(port, fn) {
+            this.fn = fn;
+            var self = this;
+            var server = net.createServer(function (socket) {
+                socket.onmessage = function (event) {
+                };
+                socket.send = function (data) {
+                    socket.write(self.deserializeMessage(data));
+                };
+                socket.on("data", function (data) {
+                    var message = self.serializeMessage(data.toString());
+                    socket["onmessage"].apply(socket, [{
+                            data: message
+                        }]);
+                });
+                self.fn(socket);
+            });
+            server.listen(port);
+        }
+        EndPoint.prototype.serializeMessage = function (data) {
+            var parts = data.split("|");
+            return new ThorIO.Message(parts[0], parts[2] || {}, parts[1]).toString();
+        };
+        ;
+        EndPoint.prototype.deserializeMessage = function (data) {
+            var message = JSON.parse(data);
+            var parts = new Array();
+            parts.push = message.C;
+            parts.push = message.T;
+            parts.push = message.D;
+            return parts.join("|");
+        };
+        return EndPoint;
+    }());
+    ThorIO.EndPoint = EndPoint;
     var Utils = (function () {
         function Utils() {
         }
@@ -229,6 +266,7 @@ var ThorIO;
                     return pre.getController(controller);
             });
             var filtered = this.filterControllers(connections, expression);
+            console.log("filtered", filtered.length);
             filtered.forEach(function (instance) {
                 instance.invoke(data, topic, _this.alias);
             });

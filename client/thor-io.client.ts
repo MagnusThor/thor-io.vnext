@@ -1,4 +1,216 @@
 namespace ThorIOClient {
+
+
+    class PeerConnection {
+        context: string;
+        peerId: string;
+    }
+    class Connection {
+        id: string;
+        rtcPeerConnection: webkitRTCPeerConnection;
+        streams: Array < any > ;
+        constructor(id:string,rtcPeerConnection:webkitRTCPeerConnection) {
+            this.id = id;
+            this.rtcPeerConnection =rtcPeerConnection;
+            this.streams = new Array < any > ();
+        }
+    }
+    export class WebRTC {
+        public Peers: Array < Connection > ;
+        public Peer: webkitRTCPeerConnection;
+        public localPeerId: string;
+        public localSteams: Array < any > ;
+
+        constructor(private brokerChannel: ThorIOClient.Channel) {
+            this.Peers = new Array < any > ();
+            this.localSteams = new Array < any > ();
+
+            brokerChannel.On("contextSignal", (signal: any) => {
+                var msg = JSON.parse(signal.message);
+                switch (msg.type) {
+                    case "offer":
+                        this.onOffer(signal)
+                        break;
+                    case "answer":
+                        this.onAnswer(signal);
+                        break;
+                    case "candidate":
+                        this.onCandidate(signal);
+                        break;
+                }
+
+            });
+
+        }
+        private onCandidate(event) {
+            var msg = JSON.parse(event.message);
+            var candidate = msg.iceCandidate;
+            var pc = this.getPeerConnection(event.sender);
+
+            pc.addIceCandidate(new RTCIceCandidate({
+                sdpMLineIndex: candidate.label,
+                candidate: candidate.candidate
+            })).then(() => {
+
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
+        private onAnswer(event) {
+            var pc = this.getPeerConnection(event.sender);
+            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message))).then((p) => {
+            });
+        }
+        
+        private onOffer(event) {
+            var pc = this.getPeerConnection(event.sender);
+            this.localSteams.forEach((stream) => {
+                pc.addStream(stream);
+            });
+          pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
+            pc.createAnswer((description) => {
+                pc.setLocalDescription(description);
+                var answer = {
+                    sender: this.localPeerId,
+                    recipient: event.sender,
+                    message: JSON.stringify(description)
+                };
+                this.brokerChannel.Invoke("contextSignal", answer, "broker");
+                console.log("answer", answer);
+            }, (error) => {
+                console.log("error", error);
+
+            }, {
+                mandatory: {
+                    "OfferToReceiveAudio": true,
+                    "OfferToReceiveVideo": true
+                }
+            });
+
+        }
+
+        addLocalStream(stream: any) {
+            this.localSteams.push(stream);
+            return this;
+        };
+   
+        private onConnected(p: any) {
+            var pc = this.getPeerConnection(p);
+            // todo: fire event
+        }
+
+        private onDisconnected(p: any) {
+            var pc = this.getPeerConnection(p);
+            pc.close();
+            this.removePeerConnection(p);
+            // todo: fire event
+        }
+
+        remoteStreamlost(streamId:string,peerId:string){}
+
+        private removePeerConnection(id: string) {
+            var connection = this.Peers.filter((conn: Connection) => {
+                return conn.id === id;
+            })[0];
+            connection.streams.forEach( (stream:MediaStream) => {
+                    this.remoteStreamlost(stream.id,connection.id)
+            });
+            var index = this.Peers.indexOf(connection);
+            if (index >= 0)
+                this.Peers.splice(index, 1);
+        }
+        private createPeerConnection(id: string): webkitRTCPeerConnection {
+            var rtcPeerConnection = new webkitRTCPeerConnection(null);
+            rtcPeerConnection.onsignalingstatechange = (state) => {};
+            rtcPeerConnection.onicecandidate = (event: any) => {
+                if (!event || !event.candidate) return;
+                if (event.candidate) {
+                    var msg = {
+                        sender: this.localPeerId,
+                        recipient: id,
+                        message: JSON.stringify({
+                            type: 'candidate',
+                            iceCandidate: event.candidate
+                        })
+                    };
+                    this.brokerChannel.Invoke("contextSignal", msg);
+                }
+            };
+            rtcPeerConnection.oniceconnectionstatechange = (event: any) => {
+                switch (event.target.iceConnectionState) {
+                    case "connected":
+                        this.onConnected(id);
+                        break;
+                    case "disconnected":
+                        this.onDisconnected(id);
+                        break;
+                };
+            };
+            rtcPeerConnection.onaddstream = (event: RTCMediaStreamEvent) => {
+                var connection = this.Peers.filter((p) => {
+                    return p.id === id;
+                })[0];
+                connection.streams.push(event.stream);
+                this.onRemoteStream(event.stream, connection);
+            };
+            return rtcPeerConnection;
+        }
+        public onRemoteStream(stream: MediaStream, connection: Connection) {};
+        private getPeerConnection(id: string): webkitRTCPeerConnection {
+            var match = this.Peers.filter((connection: Connection) => {
+                return connection.id === id;
+            });
+            if (match.length === 0) {
+                var pc = new Connection(id,this.createPeerConnection(id));
+                this.Peers.push(pc);
+
+                return pc.rtcPeerConnection;
+            }
+            return match[0].rtcPeerConnection;
+        }
+
+
+        private createOffer(peer: PeerConnection) {
+            var peerConnection = this.createPeerConnection(peer.peerId);
+            this.localSteams.forEach((stream) => {
+                peerConnection.addStream(stream);
+            });
+
+            peerConnection.createOffer((localDescription: webkitRTCSessionDescription) => {
+
+                peerConnection.setLocalDescription(localDescription, () => {
+                    var offer = {
+                        sender: this.localPeerId,
+                        recipient: peer.peerId,
+                        message: JSON.stringify(localDescription)
+                    };
+                    console.log("create offer", offer);
+
+                    this.brokerChannel.Invoke("contextSignal",
+                        offer, "broker"
+                    );
+
+                }, function(err) {
+                    console.log("set local error", err);
+                });
+            }, (err) => {
+                console.log("create offer error", err);
+            }, {
+                mandatory: {
+                    "OfferToReceiveAudio": true,
+                    "OfferToReceiveVideo": true
+                }
+            });
+            return peerConnection;
+        }
+        connect(peerConnections: Array < PeerConnection > ) {
+            peerConnections.forEach((peer: PeerConnection) => {
+                var pc = new Connection(peer.peerId,this.createOffer(peer));
+                this.Peers.push(pc);
+            })
+        }
+    }
+
     export class Factory {
         private ws: WebSocket;
         private toQuery(obj: any) {
