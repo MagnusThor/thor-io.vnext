@@ -55,10 +55,10 @@
                 };
 
                 navigator.webkitGetUserMedia(constraints, function(stream) {
-                    rtc.addLocalStream(s);
+                    rtc.addLocalStream(stream);
                          attachMediaStream(document.querySelector("#local"),stream);
 
-                }, function(err) { console.lo("gum error", err);
+                }, function(err) { console.log("gum error", err);
                 });
 
                 document.querySelector("#call").addEventListener("click", function(){
