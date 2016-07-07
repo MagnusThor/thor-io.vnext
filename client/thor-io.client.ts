@@ -51,9 +51,7 @@ namespace ThorIOClient {
                 sdpMLineIndex: candidate.label,
                 candidate: candidate.candidate
             })).then(() => {
-
             }).catch((err) => {
-                console.log(err);
             });
         }
         private onAnswer(event) {
@@ -76,10 +74,9 @@ namespace ThorIOClient {
                     message: JSON.stringify(description)
                 };
                 this.brokerChannel.Invoke("contextSignal", answer, "broker");
-                console.log("answer", answer);
+              
             }, (error) => {
-                console.log("error", error);
-
+        
             }, {
                 mandatory: {
                     "OfferToReceiveAudio": true,
@@ -120,7 +117,11 @@ namespace ThorIOClient {
                 this.Peers.splice(index, 1);
         }
         private createPeerConnection(id: string): webkitRTCPeerConnection {
-            var rtcPeerConnection = new webkitRTCPeerConnection(null);
+            var rtcPeerConnection = new webkitRTCPeerConnection({
+            iceServers: [{
+                "url": "stun:stun.l.google.com:19302"
+            }]
+            });
             rtcPeerConnection.onsignalingstatechange = (state) => {};
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
@@ -184,17 +185,15 @@ namespace ThorIOClient {
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
                     };
-                    console.log("create offer", offer);
-
                     this.brokerChannel.Invoke("contextSignal",
                         offer, "broker"
                     );
 
                 }, function(err) {
-                    console.log("set local error", err);
+                  
                 });
             }, (err) => {
-                console.log("create offer error", err);
+               
             }, {
                 mandatory: {
                     "OfferToReceiveAudio": true,

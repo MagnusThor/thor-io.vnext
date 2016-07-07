@@ -32,8 +32,8 @@ var BrokerController = (function (_super) {
         this.Peer.peerId = this.client.id;
         this.invoke(this.Peer, "contextCreated", this.alias);
     };
-    BrokerController.prototype.changeContext = function (msg) {
-        this.Peer.context = msg.context;
+    BrokerController.prototype.changeContext = function (change) {
+        this.Peer.context = change.context;
         this.invoke(this.Peer, "contextChanged", this.alias);
     };
     BrokerController.prototype.contextSignal = function (signal) {

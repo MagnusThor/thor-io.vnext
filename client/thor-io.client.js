@@ -43,7 +43,6 @@ var ThorIOClient;
                 candidate: candidate.candidate
             })).then(function () {
             }).catch(function (err) {
-                console.log(err);
             });
         };
         WebRTC.prototype.onAnswer = function (event) {
@@ -66,9 +65,7 @@ var ThorIOClient;
                     message: JSON.stringify(description)
                 };
                 _this.brokerChannel.Invoke("contextSignal", answer, "broker");
-                console.log("answer", answer);
             }, function (error) {
-                console.log("error", error);
             }, {
                 mandatory: {
                     "OfferToReceiveAudio": true,
@@ -106,7 +103,11 @@ var ThorIOClient;
         };
         WebRTC.prototype.createPeerConnection = function (id) {
             var _this = this;
-            var rtcPeerConnection = new webkitRTCPeerConnection(null);
+            var rtcPeerConnection = new webkitRTCPeerConnection({
+                iceServers: [{
+                        "url": "stun:stun.l.google.com:19302"
+                    }]
+            });
             rtcPeerConnection.onsignalingstatechange = function (state) { };
             rtcPeerConnection.onicecandidate = function (event) {
                 if (!event || !event.candidate)
@@ -169,13 +170,10 @@ var ThorIOClient;
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
                     };
-                    console.log("create offer", offer);
                     _this.brokerChannel.Invoke("contextSignal", offer, "broker");
                 }, function (err) {
-                    console.log("set local error", err);
                 });
             }, function (err) {
-                console.log("create offer error", err);
             }, {
                 mandatory: {
                     "OfferToReceiveAudio": true,

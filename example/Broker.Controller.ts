@@ -32,8 +32,8 @@ export class BrokerController  extends ThorIO.Controller
         this.Peer.peerId = this.client.id;
         this.invoke(this.Peer,"contextCreated",this.alias);
     }
-    changeContext(msg:any){
-        this.Peer.context = msg.context;
+    changeContext(change:PeerConnection){
+        this.Peer.context = change.context;
         this.invoke(this.Peer,"contextChanged",this.alias);
     }
     contextSignal(signal:Signal){
@@ -41,7 +41,6 @@ export class BrokerController  extends ThorIO.Controller
             if (pre.client.id === signal.recipient) return pre;
         };
         this.invokeTo(expression,signal,"contextSignal",this.alias);
-
     }
     connectContext(){
         var connections = this.getPeerConnections(this.Peer).map( (p:BrokerController) => {return p.Peer });
@@ -50,7 +49,9 @@ export class BrokerController  extends ThorIO.Controller
     }
     getPeerConnections(peerConnetion:PeerConnection):Array<BrokerController>{
            var connections = this.getConnections().map((pre:ThorIO.Connection) => {
+
                 if (pre.hasController(this.alias)) return <BrokerController>pre.getController(this.alias);
+
             }).filter( (pre:BrokerController) => {
                     return pre.Peer.context === this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId
             });
