@@ -1,4 +1,4 @@
-# thor-io.vnext
+thor-io.vnext
 thor-io.vnext represents the next generation of thor-io .Written i Typescript.
 
 The first examples based on the source found in this repo is deployed heroku. 
