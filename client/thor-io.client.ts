@@ -1,5 +1,7 @@
-namespace ThorIOClient {
 
+
+
+namespace ThorIOClient {
 
     class PeerConnection {
         context: string;
@@ -9,15 +11,16 @@ namespace ThorIOClient {
         id: string;
         rtcPeerConnection: webkitRTCPeerConnection;
         streams: Array < any > ;
-        constructor(id:string,rtcPeerConnection:webkitRTCPeerConnection) {
+        constructor(id:string,rtcPeerConnection:RTCPeerConnection) {
             this.id = id;
             this.rtcPeerConnection =rtcPeerConnection;
             this.streams = new Array < any > ();
         }
     }
     export class WebRTC {
+
         public Peers: Array < Connection > ;
-        public Peer: webkitRTCPeerConnection;
+        public Peer: RTCPeerConnection;
         public localPeerId: string;
         public localSteams: Array < any > ;
 
@@ -116,8 +119,8 @@ namespace ThorIOClient {
             if (index >= 0)
                 this.Peers.splice(index, 1);
         }
-        private createPeerConnection(id: string): webkitRTCPeerConnection {
-            var rtcPeerConnection = new webkitRTCPeerConnection({
+        private createPeerConnection(id: string): RTCPeerConnection {
+            var rtcPeerConnection = new RTCPeerConnection({
             iceServers: [{
                 "url": "stun:stun.l.google.com:19302"
             }]
@@ -177,7 +180,7 @@ namespace ThorIOClient {
                 peerConnection.addStream(stream);
             });
 
-            peerConnection.createOffer((localDescription: webkitRTCSessionDescription) => {
+            peerConnection.createOffer((localDescription: RTCSessionDescription) => {
 
                 peerConnection.setLocalDescription(localDescription, () => {
                     var offer = {

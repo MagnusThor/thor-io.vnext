@@ -81,4 +81,4 @@ declare module 'es6-promise' {
 		export function polyfill(): void;
 	}
 	export = rsvp;
-}ß
+}

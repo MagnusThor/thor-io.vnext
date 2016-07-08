@@ -49,9 +49,9 @@ var BrokerController = (function (_super) {
     };
     BrokerController.prototype.getPeerConnections = function (peerConnetion) {
         var _this = this;
-        var connections = this.getConnections().map(function (pre) {
-            if (pre.hasController(_this.alias))
-                return pre.getController(_this.alias);
+        var connections = this.getConnections().map(function (connection) {
+            if (connection.hasController(_this.alias))
+                return connection.getController(_this.alias);
         }).filter(function (pre) {
             return pre.Peer.context === _this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId;
         });

@@ -103,7 +103,7 @@ var ThorIOClient;
         };
         WebRTC.prototype.createPeerConnection = function (id) {
             var _this = this;
-            var rtcPeerConnection = new webkitRTCPeerConnection({
+            var rtcPeerConnection = new RTCPeerConnection({
                 iceServers: [{
                         "url": "stun:stun.l.google.com:19302"
                     }]

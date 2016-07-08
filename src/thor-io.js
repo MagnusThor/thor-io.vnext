@@ -68,18 +68,6 @@ var ThorIO;
         }
         Engine.prototype.log = function (error) {
         };
-        Engine.prototype.findController = function (alias) {
-            var match = this.controllers.filter(function (pre) {
-                return pre.alias == alias;
-            });
-            return match[0].instance;
-        };
-        Engine.prototype.findConnection = function (id) {
-            var match = this.connections.filter(function (conn) {
-                return conn.id === id;
-            });
-            return match[0];
-        };
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
                 var connection = this.connections.filter(function (pre) {
@@ -192,7 +180,6 @@ var ThorIO;
                 return match[0];
             }
             catch (error) {
-                // todo:log error
                 return null;
             }
         };

@@ -46,7 +46,7 @@ export namespace ThorIO {
 
     export class Plugin {
         public alias: string;
-        public instance: any;
+        public instance: ThorIO.Controller;
         constructor() {}
     }
     export class Engine {
@@ -60,24 +60,12 @@ export namespace ThorIO {
             controllers.forEach((ctrl) => {
                 this.controllers.push(ctrl);
             });
-
         }
         private log(error: any) {
 
         }
-        findController(alias: string): Controller {
-            var match = this.controllers.filter((pre) => {
-                return pre.alias == alias;
-            });
-            return match[0].instance;
-        }
-
-        findConnection(id: string): Connection {
-            var match = this.connections.filter((conn) => {
-                return conn.id === id;
-            });
-            return match[0];
-        }
+      
+    
         removeConnection(ws: any, reason: number) {
             try {
                 var connection = this.connections.filter((pre: Connection) => {
@@ -153,7 +141,8 @@ export namespace ThorIO {
         public id: string;
         public ws: WebSocket;
         public queue: Array < Message > ;
-        public controllerInstances: Array < Controller > ;
+        public controllerInstances: Array < any > ;
+        
         public connections: Array < Connection > ;
         public clientInfo: ThorIO.ClientInfo;
 
@@ -198,7 +187,8 @@ export namespace ThorIO {
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         }
-     
+
+      
         getController(alias: string): Controller {
             try {
                 var match = this.controllerInstances.filter((pre: Controller) => {
@@ -206,7 +196,6 @@ export namespace ThorIO {
                 });
                 return match[0];
             } catch (error) {
-                // todo:log error
                 return null
             }
         }
