@@ -15,12 +15,11 @@ The first examples based on the source found in this repo are deployed on heroku
 
 At http://thorio.herokuapp.com/client/chat.html you will find a simple chat based in the controller found in (examples).
 
-The latest example is a WebRTC implementation, containig a client and a Signalling Server ( controller ) , see example/Broker.Controller.ts.
-
 ###WebRTC example
 
-   https://thorio.herokuapp.com/client/p2p.html is a simple WebRTC 1-n video-conf.   Enjoy!
+The latest example is a WebRTC implementation, containig a client and a Signalling Server ( controller ) , see example/Broker.Controller.ts.
 
+   https://thorio.herokuapp.com/client/p2p.html is a simple WebRTC 1-n video-conf.   Enjoy!
 
 
 
