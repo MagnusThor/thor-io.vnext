@@ -178,7 +178,7 @@ var ThorIO;
             try {
                 if (!controller.canInvokeMethod(method))
                     throw "method " + method + "cant be invoked.";
-                if (typeof (controller[method] === "function")) {
+                if (typeof (controller[method]) === "function") {
                     controller[method].apply(controller, [data, controller.alias]);
                 }
                 else {
@@ -226,7 +226,7 @@ var ThorIO;
                     var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias;
                     })[0].instance;
-                    var controllerInstance = new (resolved.constructor(this));
+                    var controllerInstance = new resolved(this); // todo: fix..
                     this.controllerInstances.push(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -263,15 +263,9 @@ var ThorIO;
         };
         Controller.prototype.onopen = function () { };
         Controller.prototype.onclose = function () { };
-        Controller.prototype.filterControllers = function (what, pre) {
-            var arr = what;
-            var result = [];
-            for (var i = 0; i < arr.length; i++) {
-                if (pre(arr[i]))
-                    result.push(arr[i]);
-            }
-            ;
-            return result;
+        Controller.prototype.find = function (array, predicate, selector) {
+            if (selector === void 0) { selector = function (x) { return x; }; }
+            return array.filter(predicate).map(selector);
         };
         Controller.prototype.invokeError = function (error) {
             var msg = new Message("$error_", error, this.alias).toString();
@@ -290,9 +284,8 @@ var ThorIO;
                 if (pre.hasController(controller))
                     return pre.getController(controller);
             });
-            var filtered = this.filterControllers(connections, expression);
-            filtered.forEach(function (instance) {
-                instance.invoke(data, topic, _this.alias);
+            connections.filter(expression).forEach(function (i) {
+                i.invoke(data, topic, _this.alias);
             });
         };
         ;

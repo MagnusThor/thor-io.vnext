@@ -160,7 +160,7 @@ export namespace ThorIO {
             try {
                     if(!controller.canInvokeMethod(method)) 
                         throw "method " + method + "cant be invoked."
-                    if (typeof(controller[method] === "function")){
+                    if (typeof(controller[method]) === "function"){
                         controller[method].apply(controller, [data, controller.alias]);
 
                 } else {
@@ -223,7 +223,9 @@ export namespace ThorIO {
                     var resolved = this.controllers.filter((resolve) => {
                         return resolve.alias === alias;
                     })[0].instance;
-                    var controllerInstance = new (<any> resolved.constructor(this));
+
+                    var controllerInstance = <Controller>new resolved(this); // todo: fix..
+
                     this.controllerInstances.push(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -263,39 +265,36 @@ export namespace ThorIO {
         }
         onopen() {}
         onclose() {}
-        private filterControllers(what: any, pre:any) {
-            var arr = what;
-            var result = [];
-            for (var i = 0; i < arr.length; i++) {
-                if (pre(arr[i]))
-                    result.push(arr[i]);
-            };
-           
-            return result;
+        find<T, U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x:T)=> <U><any>x): U[] {
+            return array.filter(predicate).map(selector);
         }
+
         invokeError(error:any){
              var msg = new Message("$error_", error, this.alias).toString();
              this.client.ws.send(msg.toString());
         }
+
         invokeToAll(data: any, topic: string, controller: string) {
             var msg = new Message(topic, data, this.alias).toString();
             this.getConnections().forEach((connection: Connection) => {
                 connection.ws.send(msg);
             });
         };
-        invokeTo(expression: Function, data: any, topic: string, controller: string) {
+
+        invokeTo(expression: (item: Controller) => boolean, data: any, topic: string, controller: string) {
             var connections = this.getConnections().map((pre: Connection) => {
                 if (pre.hasController(controller)) return pre.getController(controller);
             });
-            var filtered = this.filterControllers(connections, expression);
-            filtered.forEach((instance: Controller) => {
-                instance.invoke(data, topic, this.alias);
-            });
+           connections.filter(expression).forEach( (i:Controller) => {
+                 i.invoke(data, topic, this.alias);
+           });
         };
+
         invoke(data: any, topic: string, controller: string) {
             var msg = new Message(topic, data, this.alias);
             this.client.ws.send(msg.toString());
         };
+
         subscribe(subscription: Subscription, topic: string, controller: string): Subscription {
             if (this.hasSubscription(subscription.topic)) {
                 return;
@@ -303,6 +302,7 @@ export namespace ThorIO {
             this.subscriptions.push(subscription);
             return subscription;
         };
+
         unsubscribe(subscription: Subscription): boolean {
             var index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
             if (index >= 0) {

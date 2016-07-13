@@ -47,8 +47,7 @@ var BrokerController = (function (_super) {
     };
     BrokerController.prototype.contextSignal = function (signal) {
         var expression = function (pre) {
-            if (pre.client.id === signal.recipient)
-                return pre;
+            return pre.client.id === signal.recipient;
         };
         this.invokeTo(expression, signal, "contextSignal", this.alias);
     };

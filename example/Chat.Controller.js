@@ -28,9 +28,8 @@ var ChatController = (function (_super) {
     ChatController.prototype.sendChatMessage = function (data, topic, controller) {
         var _this = this;
         var expression = function (pre) {
-            console.log("-->", pre.age, _this.age);
-            if (pre.age >= _this.age)
-                return pre;
+            console.log("-->", pre.age, _this.age, pre.client.id);
+            return pre.age >= _this.age;
         };
         this.invokeTo(expression, data, "chatMessage", this.alias);
     };

@@ -15,19 +15,18 @@ export class ChatController extends ThorIO.Controller {
 
    
     @CanSet(true) // this property can be modified (set) by the clients
-    age: number ;
+    age: number = 1;
 
     constructor(client: ThorIO.Connection) {
         super(client);
-        this.age = 1;
     }
 
     @CanInvoke(true) // this method can be called / invoke by clients
     sendChatMessage(data: ChatMessage, topic: string, controller: string) {
        
         var expression = (pre: ChatController) => {
-            console.log("-->", pre.age,this.age);
-            if (pre.age >= this.age) return pre;
+            console.log("-->", pre.age,this.age,pre.client.id);
+            return pre.age >= this.age;
         }
         this.invokeTo(expression, data, "chatMessage", this.alias);
     }
