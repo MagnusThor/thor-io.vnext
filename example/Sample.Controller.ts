@@ -11,6 +11,8 @@ module Fake {
 export class ExampleController extends ThorIO.Controller {
     public alias: string;
     public clientInfo: any;
+
+    
     public room: string;
     constructor(client: ThorIO.Connection) {
 
@@ -20,7 +22,6 @@ export class ExampleController extends ThorIO.Controller {
         // properties such as "room" can be modified by calling i.e .SetProperty("room","bar") in the 
         // client.
         this.alias = "example";
-
     }
     sendMessage(data, controller, topic) {
         

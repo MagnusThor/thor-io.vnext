@@ -1,5 +1,5 @@
 import { ThorIO } from "../src/thor-io";
-export declare class Generic extends ThorIO.Controller {
+export declare class ExampleController extends ThorIO.Controller {
     alias: string;
     clientInfo: any;
     room: string;

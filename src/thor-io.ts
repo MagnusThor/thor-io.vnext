@@ -1,15 +1,35 @@
 import net = require("net");
+import 'reflect-metadata';
+
+
+
+export function CanInvoke(state:boolean) {
+    return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
+         Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    }    
+}
+export function CanSet(state:boolean){
+    return function(target: Object, propertyKey: string ){
+         Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    }
+}
+export function ControllerProperties(alias:string){
+        return function(target:any){
+            Reflect.defineMetadata("alias",alias,target);
+        }
+}
 
 export namespace ThorIO {
-    export class EndPoint {
-        private serializeMessage(data: string):string {
 
+
+    export class EndPoint {
+        private serializeMessage(data: string): string {
             var parts = data.split("|");
             return new ThorIO.Message(parts[0], parts[2] || {}, parts[1]).toString();
         };
-        private deserializeMessage(data:any):string {
-            var message =  JSON.parse(data);
-            var parts = new Array<string>();
+        private deserializeMessage(data: any): string {
+            var message = JSON.parse(data);
+            var parts = new Array < string > ();
             parts.push = message.C;
             parts.push = message.T;
             parts.push = message.D;
@@ -18,8 +38,7 @@ export namespace ThorIO {
         constructor(port: number, private fn ? : Function) {
             var self = this;
             var server: net.Server = net.createServer(function(socket: any) {
-                socket.onmessage = function(event: MessageEvent) {
-                };
+                socket.onmessage = function(event: MessageEvent) {};
                 socket.send = function(data: ThorIO.Message) {
                     socket.write(self.deserializeMessage(data));
                 }
@@ -64,8 +83,8 @@ export namespace ThorIO {
         private log(error: any) {
 
         }
-      
-    
+
+
         removeConnection(ws: any, reason: number) {
             try {
                 var connection = this.connections.filter((pre: Connection) => {
@@ -140,12 +159,27 @@ export namespace ThorIO {
 
         public id: string;
         public ws: WebSocket;
-        public queue: Array < Message > ;
+       
         public controllerInstances: Array < any > ;
-        
-        public connections: Array < Connection > ;
+        public connections: Array <ThorIO.Connection> ;
         public clientInfo: ThorIO.ClientInfo;
+        private methodInvoker(controller: Controller, method: string, data: Object) {
+            try {
+                    if(!controller.canInvokeMethod(method)) throw "method " + method + " cant be invoked."
+                    if (typeof(controller[method] === "function")){
+                        controller[method].apply(controller, [data, controller.alias]);
 
+                } else {
+                    var prop = method;
+                    var propValue = data;
+                    if (typeof(controller[prop]) === typeof(propValue))
+                        controller[prop] = propValue;
+                }
+            } catch (ex) {
+              
+                controller.invokeError(ex);
+            }
+        }
 
         constructor(ws: WebSocket, connections: Array < Connection > , private controllers: Array < Plugin > ) {
 
@@ -158,21 +192,9 @@ export namespace ThorIO {
             this.ws.onmessage = (message: MessageEvent) => {
                 var json = JSON.parse(message.data);
                 var controller = this.locateController(json.C);
-                try {
-                    if (!json.T.startsWith("$set_")) {
-                        if (typeof(controller[json.T] === "function"))
-                            controller[json.T].apply(controller, [JSON.parse(json.D), json.C]);
-                    } else {
-                        var prop = json.T.replace("$set_", "");
-                        var propValue = JSON.parse(json.D)
-                        if (typeof(controller[prop]) === typeof(propValue))
-                            controller[prop] = propValue;
-                    }
-                } catch (ex) {
-                    // todo:log error
-                }
+                this.methodInvoker(controller, json.T, JSON.parse(json.D));
             };
-            this.queue = new Array < Message > ();
+
             this.controllerInstances = new Array < Controller > ();
         }
         hasController(alias: string): boolean {
@@ -188,7 +210,7 @@ export namespace ThorIO {
                 this.controllerInstances.splice(index, 1);
         }
 
-      
+
         getController(alias: string): Controller {
             try {
                 var match = this.controllerInstances.filter((pre: Controller) => {
@@ -212,7 +234,8 @@ export namespace ThorIO {
                         return resolve.alias === alias;
                     });
                     var resolved = controller[0].instance;
-                    var controllerInstance = (new resolved(this)) as Controller;
+                    var controllerInstance = <Controller>(new resolved(this));
+
                     this.controllerInstances.push(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -244,16 +267,17 @@ export namespace ThorIO {
             this.client = client;
             this.subscriptions = new Array < Subscription > ();
         }
+        public canInvokeMethod(method: string): any {
+            return ( < any > global).Reflect.getMetadata("invokeable", this, method);
+        }
+
+     
+
         getConnections(alias ? : string) {
             return this.client.connections;
         }
         onopen() {}
-        invokeToAll(data: any, topic: string, controller: string) {
-            var msg = new Message(topic, data, this.alias).toString();
-            this.getConnections().forEach((connection: Connection) => {
-                connection.ws.send(msg);
-            });
-        };
+        onclose() {}
         private filterControllers(what: Array < Controller > , pre) {
             var arr = what;
             var result = [];
@@ -263,15 +287,21 @@ export namespace ThorIO {
             };
             return result;
         }
-
-       
-        
+        invokeError(error:any){
+             var msg = new Message("$error_", error, this.alias).toString();
+             this.client.ws.send(msg.toString());
+        }
+        invokeToAll(data: any, topic: string, controller: string) {
+            var msg = new Message(topic, data, this.alias).toString();
+            this.getConnections().forEach((connection: Connection) => {
+                connection.ws.send(msg);
+            });
+        };
         invokeTo(expression: Function, data: any, topic: string, controller: string) {
             var connections = this.getConnections().map((pre: Connection) => {
                 if (pre.hasController(controller)) return pre.getController(controller);
             });
             var filtered = this.filterControllers(connections, expression);
-            console.log("filtered",filtered.length);
             filtered.forEach((instance: Controller) => {
                 instance.invoke(data, topic, this.alias);
             });
@@ -280,7 +310,6 @@ export namespace ThorIO {
             var msg = new Message(topic, data, this.alias);
             this.client.ws.send(msg.toString());
         };
-
         subscribe(subscription: Subscription, topic: string, controller: string): Subscription {
             if (this.hasSubscription(subscription.topic)) {
                 return;
@@ -327,10 +356,11 @@ export namespace ThorIO {
                 return subscription[0];
             }
             // todo: remove this method
+        @CanInvoke(true)
         $connect_() {
-
             // todo: remove this method        
         }
+        @CanInvoke(true)
         $close_() {
             this.client.removeController(this.alias);
             this.invoke({}, "$close_", this.alias);
@@ -338,3 +368,8 @@ export namespace ThorIO {
 
     }
 }
+
+
+
+
+

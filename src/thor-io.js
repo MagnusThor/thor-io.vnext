@@ -1,5 +1,33 @@
 "use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var net = require("net");
+require('reflect-metadata');
+function CanInvoke(state) {
+    return function (target, propertyKey, descriptor) {
+        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    };
+}
+exports.CanInvoke = CanInvoke;
+function CanSet(state) {
+    return function (target, propertyKey) {
+        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    };
+}
+exports.CanSet = CanSet;
+function ControllerProperties(alias) {
+    return function (target) {
+        Reflect.defineMetadata("alias", alias, target);
+    };
+}
+exports.ControllerProperties = ControllerProperties;
 var ThorIO;
 (function (ThorIO) {
     var EndPoint = (function () {
@@ -7,8 +35,7 @@ var ThorIO;
             this.fn = fn;
             var self = this;
             var server = net.createServer(function (socket) {
-                socket.onmessage = function (event) {
-                };
+                socket.onmessage = function (event) { };
                 socket.send = function (data) {
                     socket.write(self.deserializeMessage(data));
                 };
@@ -143,24 +170,28 @@ var ThorIO;
             this.ws.onmessage = function (message) {
                 var json = JSON.parse(message.data);
                 var controller = _this.locateController(json.C);
-                try {
-                    if (!json.T.startsWith("$set_")) {
-                        if (typeof (controller[json.T] === "function"))
-                            controller[json.T].apply(controller, [JSON.parse(json.D), json.C]);
-                    }
-                    else {
-                        var prop = json.T.replace("$set_", "");
-                        var propValue = JSON.parse(json.D);
-                        if (typeof (controller[prop]) === typeof (propValue))
-                            controller[prop] = propValue;
-                    }
-                }
-                catch (ex) {
-                }
+                _this.methodInvoker(controller, json.T, JSON.parse(json.D));
             };
-            this.queue = new Array();
             this.controllerInstances = new Array();
         }
+        Connection.prototype.methodInvoker = function (controller, method, data) {
+            try {
+                if (!controller.canInvokeMethod(method))
+                    throw "method " + method + " cant be invoked.";
+                if (typeof (controller[method] === "function")) {
+                    controller[method].apply(controller, [data, controller.alias]);
+                }
+                else {
+                    var prop = method;
+                    var propValue = data;
+                    if (typeof (controller[prop]) === typeof (propValue))
+                        controller[prop] = propValue;
+                }
+            }
+            catch (ex) {
+                controller.invokeError(ex);
+            }
+        };
         Connection.prototype.hasController = function (alias) {
             var match = this.controllerInstances.filter(function (pre) {
                 return pre.alias == alias;
@@ -225,17 +256,14 @@ var ThorIO;
             this.client = client;
             this.subscriptions = new Array();
         }
+        Controller.prototype.canInvokeMethod = function (method) {
+            return global.Reflect.getMetadata("invokeable", this, method);
+        };
         Controller.prototype.getConnections = function (alias) {
             return this.client.connections;
         };
         Controller.prototype.onopen = function () { };
-        Controller.prototype.invokeToAll = function (data, topic, controller) {
-            var msg = new Message(topic, data, this.alias).toString();
-            this.getConnections().forEach(function (connection) {
-                connection.ws.send(msg);
-            });
-        };
-        ;
+        Controller.prototype.onclose = function () { };
         Controller.prototype.filterControllers = function (what, pre) {
             var arr = what;
             var result = [];
@@ -246,6 +274,17 @@ var ThorIO;
             ;
             return result;
         };
+        Controller.prototype.invokeError = function (error) {
+            var msg = new Message("$error_", error, this.alias).toString();
+            this.client.ws.send(msg.toString());
+        };
+        Controller.prototype.invokeToAll = function (data, topic, controller) {
+            var msg = new Message(topic, data, this.alias).toString();
+            this.getConnections().forEach(function (connection) {
+                connection.ws.send(msg);
+            });
+        };
+        ;
         Controller.prototype.invokeTo = function (expression, data, topic, controller) {
             var _this = this;
             var connections = this.getConnections().map(function (pre) {
@@ -253,7 +292,6 @@ var ThorIO;
                     return pre.getController(controller);
             });
             var filtered = this.filterControllers(connections, expression);
-            console.log("filtered", filtered.length);
             filtered.forEach(function (instance) {
                 instance.invoke(data, topic, _this.alias);
             });
@@ -318,6 +356,18 @@ var ThorIO;
             this.client.removeController(this.alias);
             this.invoke({}, "$close_", this.alias);
         };
+        __decorate([
+            CanInvoke(true), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', []), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "$connect_", null);
+        __decorate([
+            CanInvoke(true), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', []), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "$close_", null);
         return Controller;
     }());
     ThorIO.Controller = Controller;

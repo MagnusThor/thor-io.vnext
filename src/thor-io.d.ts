@@ -1,10 +1,17 @@
+import 'reflect-metadata';
 export declare namespace ThorIO {
+    class EndPoint {
+        private fn;
+        private serializeMessage(data);
+        private deserializeMessage(data);
+        constructor(port: number, fn?: Function);
+    }
     class Utils {
         static newGuid(): string;
     }
     class Plugin {
         alias: string;
-        instance: any;
+        instance: ThorIO.Controller;
         constructor();
     }
     class Engine {
@@ -13,8 +20,6 @@ export declare namespace ThorIO {
         private _engine;
         constructor(controllers: Array<any>);
         private log(error);
-        findController(alias: string): Controller;
-        findConnection(id: string): Connection;
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;
     }
@@ -40,10 +45,10 @@ export declare namespace ThorIO {
         private controllers;
         id: string;
         ws: WebSocket;
-        queue: Array<Message>;
-        controllerInstances: Array<Controller>;
-        connections: Array<Connection>;
+        controllerInstances: Array<any>;
+        connections: Array<ThorIO.Connection>;
         clientInfo: ThorIO.ClientInfo;
+        private methodInvoker(controller, method, data);
         constructor(ws: WebSocket, connections: Array<Connection>, controllers: Array<Plugin>);
         hasController(alias: string): boolean;
         removeController(alias: string): void;
@@ -60,10 +65,13 @@ export declare namespace ThorIO {
         subscriptions: Array<Subscription>;
         client: Connection;
         constructor(client: Connection);
+        canInvokeMethod(method: string): any;
         getConnections(alias?: string): Connection[];
         onopen(): void;
-        invokeToAll(data: any, topic: string, controller: string): void;
+        onclose(): void;
         private filterControllers(what, pre);
+        invokeError(error: any): void;
+        invokeToAll(data: any, topic: string, controller: string): void;
         invokeTo(expression: Function, data: any, topic: string, controller: string): void;
         invoke(data: any, topic: string, controller: string): void;
         subscribe(subscription: Subscription, topic: string, controller: string): Subscription;

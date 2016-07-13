@@ -4,6 +4,15 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var thor_io_1 = require("../src/thor-io");
 var PeerConnection = (function () {
     function PeerConnection() {
@@ -57,6 +66,28 @@ var BrokerController = (function (_super) {
         });
         return connections;
     };
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [PeerConnection]), 
+        __metadata('design:returntype', void 0)
+    ], BrokerController.prototype, "changeContext", null);
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [Signal]), 
+        __metadata('design:returntype', void 0)
+    ], BrokerController.prototype, "contextSignal", null);
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', []), 
+        __metadata('design:returntype', void 0)
+    ], BrokerController.prototype, "connectContext", null);
+    BrokerController = __decorate([
+        thor_io_1.ControllerProperties("broker"), 
+        __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
+    ], BrokerController);
     return BrokerController;
 }(thor_io_1.ThorIO.Controller));
 exports.BrokerController = BrokerController;

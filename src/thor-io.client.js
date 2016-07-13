@@ -366,15 +366,13 @@ var ThorIOClient;
         };
         ;
         Channel.prototype.SetProperty = function (name, value, controller) {
-            var property = "$set_" + name;
-            this.Invoke(property, value, controller || this.alias);
+            this.Invoke(name, value, controller || this.alias);
             return this;
         };
         ;
         Channel.prototype.Dispatch = function (t, d) {
             if (t === "$open_") {
                 d = JSON.parse(d);
-                localStorage.setItem("pid", d.PI);
                 this.IsConnected = true;
                 this.OnOpen(d);
                 return;
