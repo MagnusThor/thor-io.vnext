@@ -9,16 +9,14 @@ var broker = require("./example/Broker.Controller.js")
 
 var net = require("net");
 
-var controllers = [{
-    alias: "example",
-    instance: samples.ExampleController
-}, {
-    alias: "chat",
-    instance: chat.ChatController
-}, {
-    alias: "broker",
-    instance: broker.BrokerController
-}];
+
+console.log();
+
+var controllers = [ 
+chat.ChatController
+,     
+broker.BrokerController
+];
 
 
 var thorIO = new thorio.Engine(controllers);

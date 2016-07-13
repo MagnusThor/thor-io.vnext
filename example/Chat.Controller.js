@@ -23,13 +23,12 @@ var ChatController = (function (_super) {
     __extends(ChatController, _super);
     function ChatController(client) {
         _super.call(this, client);
-        this.alias = "chat";
         this.age = 1;
-        this.gender = "male";
     }
     ChatController.prototype.sendChatMessage = function (data, topic, controller) {
         var _this = this;
         var expression = function (pre) {
+            console.log("-->", pre.age, _this.age);
             if (pre.age >= _this.age)
                 return pre;
         };

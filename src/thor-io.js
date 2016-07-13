@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var net = require("net");
-require('reflect-metadata');
+require("reflect-metadata");
 function CanInvoke(state) {
     return function (target, propertyKey, descriptor) {
         Reflect.defineMetadata("invokeable", state, target, propertyKey);
@@ -78,7 +78,9 @@ var ThorIO;
     }());
     ThorIO.Utils = Utils;
     var Plugin = (function () {
-        function Plugin() {
+        function Plugin(controller) {
+            this.alias = Reflect.getMetadata("alias", controller);
+            this.instance = controller;
         }
         return Plugin;
     }());
@@ -90,11 +92,10 @@ var ThorIO;
             this.connections = new Array();
             this.controllers = new Array();
             controllers.forEach(function (ctrl) {
-                _this.controllers.push(ctrl);
+                var plugin = new Plugin(ctrl);
+                _this.controllers.push(plugin);
             });
         }
-        Engine.prototype.log = function (error) {
-        };
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
                 var connection = this.connections.filter(function (pre) {
@@ -162,7 +163,6 @@ var ThorIO;
         function Connection(ws, connections, controllers) {
             var _this = this;
             this.controllers = controllers;
-            var self = this;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
             this.ws = ws;
@@ -177,7 +177,7 @@ var ThorIO;
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
                 if (!controller.canInvokeMethod(method))
-                    throw "method " + method + " cant be invoked.";
+                    throw "method " + method + "cant be invoked.";
                 if (typeof (controller[method] === "function")) {
                     controller[method].apply(controller, [data, controller.alias]);
                 }
@@ -223,11 +223,10 @@ var ThorIO;
                     return match[0];
                 }
                 else {
-                    var controller = this.controllers.filter(function (resolve) {
+                    var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias;
-                    });
-                    var resolved = controller[0].instance;
-                    var controllerInstance = (new resolved(this));
+                    })[0].instance;
+                    var controllerInstance = new (resolved.constructor(this));
                     this.controllerInstances.push(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -235,7 +234,6 @@ var ThorIO;
                 }
             }
             catch (error) {
-                // todo: log error
                 this.ws.close(1011, "Cannot locate the specified controller '" + alias + "'. Connection closed");
                 return null;
             }
@@ -255,6 +253,7 @@ var ThorIO;
         function Controller(client) {
             this.client = client;
             this.subscriptions = new Array();
+            this.alias = Reflect.getMetadata("alias", this.constructor);
         }
         Controller.prototype.canInvokeMethod = function (method) {
             return global.Reflect.getMetadata("invokeable", this, method);
@@ -348,7 +347,6 @@ var ThorIO;
             });
             return subscription[0];
         };
-        // todo: remove this method
         Controller.prototype.$connect_ = function () {
             // todo: remove this method        
         };

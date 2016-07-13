@@ -1,7 +1,5 @@
 import net = require("net");
-import 'reflect-metadata';
-
-
+import "reflect-metadata";
 
 export function CanInvoke(state:boolean) {
     return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
@@ -14,13 +12,12 @@ export function CanSet(state:boolean){
     }
 }
 export function ControllerProperties(alias:string){
-        return function(target:any){
+        return function(target:Function){
             Reflect.defineMetadata("alias",alias,target);
         }
 }
 
 export namespace ThorIO {
-
 
     export class EndPoint {
         private serializeMessage(data: string): string {
@@ -63,28 +60,28 @@ export namespace ThorIO {
         }
     }
 
-    export class Plugin {
+    export class Plugin<T> {
         public alias: string;
-        public instance: ThorIO.Controller;
-        constructor() {}
+        public instance: T;
+        constructor(controller:T) {
+            this.alias = Reflect.getMetadata("alias",controller)
+            this.instance = controller;
+        }
+        
     }
     export class Engine {
-        private controllers: Array < Plugin > ;
+        private controllers: Array < Plugin<Controller> > 
         private connections: Array < Connection > ;
         private _engine: Engine;
         constructor(controllers: Array < any > ) {
             this._engine = this;
             this.connections = new Array < Connection > ();
-            this.controllers = new Array < Plugin > ();
-            controllers.forEach((ctrl) => {
-                this.controllers.push(ctrl);
+            this.controllers = new Array < Plugin<Controller> > ();
+            controllers.forEach((ctrl:Controller) => {
+                var plugin = new Plugin<Controller>(ctrl);
+                this.controllers.push(plugin);
             });
         }
-        private log(error: any) {
-
-        }
-
-
         removeConnection(ws: any, reason: number) {
             try {
                 var connection = this.connections.filter((pre: Connection) => {
@@ -130,7 +127,6 @@ export namespace ThorIO {
             return JSON.stringify(this.JSON);
         }
 
-
     }
 
     export class Listener {
@@ -141,17 +137,13 @@ export namespace ThorIO {
             this.topic = topic;
         }
     }
-
-
     export class ClientInfo {
         public CI: string;
         public C: string;
-
         constructor(ci: string, controller: string) {
             this.CI = ci;
             this.C = controller;
         }
-
     }
 
 
@@ -160,12 +152,14 @@ export namespace ThorIO {
         public id: string;
         public ws: WebSocket;
        
-        public controllerInstances: Array < any > ;
+        public controllerInstances: Array < ThorIO.Controller > ;
         public connections: Array <ThorIO.Connection> ;
         public clientInfo: ThorIO.ClientInfo;
-        private methodInvoker(controller: Controller, method: string, data: Object) {
+
+        private methodInvoker(controller: Controller, method: string, data: any) {
             try {
-                    if(!controller.canInvokeMethod(method)) throw "method " + method + " cant be invoked."
+                    if(!controller.canInvokeMethod(method)) 
+                        throw "method " + method + "cant be invoked."
                     if (typeof(controller[method] === "function")){
                         controller[method].apply(controller, [data, controller.alias]);
 
@@ -176,14 +170,12 @@ export namespace ThorIO {
                         controller[prop] = propValue;
                 }
             } catch (ex) {
-              
                 controller.invokeError(ex);
             }
         }
 
-        constructor(ws: WebSocket, connections: Array < Connection > , private controllers: Array < Plugin > ) {
+        constructor(ws: WebSocket, connections: Array < Connection > , private controllers: Array < Plugin<Controller> > ) {
 
-            var self = this;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
             this.ws = ws;
@@ -194,7 +186,6 @@ export namespace ThorIO {
                 var controller = this.locateController(json.C);
                 this.methodInvoker(controller, json.T, JSON.parse(json.D));
             };
-
             this.controllerInstances = new Array < Controller > ();
         }
         hasController(alias: string): boolean {
@@ -209,7 +200,6 @@ export namespace ThorIO {
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         }
-
 
         getController(alias: string): Controller {
             try {
@@ -230,19 +220,16 @@ export namespace ThorIO {
                 if (match.length > 0) {
                     return match[0];
                 } else {
-                    var controller = this.controllers.filter((resolve) => {
+                    var resolved = this.controllers.filter((resolve) => {
                         return resolve.alias === alias;
-                    });
-                    var resolved = controller[0].instance;
-                    var controllerInstance = <Controller>(new resolved(this));
-
+                    })[0].instance;
+                    var controllerInstance = new (<any> resolved.constructor(this));
                     this.controllerInstances.push(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
-                    return controllerInstance;
+                    return controllerInstance as Controller;
                 }
             } catch (error) {
-                // todo: log error
                 this.ws.close(1011, "Cannot locate the specified controller '" + alias + "'. Connection closed")
                 return null;
             }
@@ -258,7 +245,7 @@ export namespace ThorIO {
             this.controller = controller;
         }
     }
-
+  
     export class Controller {
         public alias: string;
         public subscriptions: Array < Subscription > ;
@@ -266,25 +253,24 @@ export namespace ThorIO {
         constructor(client: Connection) {
             this.client = client;
             this.subscriptions = new Array < Subscription > ();
+            this.alias = Reflect.getMetadata("alias",this.constructor);
         }
         public canInvokeMethod(method: string): any {
             return ( < any > global).Reflect.getMetadata("invokeable", this, method);
         }
-
-     
-
         getConnections(alias ? : string) {
             return this.client.connections;
         }
         onopen() {}
         onclose() {}
-        private filterControllers(what: Array < Controller > , pre) {
+        private filterControllers(what: any, pre:any) {
             var arr = what;
             var result = [];
             for (var i = 0; i < arr.length; i++) {
                 if (pre(arr[i]))
                     result.push(arr[i]);
             };
+           
             return result;
         }
         invokeError(error:any){
@@ -352,10 +338,8 @@ export namespace ThorIO {
                         return pre.topic === topic;
                     }
                 );
-
                 return subscription[0];
             }
-            // todo: remove this method
         @CanInvoke(true)
         $connect_() {
             // todo: remove this method        

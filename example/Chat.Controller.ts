@@ -1,43 +1,35 @@
 import {
-    ThorIO,CanInvoke,CanSet,ControllerProperties
+    ThorIO,
+    CanInvoke,
+    CanSet,
+    ControllerProperties
 } from "../src/thor-io"
-
-
-
-
-
 
 class ChatMessage {
     message: string;
     age: number;
 }
 
-
-
-
-
 @ControllerProperties("chat")
 export class ChatController extends ThorIO.Controller {
 
-    gender: string;
-
-    @CanSet(true)
-    age: number;
+   
+    @CanSet(true) // this property can be modified (set) by the clients
+    age: number ;
 
     constructor(client: ThorIO.Connection) {
         super(client);
-        this.alias = "chat";
         this.age = 1;
-        this.gender = "male";
-
     }
 
-    @CanInvoke(true)
+    @CanInvoke(true) // this method can be called / invoke by clients
     sendChatMessage(data: ChatMessage, topic: string, controller: string) {
+       
         var expression = (pre: ChatController) => {
+            console.log("-->", pre.age,this.age);
             if (pre.age >= this.age) return pre;
         }
         this.invokeTo(expression, data, "chatMessage", this.alias);
     }
-   
+
 }
