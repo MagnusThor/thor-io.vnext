@@ -13,7 +13,7 @@ class Signal {
     message:string
 }
 
-@ControllerProperties("broker")
+@ControllerProperties("broker",true)
 export class BrokerController  extends ThorIO.Controller
 {
     public Connections:Array<PeerConnection>;

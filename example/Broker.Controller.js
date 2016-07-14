@@ -84,7 +84,7 @@ var BrokerController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], BrokerController.prototype, "connectContext", null);
     BrokerController = __decorate([
-        thor_io_1.ControllerProperties("broker"), 
+        thor_io_1.ControllerProperties("broker", true), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], BrokerController);
     return BrokerController;

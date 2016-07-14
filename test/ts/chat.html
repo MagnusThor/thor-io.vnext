@@ -1,0 +1,23 @@
+<html>
+
+<body>
+    <h1>Simple chat (ts source)</h1>
+    <p>
+        Messages will only be delivered to other client/connections with an age >= the age you specified.
+    </p>
+    Text:<input type="text" id="chat-message"/> Age:
+    <input type="number" min="1" max="99" value="1" id="chat-age">
+    <hr>
+    <h2>Messages</h2>
+    <div id="chatMessages"></div>
+    <script src="/src/thor-io.client.js"></script>
+    <script src="chat-client.js"></script>
+    <script>
+        var chat;
+        document.addEventListener("DOMContentLoaded",function(){
+            chat = new ChatClient();
+        });
+    </script>
+</body>
+
+</html>

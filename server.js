@@ -15,7 +15,8 @@ console.log();
 var controllers = [ 
 chat.ChatController
 ,     
-broker.BrokerController
+broker.BrokerController,
+chat.SealdController
 ];
 
 

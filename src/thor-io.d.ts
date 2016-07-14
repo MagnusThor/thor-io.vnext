@@ -1,4 +1,7 @@
-import 'reflect-metadata';
+import "reflect-metadata";
+export declare function CanInvoke(state: boolean): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function CanSet(state: boolean): (target: Object, propertyKey: string) => void;
+export declare function ControllerProperties(alias: string): (target: Function) => void;
 export declare namespace ThorIO {
     class EndPoint {
         private fn;
@@ -9,17 +12,16 @@ export declare namespace ThorIO {
     class Utils {
         static newGuid(): string;
     }
-    class Plugin {
+    class Plugin<T> {
         alias: string;
-        instance: ThorIO.Controller;
-        constructor();
+        instance: T;
+        constructor(controller: T);
     }
     class Engine {
         private controllers;
         private connections;
         private _engine;
         constructor(controllers: Array<any>);
-        private log(error);
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;
     }
@@ -45,11 +47,11 @@ export declare namespace ThorIO {
         private controllers;
         id: string;
         ws: WebSocket;
-        controllerInstances: Array<any>;
+        controllerInstances: Array<ThorIO.Controller>;
         connections: Array<ThorIO.Connection>;
         clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller, method, data);
-        constructor(ws: WebSocket, connections: Array<Connection>, controllers: Array<Plugin>);
+        constructor(ws: WebSocket, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
         hasController(alias: string): boolean;
         removeController(alias: string): void;
         getController(alias: string): Controller;
@@ -69,10 +71,10 @@ export declare namespace ThorIO {
         getConnections(alias?: string): Connection[];
         onopen(): void;
         onclose(): void;
-        private filterControllers(what, pre);
+        find<T, U>(array: T[], predicate: (item: any) => boolean, selector?: (item: T) => U): U[];
         invokeError(error: any): void;
         invokeToAll(data: any, topic: string, controller: string): void;
-        invokeTo(expression: Function, data: any, topic: string, controller: string): void;
+        invokeTo(expression: (item: Controller) => boolean, data: any, topic: string, controller: string): void;
         invoke(data: any, topic: string, controller: string): void;
         subscribe(subscription: Subscription, topic: string, controller: string): Subscription;
         unsubscribe(subscription: Subscription): boolean;

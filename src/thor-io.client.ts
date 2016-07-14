@@ -1,7 +1,7 @@
 
 
 
-namespace ThorIOClient {
+ namespace ThorIOClient {
 
     class PeerConnection {
         context: string;
@@ -221,10 +221,10 @@ namespace ThorIOClient {
         }
         private channels: Array < ThorIOClient.Channel > ;
         public IsConnected: boolean;
-        constructor(url: string, controllers: Array < string > , params: any) {
+        constructor(url: string, controllers: Array < string > , params?: any) {
             var self = this;
             this.channels = new Array < ThorIOClient.Channel > ();
-            this.ws = new WebSocket(url + this.toQuery(params));
+            this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.onmessage = event => {
                 var message = JSON.parse(event.data);
 
@@ -264,6 +264,7 @@ namespace ThorIOClient {
         OnClose(event: any) {
             console.error(event);
         }
+        
     }
     export class Message {
         private _T: string;

@@ -197,7 +197,7 @@ var ThorIOClient;
             var _this = this;
             var self = this;
             this.channels = new Array();
-            this.ws = new WebSocket(url + this.toQuery(params));
+            this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.onmessage = function (event) {
                 var message = JSON.parse(event.data);
                 _this.GetChannel(message.C).Dispatch(message.T, message.D);

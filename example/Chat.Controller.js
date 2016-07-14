@@ -15,10 +15,34 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var thor_io_1 = require("../src/thor-io");
 var ChatMessage = (function () {
-    function ChatMessage() {
+    function ChatMessage(age, message) {
+        this.age = age;
+        this.message = message;
     }
     return ChatMessage;
 }());
+// This controller is seald, and cannot be connected to. A seald controller 
+// is created upon start of the ThorIO.Engine. Common use case would be some thing
+// that produces data, and passed it to other controllers 
+var SealdController = (function (_super) {
+    __extends(SealdController, _super);
+    function SealdController(client) {
+        var _this = this;
+        _super.call(this, client);
+        setInterval(function () {
+            // send a chatMessage event 15 seconds..
+            var message = new ChatMessage(1, new Date().toString());
+            _this.invokeToAll(message, "chatMessage", "chat");
+        }, 15000);
+    }
+    ;
+    SealdController = __decorate([
+        thor_io_1.ControllerProperties("chatMessageProducer", true), 
+        __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
+    ], SealdController);
+    return SealdController;
+}(thor_io_1.ThorIO.Controller));
+exports.SealdController = SealdController;
 var ChatController = (function (_super) {
     __extends(ChatController, _super);
     function ChatController(client) {
@@ -28,7 +52,6 @@ var ChatController = (function (_super) {
     ChatController.prototype.sendChatMessage = function (data, topic, controller) {
         var _this = this;
         var expression = function (pre) {
-            console.log("-->", pre.age, _this.age, pre.client.id);
             return pre.age >= _this.age;
         };
         this.invokeTo(expression, data, "chatMessage", this.alias);
@@ -44,7 +67,7 @@ var ChatController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], ChatController.prototype, "sendChatMessage", null);
     ChatController = __decorate([
-        thor_io_1.ControllerProperties("chat"), 
+        thor_io_1.ControllerProperties("chat", false), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], ChatController);
     return ChatController;

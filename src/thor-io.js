@@ -22,9 +22,10 @@ function CanSet(state) {
     };
 }
 exports.CanSet = CanSet;
-function ControllerProperties(alias) {
+function ControllerProperties(alias, seald) {
     return function (target) {
         Reflect.defineMetadata("alias", alias, target);
+        Reflect.defineMetadata("seald", seald || false, target);
     };
 }
 exports.ControllerProperties = ControllerProperties;
@@ -95,7 +96,16 @@ var ThorIO;
                 var plugin = new Plugin(ctrl);
                 _this.controllers.push(plugin);
             });
+            this.createSealdControllers();
         }
+        Engine.prototype.createSealdControllers = function () {
+            var _this = this;
+            this.controllers.forEach(function (controller) {
+                if (Reflect.getMetadata("seald", controller.instance)) {
+                    new controller.instance(new ThorIO.Connection(null, _this.connections, _this.controllers));
+                }
+            });
+        };
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
                 var connection = this.connections.filter(function (pre) {
@@ -165,13 +175,15 @@ var ThorIO;
             this.controllers = controllers;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
-            this.ws = ws;
-            this.ws["$connectionId"] = this.id;
-            this.ws.onmessage = function (message) {
-                var json = JSON.parse(message.data);
-                var controller = _this.locateController(json.C);
-                _this.methodInvoker(controller, json.T, JSON.parse(json.D));
-            };
+            if (ws) {
+                this.ws = ws;
+                this.ws["$connectionId"] = this.id;
+                this.ws.onmessage = function (message) {
+                    var json = JSON.parse(message.data);
+                    var controller = _this.locateController(json.C);
+                    _this.methodInvoker(controller, json.T, JSON.parse(json.D));
+                };
+            }
             this.controllerInstances = new Array();
         }
         Connection.prototype.methodInvoker = function (controller, method, data) {
@@ -214,27 +226,33 @@ var ThorIO;
                 return null;
             }
         };
+        Connection.prototype.addControllerInstance = function (controller) {
+            this.controllerInstances.push(controller);
+        };
+        Connection.prototype.registerSealdController = function () {
+            throw "not yet implemented";
+        };
         Connection.prototype.locateController = function (alias) {
             try {
                 var match = this.controllerInstances.filter(function (pre) {
-                    return pre.alias === alias;
+                    return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
                 if (match.length > 0) {
                     return match[0];
                 }
                 else {
                     var resolved = this.controllers.filter(function (resolve) {
-                        return resolve.alias === alias;
+                        return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-                    var controllerInstance = new resolved(this); // todo: fix..
-                    this.controllerInstances.push(controllerInstance);
+                    var controllerInstance = (new resolved(this));
+                    this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
                     return controllerInstance;
                 }
             }
             catch (error) {
-                this.ws.close(1011, "Cannot locate the specified controller '" + alias + "'. Connection closed");
+                this.ws.close(1011, "Cannot locate the specified controller, unknown i seald.'" + alias + "'. Connection closed");
                 return null;
             }
         };
@@ -269,12 +287,12 @@ var ThorIO;
         };
         Controller.prototype.invokeError = function (error) {
             var msg = new Message("$error_", error, this.alias).toString();
-            this.client.ws.send(msg.toString());
+            this.invoke(error, "$error_", this.alias);
         };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
             this.getConnections().forEach(function (connection) {
-                connection.ws.send(msg);
+                connection.getController(controller).invoke(data, topic, controller);
             });
         };
         ;
@@ -284,14 +302,15 @@ var ThorIO;
                 if (pre.hasController(controller))
                     return pre.getController(controller);
             });
-            connections.filter(expression).forEach(function (i) {
-                i.invoke(data, topic, _this.alias);
+            connections.filter(expression).forEach(function (controller) {
+                controller.invoke(data, topic, _this.alias);
             });
         };
         ;
         Controller.prototype.invoke = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias);
-            this.client.ws.send(msg.toString());
+            if (this.client.ws)
+                this.client.ws.send(msg.toString());
         };
         ;
         Controller.prototype.subscribe = function (subscription, topic, controller) {
