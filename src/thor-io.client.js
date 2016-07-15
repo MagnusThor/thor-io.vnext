@@ -14,9 +14,10 @@ var ThorIOClient;
         return Connection;
     }());
     var WebRTC = (function () {
-        function WebRTC(brokerChannel) {
+        function WebRTC(brokerChannel, rtcConfig) {
             var _this = this;
             this.brokerChannel = brokerChannel;
+            this.rtcConfig = rtcConfig;
             this.Peers = new Array();
             this.localSteams = new Array();
             brokerChannel.On("contextSignal", function (signal) {
@@ -68,8 +69,8 @@ var ThorIOClient;
             }, function (error) {
             }, {
                 mandatory: {
-                    "OfferToReceiveAudio": true,
-                    "OfferToReceiveVideo": true
+                    "offerToReceiveAudio": true,
+                    "offerToReceiveVideo": true
                 }
             });
         };
@@ -103,11 +104,7 @@ var ThorIOClient;
         };
         WebRTC.prototype.createPeerConnection = function (id) {
             var _this = this;
-            var rtcPeerConnection = new RTCPeerConnection({
-                iceServers: [{
-                        "url": "stun:stun.l.google.com:19302"
-                    }]
-            });
+            var rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
             rtcPeerConnection.onsignalingstatechange = function (state) { };
             rtcPeerConnection.onicecandidate = function (event) {
                 if (!event || !event.candidate)
@@ -176,8 +173,8 @@ var ThorIOClient;
             }, function (err) {
             }, {
                 mandatory: {
-                    "OfferToReceiveAudio": true,
-                    "OfferToReceiveVideo": true
+                    "offerToReceiveAudio": true,
+                    "offerToReceiveVideo": true
                 }
             });
             return peerConnection;

@@ -24,7 +24,9 @@
         public localPeerId: string;
         public localSteams: Array < any > ;
 
-        constructor(private brokerChannel: ThorIOClient.Channel) {
+    
+
+        constructor(private brokerChannel: ThorIOClient.Channel,private rtcConfig:RTCConfiguration) {
             this.Peers = new Array < any > ();
             this.localSteams = new Array < any > ();
 
@@ -82,8 +84,8 @@
         
             }, {
                 mandatory: {
-                    "OfferToReceiveAudio": true,
-                    "OfferToReceiveVideo": true
+                    "offerToReceiveAudio": true,
+                    "offerToReceiveVideo": true
                 }
             });
 
@@ -119,12 +121,16 @@
             if (index >= 0)
                 this.Peers.splice(index, 1);
         }
+
+
+
         private createPeerConnection(id: string): RTCPeerConnection {
-            var rtcPeerConnection = new RTCPeerConnection({
-            iceServers: [{
-                "url": "stun:stun.l.google.com:19302"
-            }]
-            });
+           
+
+            
+
+            var rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
+
             rtcPeerConnection.onsignalingstatechange = (state) => {};
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
@@ -196,11 +202,11 @@
                   
                 });
             }, (err) => {
-               
+              
             }, {
                 mandatory: {
-                    "OfferToReceiveAudio": true,
-                    "OfferToReceiveVideo": true
+                    "offerToReceiveAudio": true,
+                    "offerToReceiveVideo": true
                 }
             });
             return peerConnection;

@@ -31,12 +31,9 @@ export class ExampleController extends ThorIO.Controller {
         this.invoke(data, "chatMessage-one", this.alias); 
         this.invokeToAll(data, "chatMessage-all", this.alias);
 
-        var expression =
-            (pre: ExampleController) => {
-                if (pre.room === "foo") return pre;
-            };
-
-        this.invokeTo(expression, data, "chatMessage-to", this.alias);
+        
+        this.invokeTo((pre:ExampleController)=> {return pre.room === "foo"},
+             data, "chatMessage-to", this.alias);
         this.publishToAll(data, "mySub", this.alias);
     }
     onopen() {

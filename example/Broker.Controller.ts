@@ -2,18 +2,25 @@ import {
     ThorIO,CanInvoke,CanSet,ControllerProperties
 } from "../src/thor-io"
 
-class PeerConnection{
+class PeerConnection {
         context:string;
         peerId: string;
+        constructor(context?:string,peerId?:string){
+            this.context = context;
+            this.peerId = peerId;
+        }
 }
-
 class Signal {
     recipient:string;
     sender:string;
     message:string
+    constructor(recipient:string,sender:string,message:string){
+        this.recipient = recipient;
+        this.sender = sender;
+        this.message = message;
+    }
 }
-
-@ControllerProperties("broker",true)
+@ControllerProperties("broker",false)
 export class BrokerController  extends ThorIO.Controller
 {
     public Connections:Array<PeerConnection>;
@@ -27,12 +34,10 @@ export class BrokerController  extends ThorIO.Controller
     constructor(client:ThorIO.Connection){
         super(client);
         this.alias = "broker";
-        this.Connections = new Array<PeerConnection>();
-        this.Peer = new PeerConnection();
+        this.Connections = new Array<PeerConnection>();    
     }
     onopen(){
-        this.Peer.context = this.createId();
-        this.Peer.peerId = this.client.id;
+        this.Peer = new PeerConnection(this.createId(),this.client.id);
         this.invoke(this.Peer,"contextCreated",this.alias);
     }
   
@@ -43,20 +48,21 @@ export class BrokerController  extends ThorIO.Controller
     }
     @CanInvoke(true)
     contextSignal(signal:Signal){
-            var expression = (pre: BrokerController) => {
+            let expression = (pre: BrokerController) => {
             return pre.client.id === signal.recipient;
         };
         this.invokeTo(expression,signal,"contextSignal",this.alias);
     }
     @CanInvoke(true)
     connectContext(){
-        var connections = this.getPeerConnections(this.Peer).map( (p:BrokerController) => {return p.Peer });
+        let connections = this.getPeerConnections(this.Peer).map( (p:BrokerController) => {return p.Peer });
          this.invoke(connections,"connectTo",this.alias);
     }
  
     getPeerConnections(peerConnetion:PeerConnection):Array<BrokerController>{
-            var connections = this.getConnections().map((connection:ThorIO.Connection) => {
-            if (connection.hasController(this.alias)) return <BrokerController>connection.getController(this.alias);
+            let connections = this.getConnections().map((connection:ThorIO.Connection) => {
+            if (connection.hasController(this.alias)) 
+            return <BrokerController>connection.getController(this.alias);
             }).filter( (pre:BrokerController) => {
                     return pre.Peer.context === this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId
             });

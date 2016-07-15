@@ -30,11 +30,7 @@ var ExampleController = (function (_super) {
         Fake.Storage.Messages.push(data);
         this.invoke(data, "chatMessage-one", this.alias);
         this.invokeToAll(data, "chatMessage-all", this.alias);
-        var expression = function (pre) {
-            if (pre.room === "foo")
-                return pre;
-        };
-        this.invokeTo(expression, data, "chatMessage-to", this.alias);
+        this.invokeTo(function (pre) { return pre.room === "foo"; }, data, "chatMessage-to", this.alias);
         this.publishToAll(data, "mySub", this.alias);
     };
     ExampleController.prototype.onopen = function () {

@@ -46,7 +46,13 @@
           
             var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["broker"], {});
               client.OnOpen = function(broker) {
-                rtc = new ThorIOClient.WebRTC(broker);
+                rtc = new ThorIOClient.WebRTC(broker,{
+                    iceServers:[
+                        {
+                        url:"stun:stun.l.google.com:19302"
+                        }
+                    ]
+                });
                 var constraints = {
                     video: {
                         mandatory: {

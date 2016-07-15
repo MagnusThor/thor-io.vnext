@@ -27,6 +27,9 @@ export class SealdController extends ThorIO.Controller{
             let message = new ChatMessage(1,new Date().toString());
                 this.invokeToAll(message,"chatMessage","chat");
         },15000);
+
+
+
     };
 
 }

@@ -15,12 +15,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var thor_io_1 = require("../src/thor-io");
 var PeerConnection = (function () {
-    function PeerConnection() {
+    function PeerConnection(context, peerId) {
+        this.context = context;
+        this.peerId = peerId;
     }
     return PeerConnection;
 }());
 var Signal = (function () {
-    function Signal() {
+    function Signal(recipient, sender, message) {
+        this.recipient = recipient;
+        this.sender = sender;
+        this.message = message;
     }
     return Signal;
 }());
@@ -30,15 +35,13 @@ var BrokerController = (function (_super) {
         _super.call(this, client);
         this.alias = "broker";
         this.Connections = new Array();
-        this.Peer = new PeerConnection();
     }
     BrokerController.prototype.createId = function () {
         return Math.random().toString(36).substring(2);
     };
     ;
     BrokerController.prototype.onopen = function () {
-        this.Peer.context = this.createId();
-        this.Peer.peerId = this.client.id;
+        this.Peer = new PeerConnection(this.createId(), this.client.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     };
     BrokerController.prototype.changeContext = function (change) {
@@ -84,7 +87,7 @@ var BrokerController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], BrokerController.prototype, "connectContext", null);
     BrokerController = __decorate([
-        thor_io_1.ControllerProperties("broker", true), 
+        thor_io_1.ControllerProperties("broker", false), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], BrokerController);
     return BrokerController;
