@@ -227,7 +227,7 @@
         }
         private channels: Array < ThorIOClient.Channel > ;
         public IsConnected: boolean;
-        constructor(url: string, controllers: Array < string > , params?: any) {
+        constructor(private url: string, controllers: Array < string > , params?: any) {
             var self = this;
             this.channels = new Array < ThorIOClient.Channel > ();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
@@ -323,14 +323,11 @@
     }
 
     export class Channel {
-        public alias: string;
-        private ws: WebSocket;
+      
         public IsConnected: boolean;
         listeners: Array < ThorIOClient.Listener > ;
-        constructor(alias: string, ws: WebSocket) {
+        constructor(public alias: string, private ws: WebSocket) {
             this.listeners = new Array < ThorIOClient.Listener > ();
-            this.alias = alias;
-            this.ws = ws;
             this.IsConnected = false;
         }
         Connect() {
@@ -341,67 +338,65 @@
             this.ws.send(new ThorIOClient.Message("$close_", {}, this.alias));
             return this;
         };
-        Subscribe(t: string, fn: any) {
-            this.On(t, fn);
+        Subscribe(topic: string, callback: any) {
+            this.On(topic, callback);
             this.ws.send(new ThorIOClient.Message("subscribe", {
-                topic: t,
+                topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
-        Unsubscribe(t: string) {
+        Unsubscribe(topic: string) {
             this.ws.send(new ThorIOClient.Message("unsubscribe", {
-                topic: t,
+                topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
-        On(t: string, fn: any) {
-            this.listeners.push(new ThorIOClient.Listener(t, fn));
+        On(topic: string, fn: any) {
+            this.listeners.push(new ThorIOClient.Listener(topic, fn));
             return this;
         };
-        private findListener(t: string): Listener {
+        private findListener(topic: string): Listener {
             var listener = this.listeners.filter(
                 (pre: Listener) => {
-                    return pre.topic === t;
+                    return pre.topic === topic;
                 }
             );
-
-
             return listener[0];
         }
-        Off(t: string) {
+        Off(topic: string) {
 
             var index =
-                this.listeners.indexOf(this.findListener(t));
+                this.listeners.indexOf(this.findListener(topic));
             if (index >= 0) this.listeners.splice(index, 1);
             return this;
         };
-        Invoke(t: string, d: any, c ? : string) {
-            this.ws.send(new ThorIOClient.Message(t, d, c || this.alias));
+        Invoke(topic: string, d: any, c ? : string) {
+            this.ws.send(new ThorIOClient.Message(topic, d, c || this.alias));
             return this;
         };
-        SetProperty(name: string, value: any, controller ? : string) {
+        SetProperty(propName: string, propValue: any, controller ? : string) {
            
-            this.Invoke(name, value, controller || this.alias);
+            this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
-        Dispatch(t: string, d: any) {
-            if (t === "$open_") {
-                d = JSON.parse(d);
+        Dispatch(topic: string, data: any) {
+            if (topic === "$open_") {
+                data = JSON.parse(data);
                 this.IsConnected = true;
-                this.OnOpen(d);
+                this.OnOpen(data);
                 return;
-            } else if (t === "$close_") {
-                this.OnClose([JSON.parse(d)]);
+            } else if (topic === "$close_") {
+                this.OnClose([JSON.parse(data)]);
                 this.IsConnected = false;
             } else {
-                var listener = this.findListener(t);
-                if (listener) listener.fn(JSON.parse(d));
+                var listener = this.findListener(topic);
+                if (listener) listener.fn(JSON.parse(data));
             }
         };
-        OnOpen(message: any) {};
+        OnOpen(event: any) {};
 
-        OnClose(message: any) {};
+        OnClose(event: any) {};
     }
 }

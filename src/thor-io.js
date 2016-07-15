@@ -276,11 +276,30 @@ var ThorIO;
         Controller.prototype.canInvokeMethod = function (method) {
             return global.Reflect.getMetadata("invokeable", this, method);
         };
-        Controller.prototype.getConnections = function (alias) {
-            return this.client.connections;
+        // todo: refine
+        Controller.prototype.findOn = function (alias, predicate) {
+            var connections = this.getConnections(alias).map(function (p) {
+                return p.getController(alias);
+            });
+            return connections.filter(predicate);
         };
-        Controller.prototype.onopen = function () { };
-        Controller.prototype.onclose = function () { };
+        //todo: find better name...
+        Controller.prototype.getConnections = function (alias) {
+            var _this = this;
+            if (!alias) {
+                return this.client.connections;
+            }
+            else {
+                return this.client.connections.map(function (conn) {
+                    if (conn.hasController(_this.alias))
+                        return conn;
+                });
+            }
+        };
+        Controller.prototype.onopen = function () {
+        };
+        Controller.prototype.onclose = function () {
+        };
         Controller.prototype.find = function (array, predicate, selector) {
             if (selector === void 0) { selector = function (x) { return x; }; }
             return array.filter(predicate).map(selector);
@@ -296,13 +315,13 @@ var ThorIO;
             });
         };
         ;
-        Controller.prototype.invokeTo = function (expression, data, topic, controller) {
+        Controller.prototype.invokeTo = function (predicate, data, topic, controller) {
             var _this = this;
-            var connections = this.getConnections().map(function (pre) {
-                if (pre.hasController(controller))
-                    return pre.getController(controller);
-            });
-            connections.filter(expression).forEach(function (controller) {
+            // let connections = this.getConnections().map((pre: Connection) => {
+            //     if (pre.hasController(controller)) return pre.getController(controller);
+            // });
+            var connections = this.findOn(controller, predicate);
+            connections.forEach(function (controller) {
                 controller.invoke(data, topic, _this.alias);
             });
         };

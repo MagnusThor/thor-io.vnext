@@ -192,6 +192,7 @@ var ThorIOClient;
     var Factory = (function () {
         function Factory(url, controllers, params) {
             var _this = this;
+            this.url = url;
             var self = this;
             this.channels = new Array();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
@@ -307,9 +308,9 @@ var ThorIOClient;
     ThorIOClient.Listener = Listener;
     var Channel = (function () {
         function Channel(alias, ws) {
-            this.listeners = new Array();
             this.alias = alias;
             this.ws = ws;
+            this.listeners = new Array();
             this.IsConnected = false;
         }
         Channel.prototype.Connect = function () {
@@ -322,72 +323,72 @@ var ThorIOClient;
             return this;
         };
         ;
-        Channel.prototype.Subscribe = function (t, fn) {
-            this.On(t, fn);
+        Channel.prototype.Subscribe = function (topic, callback) {
+            this.On(topic, callback);
             this.ws.send(new ThorIOClient.Message("subscribe", {
-                topic: t,
+                topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
         ;
-        Channel.prototype.Unsubscribe = function (t) {
+        Channel.prototype.Unsubscribe = function (topic) {
             this.ws.send(new ThorIOClient.Message("unsubscribe", {
-                topic: t,
+                topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
         ;
-        Channel.prototype.On = function (t, fn) {
-            this.listeners.push(new ThorIOClient.Listener(t, fn));
+        Channel.prototype.On = function (topic, fn) {
+            this.listeners.push(new ThorIOClient.Listener(topic, fn));
             return this;
         };
         ;
-        Channel.prototype.findListener = function (t) {
+        Channel.prototype.findListener = function (topic) {
             var listener = this.listeners.filter(function (pre) {
-                return pre.topic === t;
+                return pre.topic === topic;
             });
             return listener[0];
         };
-        Channel.prototype.Off = function (t) {
-            var index = this.listeners.indexOf(this.findListener(t));
+        Channel.prototype.Off = function (topic) {
+            var index = this.listeners.indexOf(this.findListener(topic));
             if (index >= 0)
                 this.listeners.splice(index, 1);
             return this;
         };
         ;
-        Channel.prototype.Invoke = function (t, d, c) {
-            this.ws.send(new ThorIOClient.Message(t, d, c || this.alias));
+        Channel.prototype.Invoke = function (topic, d, c) {
+            this.ws.send(new ThorIOClient.Message(topic, d, c || this.alias));
             return this;
         };
         ;
-        Channel.prototype.SetProperty = function (name, value, controller) {
-            this.Invoke(name, value, controller || this.alias);
+        Channel.prototype.SetProperty = function (propName, propValue, controller) {
+            this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
         ;
-        Channel.prototype.Dispatch = function (t, d) {
-            if (t === "$open_") {
-                d = JSON.parse(d);
+        Channel.prototype.Dispatch = function (topic, data) {
+            if (topic === "$open_") {
+                data = JSON.parse(data);
                 this.IsConnected = true;
-                this.OnOpen(d);
+                this.OnOpen(data);
                 return;
             }
-            else if (t === "$close_") {
-                this.OnClose([JSON.parse(d)]);
+            else if (topic === "$close_") {
+                this.OnClose([JSON.parse(data)]);
                 this.IsConnected = false;
             }
             else {
-                var listener = this.findListener(t);
+                var listener = this.findListener(topic);
                 if (listener)
-                    listener.fn(JSON.parse(d));
+                    listener.fn(JSON.parse(data));
             }
         };
         ;
-        Channel.prototype.OnOpen = function (message) { };
+        Channel.prototype.OnOpen = function (event) { };
         ;
-        Channel.prototype.OnClose = function (message) { };
+        Channel.prototype.OnClose = function (event) { };
         ;
         return Channel;
     }());

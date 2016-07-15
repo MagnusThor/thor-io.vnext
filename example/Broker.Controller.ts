@@ -60,12 +60,9 @@ export class BrokerController  extends ThorIO.Controller
     }
  
     getPeerConnections(peerConnetion:PeerConnection):Array<BrokerController>{
-            let connections = this.getConnections().map((connection:ThorIO.Connection) => {
-            if (connection.hasController(this.alias)) 
-            return <BrokerController>connection.getController(this.alias);
-            }).filter( (pre:BrokerController) => {
+            let match = this.findOn(this.alias,(pre:BrokerController) => {
                     return pre.Peer.context === this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId
-            });
-        return connections;
+                });
+        return match;
     }
 }

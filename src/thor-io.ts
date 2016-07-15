@@ -288,11 +288,32 @@ export namespace ThorIO {
         public canInvokeMethod(method: string): any {
             return ( < any > global).Reflect.getMetadata("invokeable", this, method);
         }
-        getConnections(alias ? : string) {
-            return this.client.connections;
+
+        // todo: refine
+        findOn(alias:string,predicate:(item: any) => boolean):Array<any>{
+            let connections = this.getConnections(alias).map( (p:Connection) =>{
+                    return p.getController(alias);
+            });
+            return connections.filter(predicate);
         }
-        onopen() {}
-        onclose() {}
+        //todo: find better name...
+        getConnections(alias?: string): Array<Connection> {
+            if (!alias) {
+                return this.client.connections;
+            }
+            else {
+                return this.client.connections.map((conn: Connection) => {
+                    if (conn.hasController(this.alias))
+                        return conn;
+                })
+            }
+        }
+        onopen() {
+
+        }
+        onclose() {
+
+        }
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x:T)=> <U><any>x): U[] {
             return array.filter(predicate).map(selector);
         }
@@ -309,11 +330,12 @@ export namespace ThorIO {
             });
         };
 
-        invokeTo(expression: (item: Controller) => boolean, data: any, topic: string, controller: string) {
-            let connections = this.getConnections().map((pre: Connection) => {
-                if (pre.hasController(controller)) return pre.getController(controller);
-            });
-           connections.filter(expression).forEach( (controller:Controller) => {
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string) {
+            // let connections = this.getConnections().map((pre: Connection) => {
+            //     if (pre.hasController(controller)) return pre.getController(controller);
+            // });
+            let connections = this.findOn(controller,predicate);
+           connections.forEach( (controller:Controller) => {
                  controller.invoke(data, topic, this.alias);
            });
         };
