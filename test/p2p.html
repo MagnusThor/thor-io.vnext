@@ -1,36 +1,43 @@
 <html>
+<style>
 
+    #local{
+        position:absolute;
+        right:10px;
+        bottom:10px;
+        max-width:180px;
+    }
+
+    #videos video{
+        display:inline;
+        margin-right:10px;
+    }
+
+</style>
 <body>
-    <h1>WebRTC</h1>
-    <p>Open 1-n windows (local) in incognito mode, or share url with someone. Hit call when you wanna start...</p>
+    <h1>Simple 1-many WebRTC "conference app" </h1>
+    <div>
+        <p>
+    Share the url with 1-many friends.  If you are doing a local test open your browser windows in incognition mode.
+    </p>
+    <button id="call">Start conference</button>
+
+    </div>
     <div>
     <video id="local" autoplay controls"></video>
     </div>
-    <button id="call">Call</button>
+  
     <div id="videos">
+
+    </div>
         
    
-    
+    <script src="//cdnjs.cloudflare.com/ajax/libs/adapterjs/0.13.3/adapter.min.js"></script>
     <script src="/src/thor-io.client.js">
     </script>
     <script>
 
-        RTCPeerConnection = webkitRTCPeerConnection;
-
-        var attachMediaStream = function (element, stream) {
-        if (typeof element.srcObject !== 'undefined') {
-            element.srcObject = stream;
-        }
-        else if (typeof element.mozSrcObject !== 'undefined') {
-            element.mozSrcObject = stream;
-        }
-        else if (typeof element.src !== 'undefined') {
-            element.src = URL.createObjectURL(stream);
-        }
-        else {
-            console.log('Error attaching stream to element.');
-        }
-    };
+     
 
     var createVideoElement = function(stream,peer){
         var el = document.createElement("video");
@@ -60,10 +67,10 @@
                             maxHeight: 180
                         }
                     },
-                    audio: false,
+                    audio: true,
                 };
 
-                navigator.webkitGetUserMedia(constraints, function(stream) {
+                navigator.getUserMedia(constraints, function(stream) {
                     rtc.addLocalStream(stream);
                          attachMediaStream(document.querySelector("#local"),stream);
 
@@ -81,13 +88,20 @@
                     console.log("streamLost",arguments); // remove the video element
                 };
                 broker.On("contextChanged", function(data) {
+                 location.hash = data.context;
                 });
                 broker.On("connectTo", function(peers) {
                     rtc.connect(peers);
                 });
                 broker.On("contextCreated" , function(data) {
                     rtc.localPeerId = data.peerId;
-                    broker.Invoke("changeContext",{context:"foo"},"broker");
+
+                    // create a new "room/context" it a #hash dont exist in the url...
+                    var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10);
+
+                   
+
+                    broker.Invoke("changeContext",{context: context.replace("#","")},"broker");
                 });
                 broker.Connect();
             };

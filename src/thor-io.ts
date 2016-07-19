@@ -290,7 +290,7 @@ export namespace ThorIO {
         }
 
         // todo: refine
-        findOn(alias:string,predicate:(item: any) => boolean):Array<any>{
+        findOn<T>(alias:string,predicate:(item: any) => boolean):Array<any>{
             let connections = this.getConnections(alias).map( (p:Connection) =>{
                     return p.getController(alias);
             });
