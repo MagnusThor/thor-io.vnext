@@ -1,33 +1,26 @@
 <html>
-<style>
-
-    #local{
-        position:absolute;
-        right:10px;
-        bottom:10px;
-        max-width:180px;
-    }
-
-    #videos video{
-        display:inline;
-        margin-right:10px;
-    }
-
-</style>
+<link href="css/default.css" rel="stylesheet"/>
 <body>
+    <div id="hero" class="">
     <h1>Simple 1-many WebRTC "conference app" </h1>
     <div>
         <p>
     Share the url with 1-many friends.  If you are doing a local test open your browser windows in incognition mode.
     </p>
     <button id="call">Start conference</button>
-
     </div>
-    <div>
-    <video id="local" autoplay controls"></video>
+    </div>
+    
+    <video id="local" autoplay controls muted"></video>
+    
+    <div id="fullscreen-video">
+        <video id="main-video">
+       </video>
     </div>
   
     <div id="videos">
+
+      
 
     </div>
         
@@ -37,73 +30,90 @@
     </script>
     <script>
 
-     
+    var $ = function(selector,el){
+        if(!el) el = document;
+        return el.querySelector(selector);
+    }
 
     var createVideoElement = function(stream,peer){
         var el = document.createElement("video");
         el.setAttribute("id", stream.id);
-        el.setAttribute("autoplay","autoplayß");
+        el.setAttribute("autoplay","autoplay");
+        el.addEventListener("click",requestFullscreen);
         attachMediaStream(el, stream);
+        attachMediaStream($("#main-video"), stream);
         return el;
     };
 
-        var rtc;
+    var requestFullscreen = function(evt){
+        var el = evt.target;
+        $("#main-video").src = evt.target.src;
+    }
 
+        var rtc;
         document.addEventListener("DOMContentLoaded", function() {
-          
-            var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["broker"], {});
-              client.OnOpen = function(broker) {
-                rtc = new ThorIOClient.WebRTC(broker,{
+            var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
+
+            // we connected to the server (.Engine) , onOpen will give us the channels to the Controllers, in this 
+            // case we are specified  just the broker (BrokerController.ts ) 
+              client.OnOpen = function(brokerChannel) {
+                // todo: add TURN server's to the config, to ensure "all" can connect..
+                rtc = new ThorIOClient.WebRTC(brokerChannel,{
                     iceServers:[
                         {
-                        url:"stun:stun.l.google.com:19302"
+                            url: "stun:stun.l.google.com:19302"
                         }
                     ]
                 });
+                // todo:should evaluate if client supports this constraints...
                 var constraints = {
                     video: {
                         mandatory: {
-                            maxWidth: 320,
-                            maxHeight: 180
+                            maxWidth: 1280,
+                            maxHeight: 720
                         }
                     },
                     audio: true,
                 };
-
+                // query for media access using the constraints , in this case audio and 720p video
                 navigator.getUserMedia(constraints, function(stream) {
                     rtc.addLocalStream(stream);
-                         attachMediaStream(document.querySelector("#local"),stream);
-
-                }, function(err) { console.log("gum error", err);
+                    attachMediaStream($("#local"),stream);
+                },function(err) { console.log("getUserMedia error", err);
                 });
 
-                document.querySelector("#call").addEventListener("click", function(){
-                    broker.Invoke("connectContext", {}, "broker");
+                // start the conference
+                $("#call").addEventListener("click", function(){
+                    brokerChannel.Invoke("connectContext", {}, "broker");
+                    $("#hero").classList.add("hide");
                 });
                 
+                // someone connected and we got a new paricipantß
                 rtc.onRemoteStream = function(stream,connection) {
-                    document.querySelector("#videos").appendChild(createVideoElement(stream,connection));
+                    $("#videos").appendChild(createVideoElement(stream,connection));
                 };
+                
+                // we lost one of the remote streams, so lets remove it
                 rtc.remoteStreamlost = function(streamId,peerId){
-                    console.log("streamLost",arguments); // remove the video element
+                    console.log("streamLost",arguments);  //  todo: find the vido using the peerId, and remove the element
                 };
-                broker.On("contextChanged", function(data) {
+                // When we change context, this event will fire...
+                brokerChannel.On("contextChanged", function(data) {
                  location.hash = data.context;
                 });
-                broker.On("connectTo", function(peers) {
+                // fires when 'connectContext' is called, in this case we just connect to them, by calling .connect(arrPeers)
+                brokerChannel.On("connectTo", function(peers) {
                     rtc.connect(peers);
                 });
-                broker.On("contextCreated" , function(data) {
+
+                // When we connect, we got our own context / room ... if we got a "hash" value, use that , otherwise generate a new room..
+                brokerChannel.On("contextCreated" , function(data) {
                     rtc.localPeerId = data.peerId;
-
-                    // create a new "room/context" it a #hash dont exist in the url...
-                    var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10);
-
-                   
-
-                    broker.Invoke("changeContext",{context: context.replace("#","")},"broker");
+                    // create a new "room/context" using the #hash 'parameter' if it exists, otherwise a random one..
+                    var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
+                    brokerChannel.Invoke("changeContext",{context: context.replace("#","")},"broker");
                 });
-                broker.Connect();
+                brokerChannel.Connect();
             };
         });
     </script>

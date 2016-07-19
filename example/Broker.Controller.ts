@@ -44,7 +44,6 @@ export class BrokerController  extends ThorIO.Controller
     @CanInvoke(true)
     changeContext(change:PeerConnection){
         this.Peer.context = change.context;
-
         this.invoke(this.Peer,"contextChanged",this.alias);
     }
     @CanInvoke(true)
