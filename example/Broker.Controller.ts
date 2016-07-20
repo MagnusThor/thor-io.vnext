@@ -2,6 +2,11 @@ import {
     ThorIO,CanInvoke,CanSet,ControllerProperties
 } from "../src/thor-io"
 
+class InstantMessage
+{
+    text: string;
+}
+
 class PeerConnection {
         context:string;
         peerId: string;
@@ -39,6 +44,14 @@ export class BrokerController  extends ThorIO.Controller
     onopen(){
         this.Peer = new PeerConnection(this.createId(),this.client.id);
         this.invoke(this.Peer,"contextCreated",this.alias);
+    }
+
+    @CanInvoke(true)
+    instantMessage(data: any, topic: string, controller: string) {
+        var expression = (pre: BrokerController) => {
+            return pre.Peer.context >= this.Peer.context
+        };
+        this.invokeTo(expression, data, "instantMessage", this.alias);
     }
   
     @CanInvoke(true)

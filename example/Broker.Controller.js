@@ -14,6 +14,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var thor_io_1 = require("../src/thor-io");
+var InstantMessage = (function () {
+    function InstantMessage() {
+    }
+    return InstantMessage;
+}());
 var PeerConnection = (function () {
     function PeerConnection(context, peerId) {
         this.context = context;
@@ -44,6 +49,13 @@ var BrokerController = (function (_super) {
         this.Peer = new PeerConnection(this.createId(), this.client.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     };
+    BrokerController.prototype.instantMessage = function (data, topic, controller) {
+        var _this = this;
+        var expression = function (pre) {
+            return pre.Peer.context >= _this.Peer.context;
+        };
+        this.invokeTo(expression, data, "instantMessage", this.alias);
+    };
     BrokerController.prototype.changeContext = function (change) {
         this.Peer.context = change.context;
         this.invoke(this.Peer, "contextChanged", this.alias);
@@ -65,6 +77,12 @@ var BrokerController = (function (_super) {
         });
         return match;
     };
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [Object, String, String]), 
+        __metadata('design:returntype', void 0)
+    ], BrokerController.prototype, "instantMessage", null);
     __decorate([
         thor_io_1.CanInvoke(true), 
         __metadata('design:type', Function), 

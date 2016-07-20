@@ -1,3 +1,8 @@
+#hero{
+    position: absolute;
+    z-index: 110;
+}
+
 #fullscreen-video {
     position: fixed;
     top: 0;
@@ -6,7 +11,7 @@
     left: 0;
     border:0;
     overflow: hidden;
-    z-index: -10;
+    z-index: 50;
     border: 1px solid;
     background: #39403D;
     -webkit-background-size: cover;
@@ -22,7 +27,7 @@
         min-height: 100%;
         width: auto;
         height: auto;
-        z-index: -100;
+      
         -webkit-transform: translateX(-50%) translateY(-50%);
         transform: translateX(-50%) translateY(-50%);
         background-size: cover;
@@ -34,20 +39,35 @@
     box-sizing: border-box;
 }
 
+button{
+    border: 0px;
+    height: auto;
+    padding: 10px;
+    font-size:16px;
+}
+
 body, html {
     height: 100%;
     overflow: hidden;
     color:#fff;
+    margin: 0;
+    padding: 0;
+    background: #666666;
+    font-family: 'Open Sans', sans-serif;
 }
-
     #local{
         position:absolute;
-        right:10px;
+        right:20px;
         bottom:10px;
-        max-width:180px;
+        max-width:120px;
+        z-index:100;
+        background: #39403D;
         border:1px solid #39403D;
     }
-
+    #videos {
+        position: absolute;
+        z-index:100;
+    }
     #videos video{
         display:inline;
         margin-right:10px;
@@ -60,3 +80,34 @@ body, html {
         display:none
     }
 
+
+section{
+    padding: 10px;
+}
+
+footer
+{
+    position: absolute;
+    bottom:0;
+    z-index: 90;
+    width:100%;
+    background: rgba(0,0,0,0.5);
+    height:180px;
+  
+
+}
+footer > input{
+    position: absolute;
+    bottom:0;
+    z-index:50;
+    padding: 10px;
+    width:100%;
+    font-size: 16px;
+    border:0px;
+}
+
+#im-messages{
+    height: 135px;
+    overflow: auto;
+    padding: 10px;
+}

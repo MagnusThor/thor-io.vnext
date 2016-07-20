@@ -19,7 +19,8 @@ export function ControllerProperties(alias:string,seald?:boolean){
 }
 
 export namespace ThorIO {
-
+    // todo: Finalize this thing , that enables raw ( rudimentary clients ) to connect , 
+    // in other words non ws/wss speaking clients to connect..
     export class EndPoint {
         private serializeMessage(data: string): string {
             let parts = data.split("|");
@@ -59,12 +60,14 @@ export namespace ThorIO {
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
+
     }
 
     export class Plugin<T> {
         public alias: string;
         public instance: T;
         constructor(controller:T) {
+            // todo , throw if metaData not exists...
             this.alias = Reflect.getMetadata("alias",controller)
             this.instance = controller;
         }
@@ -149,6 +152,7 @@ export namespace ThorIO {
             this.topic = topic;
         }
     }
+    // todo: refactor this, implememt PI for a sticky session?
     export class ClientInfo {
         public CI: string;
         public C: string;
@@ -157,17 +161,12 @@ export namespace ThorIO {
             this.C = controller;
         }
     }
-
-
     export class Connection {
-
         public id: string;
         public ws: WebSocket;
-       
         public controllerInstances: Array < ThorIO.Controller > ;
         public connections: Array <ThorIO.Connection> ;
         public clientInfo: ThorIO.ClientInfo;
-
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
                     if(!controller.canInvokeMethod(method)) 
@@ -190,10 +189,11 @@ export namespace ThorIO {
 
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
+            // todo: Ugly , fuzzy due to the "seald" controllers, find a way / workaround..
             if(ws){
 
             this.ws = ws;
-            this.ws["$connectionId"] = this.id;
+            this.ws["$connectionId"] = this.id; // todo: replace this
 
             this.ws.onmessage = (message: MessageEvent) => {
                 let json = JSON.parse(message.data);
@@ -201,7 +201,6 @@ export namespace ThorIO {
                 this.methodInvoker(controller, json.T, JSON.parse(json.D));
             };
             }
-            
             this.controllerInstances = new Array < Controller > ();
         }
         hasController(alias: string): boolean {
@@ -210,13 +209,12 @@ export namespace ThorIO {
             });
             return match.length >= 0;
         }
-
         removeController(alias: string) {
             let index = this.controllerInstances.indexOf(this.getController(alias));
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         }
-
+        // todo: refactor and improve..
         getController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre: Controller) => {
@@ -227,33 +225,27 @@ export namespace ThorIO {
                 return null
             }
         }
-
         private addControllerInstance(controller:Controller){
             this.controllerInstances.push(controller);
         }
-
         private registerSealdController(){
             throw "not yet implemented";
         }
-
         locateController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre:Controller) => {
                     return pre.alias === alias && Reflect.getMetadata("seald",pre.constructor) === false;
                 });
-
                 if (match.length > 0) {
                     return match[0];
                 } else {
-                    
                     let resolved = this.controllers.filter((resolve:Plugin<Controller>) => {
                         return resolve.alias === alias &&  Reflect.getMetadata("seald",resolve.instance) === false;
                     })[0].instance;
-
+                    // hmm  fix this ... 
                     let controllerInstance = <Controller>(new resolved(this));
-
                     this.addControllerInstance(controllerInstance);
-
+                
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
                     controllerInstance.onopen();
 
@@ -266,6 +258,7 @@ export namespace ThorIO {
         }
     }
 
+    // maybe use EventEmitters, a bit fuzzy ? Comments?? 
     export class Subscription {
         public topic: string;
         public controller: string
@@ -288,8 +281,7 @@ export namespace ThorIO {
         public canInvokeMethod(method: string): any {
             return ( < any > global).Reflect.getMetadata("invokeable", this, method);
         }
-
-        // todo: refine
+       // todo: refine ( would be happt to discuess with UlfBjo)
         findOn<T>(alias:string,predicate:(item: any) => boolean):Array<any>{
             let connections = this.getConnections(alias).map( (p:Connection) =>{
                     return p.getController(alias);
@@ -331,11 +323,8 @@ export namespace ThorIO {
         };
 
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string) {
-            // let connections = this.getConnections().map((pre: Connection) => {
-            //     if (pre.hasController(controller)) return pre.getController(controller);
-            // });
             let connections = this.findOn(controller,predicate);
-           connections.forEach( (controller:Controller) => {
+               connections.forEach( (controller:Controller) => {
                  controller.invoke(data, topic, this.alias);
            });
         };

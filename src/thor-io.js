@@ -31,6 +31,8 @@ function ControllerProperties(alias, seald) {
 exports.ControllerProperties = ControllerProperties;
 var ThorIO;
 (function (ThorIO) {
+    // todo: Finalize this thing , that enables raw ( rudimentary clients ) to connect , 
+    // in other words non ws/wss speaking clients to connect..
     var EndPoint = (function () {
         function EndPoint(port, fn) {
             this.fn = fn;
@@ -80,6 +82,7 @@ var ThorIO;
     ThorIO.Utils = Utils;
     var Plugin = (function () {
         function Plugin(controller) {
+            // todo , throw if metaData not exists...
             this.alias = Reflect.getMetadata("alias", controller);
             this.instance = controller;
         }
@@ -161,6 +164,7 @@ var ThorIO;
         return Listener;
     }());
     ThorIO.Listener = Listener;
+    // todo: refactor this, implememt PI for a sticky session?
     var ClientInfo = (function () {
         function ClientInfo(ci, controller) {
             this.CI = ci;
@@ -175,9 +179,10 @@ var ThorIO;
             this.controllers = controllers;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
+            // todo: Ugly , fuzzy due to the "seald" controllers, find a way / workaround..
             if (ws) {
                 this.ws = ws;
-                this.ws["$connectionId"] = this.id;
+                this.ws["$connectionId"] = this.id; // todo: replace this
                 this.ws.onmessage = function (message) {
                     var json = JSON.parse(message.data);
                     var controller = _this.locateController(json.C);
@@ -215,6 +220,7 @@ var ThorIO;
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         };
+        // todo: refactor and improve..
         Connection.prototype.getController = function (alias) {
             try {
                 var match = this.controllerInstances.filter(function (pre) {
@@ -244,6 +250,7 @@ var ThorIO;
                     var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
+                    // hmm  fix this ... 
                     var controllerInstance = (new resolved(this));
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
@@ -259,6 +266,7 @@ var ThorIO;
         return Connection;
     }());
     ThorIO.Connection = Connection;
+    // maybe use EventEmitters, a bit fuzzy ? Comments?? 
     var Subscription = (function () {
         function Subscription(topic, controller) {
             this.topic = topic;
@@ -276,7 +284,7 @@ var ThorIO;
         Controller.prototype.canInvokeMethod = function (method) {
             return global.Reflect.getMetadata("invokeable", this, method);
         };
-        // todo: refine
+        // todo: refine ( would be happt to discuess with UlfBjo)
         Controller.prototype.findOn = function (alias, predicate) {
             var connections = this.getConnections(alias).map(function (p) {
                 return p.getController(alias);
@@ -317,9 +325,6 @@ var ThorIO;
         ;
         Controller.prototype.invokeTo = function (predicate, data, topic, controller) {
             var _this = this;
-            // let connections = this.getConnections().map((pre: Connection) => {
-            //     if (pre.hasController(controller)) return pre.getController(controller);
-            // });
             var connections = this.findOn(controller, predicate);
             connections.forEach(function (controller) {
                 controller.invoke(data, topic, _this.alias);

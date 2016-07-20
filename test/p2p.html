@@ -1,29 +1,33 @@
 <html>
-<link href="css/default.css" rel="stylesheet"/>
+<link href="css/default.css" rel="stylesheet" type="text/css">
+<link href='//fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
 <body>
+    <section>
     <div id="hero" class="">
-    <h1>Simple 1-many WebRTC "conference app" </h1>
+    <h1>A Simple 1-many WebRTC "conference app" demo built on thor-io.vnext </h1>
     <div>
-        <p>
+    <p>
     Share the url with 1-many friends.  If you are doing a local test open your browser windows in incognition mode.
     </p>
     <button id="call">Start conference</button>
     </div>
     </div>
     
-    <video id="local" autoplay controls muted"></video>
+    <video id="local" autoplay muted></video>
     
     <div id="fullscreen-video">
         <video id="main-video">
        </video>
     </div>
-  
     <div id="videos">
-
-      
-
     </div>
-        
+    </section>
+    <footer>
+        <div id="im-messages">
+
+            </div>
+        <input type="text" id="im-text" placeholder="Send an instant message to all ...">
+        </footer>
    
     <script src="//cdnjs.cloudflare.com/ajax/libs/adapterjs/0.13.3/adapter.min.js"></script>
     <script src="/src/thor-io.client.js">
@@ -76,11 +80,14 @@
                     audio: true,
                 };
                 // query for media access using the constraints , in this case audio and 720p video
-                navigator.getUserMedia(constraints, function(stream) {
-                    rtc.addLocalStream(stream);
-                    attachMediaStream($("#local"),stream);
-                },function(err) { console.log("getUserMedia error", err);
-                });
+                if(navigator.getUserMedia){
+                    navigator.getUserMedia(constraints, function(stream) {
+                        rtc.addLocalStream(stream);
+                        attachMediaStream($("#local"),stream);
+                    },function(err){
+                         console.log("getUserMedia error", err);
+                    });
+                }
 
                 // start the conference
                 $("#call").addEventListener("click", function(){
@@ -88,8 +95,19 @@
                     $("#hero").classList.add("hide");
                 });
                 
+
+                $("#im-text").addEventListener("keyup",function(evt){
+                        if(evt.keyCode === 13){
+                            brokerChannel.Invoke("instantMessage", {
+                                text: (new Date()).toTimeString().substring(0,5) + " : " + this.value // just a simple message
+                            },"broker");
+                            this.value = ""
+                        }
+                });
+
                 // someone connected and we got a new paricipantß
                 rtc.onRemoteStream = function(stream,connection) {
+                        $("#hero").classList.add("hide")
                     $("#videos").appendChild(createVideoElement(stream,connection));
                 };
                 
@@ -100,6 +118,13 @@
                 // When we change context, this event will fire...
                 brokerChannel.On("contextChanged", function(data) {
                  location.hash = data.context;
+                });
+                brokerChannel.On("instantMessage", function(data){
+                        var im = document.createElement("p");
+                        im.textContent = data.text;
+                        var parent =  $("#im-messages");
+                       parent.insertBefore(im,parent.firstChild);
+
                 });
                 // fires when 'connectContext' is called, in this case we just connect to them, by calling .connect(arrPeers)
                 brokerChannel.On("connectTo", function(peers) {
