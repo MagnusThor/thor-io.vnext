@@ -1,5 +1,30 @@
 var ThorIOClient;
 (function (ThorIOClient) {
+    var Message = (function () {
+        function Message(topic, object, controller, id) {
+            this.D = object;
+            this.T = topic;
+            this.C = controller;
+            this.id = id || ThorIOClient.Utils.newGuid();
+        }
+        Object.defineProperty(Message.prototype, "JSON", {
+            get: function () {
+                return {
+                    T: this.T,
+                    D: JSON.stringify(this.D),
+                    C: this.C
+                };
+            },
+            enumerable: true,
+            configurable: true
+        });
+        ;
+        Message.prototype.toString = function () {
+            return JSON.stringify(this.JSON);
+        };
+        return Message;
+    }());
+    ThorIOClient.Message = Message;
     var PeerConnection = (function () {
         function PeerConnection() {
         }
@@ -37,7 +62,7 @@ var ThorIOClient;
         }
         WebRTC.prototype.onCandidate = function (event) {
             var msg = JSON.parse(event.message);
-            var candidate = msg.iceCandidate;
+            var candidate = msg.icGetCandidate;
             var pc = this.getPeerConnection(event.sender);
             pc.addIceCandidate(new RTCIceCandidate({
                 sdpMLineIndex: candidate.label,
@@ -242,62 +267,6 @@ var ThorIOClient;
         return Factory;
     }());
     ThorIOClient.Factory = Factory;
-    var Message = (function () {
-        function Message(topic, object, controller) {
-            this.D = object;
-            this.T = topic;
-            this.C = controller;
-        }
-        Object.defineProperty(Message.prototype, "T", {
-            get: function () {
-                return this._T;
-            },
-            set: function (v) {
-                this._T = v;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Message.prototype, "D", {
-            get: function () {
-                return this._D;
-            },
-            set: function (v) {
-                this._D = v;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Message.prototype, "C", {
-            get: function () {
-                return this._C;
-            },
-            set: function (value) {
-                this._C = value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        ;
-        ;
-        Object.defineProperty(Message.prototype, "JSON", {
-            get: function () {
-                return {
-                    T: this.T,
-                    D: JSON.stringify(this.D),
-                    C: this.C
-                };
-            },
-            enumerable: true,
-            configurable: true
-        });
-        ;
-        Message.prototype.toString = function () {
-            return JSON.stringify(this.JSON);
-        };
-        return Message;
-    }());
-    ThorIOClient.Message = Message;
     var Listener = (function () {
         function Listener(topic, fn) {
             this.fn = fn;
@@ -306,26 +275,63 @@ var ThorIOClient;
         return Listener;
     }());
     ThorIOClient.Listener = Listener;
+    var Utils = (function () {
+        function Utils() {
+        }
+        Utils.newGuid = function () {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+            }
+            return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        };
+        return Utils;
+    }());
+    ThorIOClient.Utils = Utils;
+    var PromisedMessage = (function () {
+        function PromisedMessage(id, resolve) {
+            this.messageId = id;
+            this.resolve = resolve;
+        }
+        return PromisedMessage;
+    }());
+    ThorIOClient.PromisedMessage = PromisedMessage;
+    var PropertyMessage = (function () {
+        function PropertyMessage() {
+            this.messageId = ThorIOClient.Utils.newGuid();
+        }
+        return PropertyMessage;
+    }());
+    ThorIOClient.PropertyMessage = PropertyMessage;
     var Channel = (function () {
         function Channel(alias, ws) {
+            var _this = this;
             this.alias = alias;
             this.ws = ws;
+            this.promisedMessages = new Array();
             this.listeners = new Array();
             this.IsConnected = false;
+            this.On("___getProperty", function (data) {
+                var prom = _this.promisedMessages.filter(function (pre) {
+                    return pre.messageId === data.messageId;
+                })[0];
+                prom.resolve(data.value);
+                var index = _this.promisedMessages.indexOf(prom);
+                _this.promisedMessages.splice(index, 1);
+            });
         }
         Channel.prototype.Connect = function () {
-            this.ws.send(new ThorIOClient.Message("$connect_", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___connect", {}, this.alias));
             return this;
         };
         ;
         Channel.prototype.Close = function () {
-            this.ws.send(new ThorIOClient.Message("$close_", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___close", {}, this.alias));
             return this;
         };
         ;
         Channel.prototype.Subscribe = function (topic, callback) {
             this.On(topic, callback);
-            this.ws.send(new ThorIOClient.Message("subscribe", {
+            this.ws.send(new ThorIOClient.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -333,7 +339,7 @@ var ThorIOClient;
         };
         ;
         Channel.prototype.Unsubscribe = function (topic) {
-            this.ws.send(new ThorIOClient.Message("unsubscribe", {
+            this.ws.send(new ThorIOClient.Message("___unsubscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -368,14 +374,26 @@ var ThorIOClient;
             return this;
         };
         ;
+        Channel.prototype.GetProperty = function (propName, controller) {
+            var propInfo = new PropertyMessage();
+            propInfo.name = propName;
+            var wrapper = new PromisedMessage(propInfo.messageId, function () { });
+            ;
+            this.promisedMessages.push(wrapper);
+            var promise = new Promise(function (resolve, reject) {
+                wrapper.resolve = resolve;
+            });
+            this.Invoke("___getProperty", propInfo, controller || this.alias);
+            return promise;
+        };
         Channel.prototype.Dispatch = function (topic, data) {
-            if (topic === "$open_") {
+            if (topic === "___open") {
                 data = JSON.parse(data);
                 this.IsConnected = true;
                 this.OnOpen(data);
                 return;
             }
-            else if (topic === "$close_") {
+            else if (topic === "___close") {
                 this.OnClose([JSON.parse(data)]);
                 this.IsConnected = false;
             }

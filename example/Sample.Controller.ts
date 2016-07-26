@@ -1,10 +1,22 @@
-import {ThorIO} from "../src/thor-io"
+import {
+     ThorIO,CanInvoke,CanSet,ControllerProperties
+} from "../src/thor-io"
 
 // create a module for fale storage
 module Fake {
   export class Storage {
     static Messages : any[] = []; //persist any kind of messages.
  }
+}
+
+
+@ControllerProperties("datasync",false)
+export class DataSync extends ThorIO.Controller{
+    private Person: any;
+    constructor(client: ThorIO.Connection){
+        super(client);
+    
+    }
 }
 
 

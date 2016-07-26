@@ -71,8 +71,10 @@ export namespace ThorIO {
             this.alias = Reflect.getMetadata("alias",controller)
             this.instance = controller;
         }
-        
     }
+
+   
+
     export class Engine {
         private controllers: Array < Plugin<Controller> > 
         private connections: Array < Connection > ;
@@ -122,10 +124,10 @@ export namespace ThorIO {
 
     export class Message {
 
-        public T: string;
-        public D: any;
-        public C: string;
-
+         T: string;
+         D: any;
+         C: string;
+         id:string;
         get JSON(): any {
             return {
                 T: this.T,
@@ -133,10 +135,11 @@ export namespace ThorIO {
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string) {
+        constructor(topic: string, object: any, controller: string,id?:string) {
             this.D = object;
             this.T = topic;
             this.C = controller;
+            this.id = id;
         }
         toString() {
             return JSON.stringify(this.JSON);
@@ -170,11 +173,11 @@ export namespace ThorIO {
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
                     if(!controller.canInvokeMethod(method)) 
-                        throw "method " + method + "cant be invoked."
+                        throw "method " + method + " cant be invoked."
                     if (typeof(controller[method]) === "function"){
                         controller[method].apply(controller, [data, controller.alias]);
-
                 } else {
+                    // todo : refactor and use PropertyMessage ?
                     let prop = method;
                     let propValue = data;
                     if (typeof(controller[prop]) === typeof(propValue))
@@ -184,7 +187,6 @@ export namespace ThorIO {
                 controller.invokeError(ex);
             }
         }
-
         constructor(ws: WebSocket, connections: Array < Connection > , private controllers: Array < Plugin<Controller> > ) {
 
             this.connections = connections;
@@ -246,7 +248,7 @@ export namespace ThorIO {
                     let controllerInstance = <Controller>(new resolved(this));
                     this.addControllerInstance(controllerInstance);
                 
-                    controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
+                    controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();
 
                     return controllerInstance as Controller;
@@ -270,18 +272,24 @@ export namespace ThorIO {
     }
   
     export class Controller {
+        @CanSet(false)
         public alias: string;
+        @CanSet(false)
         public subscriptions: Array < Subscription > ;
+        @CanSet(false)
         public client: Connection
+        
         constructor(client: Connection) {
             this.client = client;
             this.subscriptions = new Array < Subscription > ();
             this.alias = Reflect.getMetadata("alias",this.constructor);
         }
+        @CanInvoke(false)
         public canInvokeMethod(method: string): any {
-            return ( < any > global).Reflect.getMetadata("invokeable", this, method);
+            return Reflect.getMetadata("invokeable", this, method);
         }
-       // todo: refine ( would be happt to discuess with UlfBjo)
+       // todo: refine ( would be happy to discuess with UlfBjo)
+        @CanInvoke(false)         
         findOn<T>(alias:string,predicate:(item: any) => boolean):Array<any>{
             let connections = this.getConnections(alias).map( (p:Connection) =>{
                     return p.getController(alias);
@@ -289,6 +297,7 @@ export namespace ThorIO {
             return connections.filter(predicate);
         }
         //todo: find better name...
+        @CanInvoke(false)
         getConnections(alias?: string): Array<Connection> {
             if (!alias) {
                 return this.client.connections;
@@ -300,20 +309,24 @@ export namespace ThorIO {
                 })
             }
         }
+        @CanInvoke(false)
         onopen() {
 
         }
+        @CanInvoke(false)        
         onclose() {
 
         }
+        @CanInvoke(false)
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x:T)=> <U><any>x): U[] {
             return array.filter(predicate).map(selector);
         }
+        @CanInvoke(false) 
         invokeError(error:any){
-            let msg = new Message("$error_", error, this.alias).toString();
-            this.invoke(error,"$error_",this.alias);
+            let msg = new Message("___error", error, this.alias).toString();
+            this.invoke(error,"___error",this.alias);
         }
-
+        @CanInvoke(false)
         invokeToAll(data: any, topic: string, controller: string) {
             let msg = new Message(topic, data, this.alias).toString();
             this.getConnections().forEach((connection: Connection) => {
@@ -321,40 +334,25 @@ export namespace ThorIO {
               
             });
         };
-
+        @CanInvoke(false)
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string) {
             let connections = this.findOn(controller,predicate);
                connections.forEach( (controller:Controller) => {
                  controller.invoke(data, topic, this.alias);
            });
         };
-
+        @CanInvoke(false)
         invoke(data: any, topic: string, controller: string) {
             let msg = new Message(topic, data, this.alias);
             if(this.client.ws)
             this.client.ws.send(msg.toString());
         };
-
-        subscribe(subscription: Subscription, topic: string, controller: string): Subscription {
-            if (this.hasSubscription(subscription.topic)) {
-                return;
-            }
-            this.subscriptions.push(subscription);
-            return subscription;
-        };
-
-        unsubscribe(subscription: Subscription): boolean {
-            let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
-            if (index >= 0) {
-                let result = this.subscriptions.splice(index, 1);
-                return true;
-            } else
-                return false;
-        };
+        @CanInvoke(false)
         publish(data: any, topic: string, controller: string) {
             if (!this.hasSubscription(topic)) return;
             this.invoke(data, topic, this.alias);
         };
+        @CanInvoke(false)
         publishToAll(data: any, topic: string, controller: string) {
             let msg = new Message(topic, data, this.alias);
             this.getConnections().forEach((connection: Connection) => {
@@ -364,6 +362,7 @@ export namespace ThorIO {
                 }
             });
         }
+        @CanInvoke(false)
         public hasSubscription(topic: string): boolean {
             let p = this.subscriptions.filter(
                 (pre: Subscription) => {
@@ -372,6 +371,7 @@ export namespace ThorIO {
             );
             return !(p.length === 0);
         }
+        @CanInvoke(false)
         public getSubscription(topic: string): Subscription {
                 let subscription = this.subscriptions.filter(
                     (pre: Subscription) => {
@@ -381,16 +381,47 @@ export namespace ThorIO {
                 return subscription[0];
             }
         @CanInvoke(true)
-        $connect_() {
+        ___connect() {
             // todo: remove this method        
         }
-        @CanInvoke(true)
-        $close_() {
-            this.client.removeController(this.alias);
-            this.invoke({}, "$close_", this.alias);
+        @CanInvoke(true) // Hmm
+        ___getProperty(data:PropertyMessage){
+            data.value = this[data.name];
+            this.invoke(data,"___getProperty",this.alias);
         }
-
+        @CanInvoke(true)
+        ___close() {
+            this.client.removeController(this.alias);
+            this.invoke({}, " ___close", this.alias);
+        }
+        @CanInvoke(true)
+        ___subscribe(subscription: Subscription, topic: string, controller: string): Subscription {
+            if (this.hasSubscription(subscription.topic)) {
+                return;
+            }
+            this.subscriptions.push(subscription);
+            return subscription;
+        };
+        @CanInvoke(true)
+        ___unsubscribe(subscription: Subscription): boolean {
+            let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
+            if (index >= 0) {
+                let result = this.subscriptions.splice(index, 1);
+                return true;
+            } else
+                return false;
+        };
+     
     }
+
+  export class PropertyMessage  {
+         name:string;
+         value:any;
+         messageId: string
+         constructor(){
+             this.messageId = ThorIOClient.Utils.newGuid();
+         }
+        }
 }
 
 

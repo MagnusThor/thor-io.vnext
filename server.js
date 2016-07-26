@@ -7,7 +7,6 @@ var samples = require("./example/Sample.Controller.js")
 var chat = require("./example/Chat.Controller.js")
 var broker = require("./example/Broker.Controller.js")
 
-var net = require("net");
 
 var controllers = [
     chat.ChatController

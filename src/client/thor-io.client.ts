@@ -3,6 +3,31 @@
 
  namespace ThorIOClient {
 
+    export class Message {
+
+         T: string;
+         D: any;
+         C: string;
+         id:string;
+        get JSON(): any {
+            return {
+                T: this.T,
+                D: JSON.stringify(this.D),
+                C: this.C
+            }
+        };
+        constructor(topic: string, object: any, controller: string,id?:string) {
+            this.D = object;
+            this.T = topic;
+            this.C = controller;
+            this.id = id || ThorIOClient.Utils.newGuid();
+        }
+        toString() {
+            return JSON.stringify(this.JSON);
+        }
+    }
+
+
     class PeerConnection {
         context: string;
         peerId: string;
@@ -31,7 +56,7 @@
             this.localSteams = new Array < any > ();
 
             brokerChannel.On("contextSignal", (signal: any) => {
-                var msg = JSON.parse(signal.message);
+                let msg = JSON.parse(signal.message);
                 switch (msg.type) {
                     case "offer":
                         this.onOffer(signal)
@@ -48,9 +73,9 @@
 
         }
         private onCandidate(event) {
-            var msg = JSON.parse(event.message);
-            var candidate = msg.iceCandidate;
-            var pc = this.getPeerConnection(event.sender);
+            let msg = JSON.parse(event.message);
+            let candidate = msg.icGetCandidate;
+            let pc = this.getPeerConnection(event.sender);
 
             pc.addIceCandidate(new RTCIceCandidate({
                 sdpMLineIndex: candidate.label,
@@ -60,20 +85,20 @@
             });
         }
         private onAnswer(event) {
-            var pc = this.getPeerConnection(event.sender);
+            let pc = this.getPeerConnection(event.sender);
             pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message))).then((p) => {
             });
         }
         
         private onOffer(event) {
-            var pc = this.getPeerConnection(event.sender);
+            let pc = this.getPeerConnection(event.sender);
             this.localSteams.forEach((stream) => {
                 pc.addStream(stream);
             });
           pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
             pc.createAnswer((description) => {
                 pc.setLocalDescription(description);
-                var answer = {
+                let answer = {
                     sender: this.localPeerId,
                     recipient: event.sender,
                     message: JSON.stringify(description)
@@ -97,12 +122,12 @@
         };
    
         private onConnected(p: any) {
-            var pc = this.getPeerConnection(p);
+            let pc = this.getPeerConnection(p);
             // todo: fire event
         }
 
         private onDisconnected(p: any) {
-            var pc = this.getPeerConnection(p);
+            let pc = this.getPeerConnection(p);
             pc.close();
             this.removePeerConnection(p);
             // todo: fire event
@@ -111,13 +136,13 @@
         remoteStreamlost(streamId:string,peerId:string){}
 
         private removePeerConnection(id: string) {
-            var connection = this.Peers.filter((conn: Connection) => {
+            let connection = this.Peers.filter((conn: Connection) => {
                 return conn.id === id;
             })[0];
             connection.streams.forEach( (stream:MediaStream) => {
                     this.remoteStreamlost(stream.id,connection.id)
             });
-            var index = this.Peers.indexOf(connection);
+            let index = this.Peers.indexOf(connection);
             if (index >= 0)
                 this.Peers.splice(index, 1);
         }
@@ -129,13 +154,13 @@
 
             
 
-            var rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
+            let rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
 
             rtcPeerConnection.onsignalingstatechange = (state) => {};
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
                 if (event.candidate) {
-                    var msg = {
+                    let msg = {
                         sender: this.localPeerId,
                         recipient: id,
                         message: JSON.stringify({
@@ -157,7 +182,7 @@
                 };
             };
             rtcPeerConnection.onaddstream = (event: RTCMediaStreamEvent) => {
-                var connection = this.Peers.filter((p) => {
+                let connection = this.Peers.filter((p) => {
                     return p.id === id;
                 })[0];
                 connection.streams.push(event.stream);
@@ -167,11 +192,11 @@
         }
         public onRemoteStream(stream: MediaStream, connection: Connection) {};
         private getPeerConnection(id: string): webkitRTCPeerConnection {
-            var match = this.Peers.filter((connection: Connection) => {
+            let match = this.Peers.filter((connection: Connection) => {
                 return connection.id === id;
             });
             if (match.length === 0) {
-                var pc = new Connection(id,this.createPeerConnection(id));
+                let pc = new Connection(id,this.createPeerConnection(id));
                 this.Peers.push(pc);
 
                 return pc.rtcPeerConnection;
@@ -181,7 +206,7 @@
 
 
         private createOffer(peer: PeerConnection) {
-            var peerConnection = this.createPeerConnection(peer.peerId);
+            let peerConnection = this.createPeerConnection(peer.peerId);
             this.localSteams.forEach((stream) => {
                 peerConnection.addStream(stream);
             });
@@ -189,7 +214,7 @@
             peerConnection.createOffer((localDescription: RTCSessionDescription) => {
 
                 peerConnection.setLocalDescription(localDescription, () => {
-                    var offer = {
+                    let offer = {
                         sender: this.localPeerId,
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
@@ -213,7 +238,7 @@
         }
         connect(peerConnections: Array < PeerConnection > ) {
             peerConnections.forEach((peer: PeerConnection) => {
-                var pc = new Connection(peer.peerId,this.createOffer(peer));
+                let pc = new Connection(peer.peerId,this.createOffer(peer));
                 this.Peers.push(pc);
             })
         }
@@ -228,11 +253,11 @@
         private channels: Array < ThorIOClient.Channel > ;
         public IsConnected: boolean;
         constructor(private url: string, controllers: Array < string > , params?: any) {
-            var self = this;
+            let self = this;
             this.channels = new Array < ThorIOClient.Channel > ();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.onmessage = event => {
-                var message = JSON.parse(event.data);
+                let message = JSON.parse(event.data);
 
                 this.GetChannel(message.C).Dispatch(message.T, message.D);
             };
@@ -257,7 +282,7 @@
             this.ws.close();
         };
         GetChannel(alias: string): ThorIOClient.Channel {
-            var channel = this.channels.filter(pre => (pre.alias === alias));
+            let channel = this.channels.filter(pre => (pre.alias === alias));
             return channel[0];
         };
         RemoveChannel() {
@@ -272,47 +297,7 @@
         }
         
     }
-    export class Message {
-        private _T: string;
-        get T(): string {
-            return this._T;
-        }
-        set T(v: string) {
-            this._T = v;
-        }
-        private _D: any;
-        get D(): any {
-            return this._D;
-        }
-        set D(v: any) {
-            this._D = v;
-        }
-        private _C: string;
-        get C(): string {
-            return this._C
-        };
-        set C(value: string) {
-            this._C = value
-        };
-        get JSON(): any {
-            return {
-                T: this.T,
-                D: JSON.stringify(this.D),
-                C: this.C
-            }
-        };
-        constructor(topic: string, object: any, controller: string) {
-            this.D = object;
-            this.T = topic;
-            this.C = controller;
-        }
-        toString() {
-            return JSON.stringify(this.JSON);
-        }
-
-
-    }
-
+ 
     export class Listener {
         fn: Function;
         topic: string;
@@ -322,32 +307,73 @@
         }
     }
 
+
+    export class Utils {
+        static newGuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+            }
+            return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        }
+
+    }
+
+    export class PromisedMessage
+    {
+        resolve:Function;
+        messageId:string;
+        constructor(id:string,resolve:Function){
+            this.messageId = id;
+            this.resolve = resolve;
+
+        }
+    }
+
+     export class PropertyMessage  {
+         name:string;
+         value:any;
+         messageId: string
+         constructor(){
+             this.messageId = ThorIOClient.Utils.newGuid();
+         }
+        }   
+
     export class Channel {
-      
-        public IsConnected: boolean;
+        IsConnected: boolean;
         listeners: Array < ThorIOClient.Listener > ;
+        promisedMessages: Array<PromisedMessage>;
         constructor(public alias: string, private ws: WebSocket) {
+            this.promisedMessages = new Array<PromisedMessage>();
             this.listeners = new Array < ThorIOClient.Listener > ();
             this.IsConnected = false;
+            this.On("___getProperty", (data:PropertyMessage) => {
+                  let prom = this.promisedMessages.filter( (pre:PromisedMessage) => {
+                        return pre.messageId === data.messageId; 
+                  })[0];
+                  prom.resolve(data.value);
+                  
+                  let index = this.promisedMessages.indexOf(prom);
+                  this.promisedMessages.splice(index,1);
+            });
         }
         Connect() {
-            this.ws.send(new ThorIOClient.Message("$connect_", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___connect", {}, this.alias));
             return this;
         };
         Close() {
-            this.ws.send(new ThorIOClient.Message("$close_", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___close", {}, this.alias));
             return this;
         };
         Subscribe(topic: string, callback: any) {
             this.On(topic, callback);
-            this.ws.send(new ThorIOClient.Message("subscribe", {
+            this.ws.send(new ThorIOClient.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
         Unsubscribe(topic: string) {
-            this.ws.send(new ThorIOClient.Message("unsubscribe", {
+            this.ws.send(new ThorIOClient.Message("___unsubscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -358,7 +384,7 @@
             return this;
         };
         private findListener(topic: string): Listener {
-            var listener = this.listeners.filter(
+            let listener = this.listeners.filter(
                 (pre: Listener) => {
                     return pre.topic === topic;
                 }
@@ -366,8 +392,7 @@
             return listener[0];
         }
         Off(topic: string) {
-
-            var index =
+            let index =
                 this.listeners.indexOf(this.findListener(topic));
             if (index >= 0) this.listeners.splice(index, 1);
             return this;
@@ -377,21 +402,31 @@
             return this;
         };
         SetProperty(propName: string, propValue: any, controller ? : string) {
-           
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
+        GetProperty(propName:string,controller ? : string):Promise<any>{
+            let propInfo = new PropertyMessage();
+            propInfo.name = propName;
+            let wrapper = new PromisedMessage(propInfo.messageId,()=> {});;
+            this.promisedMessages.push(wrapper);
+            let promise = new Promise((resolve,reject) =>{
+            wrapper.resolve = resolve;
+            });
+            this.Invoke("___getProperty",propInfo,controller || this.alias);
+            return promise;
+        }
         Dispatch(topic: string, data: any) {
-            if (topic === "$open_") {
+            if (topic === "___open") {
                 data = JSON.parse(data);
                 this.IsConnected = true;
                 this.OnOpen(data);
                 return;
-            } else if (topic === "$close_") {
+            } else if (topic === "___close") {
                 this.OnClose([JSON.parse(data)]);
                 this.IsConnected = false;
             } else {
-                var listener = this.findListener(topic);
+                let listener = this.findListener(topic);
                 if (listener) listener.fn(JSON.parse(data));
             }
         };
@@ -399,4 +434,7 @@
 
         OnClose(event: any) {};
     }
+
+      
+
 }

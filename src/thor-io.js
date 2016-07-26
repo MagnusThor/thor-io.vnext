@@ -133,10 +133,11 @@ var ThorIO;
     }());
     ThorIO.Engine = Engine;
     var Message = (function () {
-        function Message(topic, object, controller) {
+        function Message(topic, object, controller, id) {
             this.D = object;
             this.T = topic;
             this.C = controller;
+            this.id = id;
         }
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
@@ -194,11 +195,12 @@ var ThorIO;
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
                 if (!controller.canInvokeMethod(method))
-                    throw "method " + method + "cant be invoked.";
+                    throw "method " + method + " cant be invoked.";
                 if (typeof (controller[method]) === "function") {
                     controller[method].apply(controller, [data, controller.alias]);
                 }
                 else {
+                    // todo : refactor and use PropertyMessage ?
                     var prop = method;
                     var propValue = data;
                     if (typeof (controller[prop]) === typeof (propValue))
@@ -253,7 +255,7 @@ var ThorIO;
                     // hmm  fix this ... 
                     var controllerInstance = (new resolved(this));
                     this.addControllerInstance(controllerInstance);
-                    controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "$open_", controllerInstance.alias);
+                    controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();
                     return controllerInstance;
                 }
@@ -282,9 +284,9 @@ var ThorIO;
             this.alias = Reflect.getMetadata("alias", this.constructor);
         }
         Controller.prototype.canInvokeMethod = function (method) {
-            return global.Reflect.getMetadata("invokeable", this, method);
+            return Reflect.getMetadata("invokeable", this, method);
         };
-        // todo: refine ( would be happt to discuess with UlfBjo)
+        // todo: refine ( would be happy to discuess with UlfBjo)
         Controller.prototype.findOn = function (alias, predicate) {
             var connections = this.getConnections(alias).map(function (p) {
                 return p.getController(alias);
@@ -313,8 +315,8 @@ var ThorIO;
             return array.filter(predicate).map(selector);
         };
         Controller.prototype.invokeError = function (error) {
-            var msg = new Message("$error_", error, this.alias).toString();
-            this.invoke(error, "$error_", this.alias);
+            var msg = new Message("___error", error, this.alias).toString();
+            this.invoke(error, "___error", this.alias);
         };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
@@ -335,24 +337,6 @@ var ThorIO;
             var msg = new Message(topic, data, this.alias);
             if (this.client.ws)
                 this.client.ws.send(msg.toString());
-        };
-        ;
-        Controller.prototype.subscribe = function (subscription, topic, controller) {
-            if (this.hasSubscription(subscription.topic)) {
-                return;
-            }
-            this.subscriptions.push(subscription);
-            return subscription;
-        };
-        ;
-        Controller.prototype.unsubscribe = function (subscription) {
-            var index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
-            if (index >= 0) {
-                var result = this.subscriptions.splice(index, 1);
-                return true;
-            }
-            else
-                return false;
         };
         ;
         Controller.prototype.publish = function (data, topic, controller) {
@@ -383,27 +367,170 @@ var ThorIO;
             });
             return subscription[0];
         };
-        Controller.prototype.$connect_ = function () {
+        Controller.prototype.___connect = function () {
             // todo: remove this method        
         };
-        Controller.prototype.$close_ = function () {
-            this.client.removeController(this.alias);
-            this.invoke({}, "$close_", this.alias);
+        Controller.prototype.___getProperty = function (data) {
+            data.value = this[data.name];
+            this.invoke(data, "___getProperty", this.alias);
         };
+        Controller.prototype.___close = function () {
+            this.client.removeController(this.alias);
+            this.invoke({}, " ___close", this.alias);
+        };
+        Controller.prototype.___subscribe = function (subscription, topic, controller) {
+            if (this.hasSubscription(subscription.topic)) {
+                return;
+            }
+            this.subscriptions.push(subscription);
+            return subscription;
+        };
+        ;
+        Controller.prototype.___unsubscribe = function (subscription) {
+            var index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
+            if (index >= 0) {
+                var result = this.subscriptions.splice(index, 1);
+                return true;
+            }
+            else
+                return false;
+        };
+        ;
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', String)
+        ], Controller.prototype, "alias", void 0);
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', Array)
+        ], Controller.prototype, "subscriptions", void 0);
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', Connection)
+        ], Controller.prototype, "client", void 0);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Object)
+        ], Controller.prototype, "canInvokeMethod", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String, Function]), 
+            __metadata('design:returntype', Array)
+        ], Controller.prototype, "findOn", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Array)
+        ], Controller.prototype, "getConnections", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', []), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "onopen", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', []), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "onclose", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Array, Function, Function]), 
+            __metadata('design:returntype', Array)
+        ], Controller.prototype, "find", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Object]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "invokeError", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "invokeToAll", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Function, Object, String, String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "invokeTo", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "invoke", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "publish", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "publishToAll", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Boolean)
+        ], Controller.prototype, "hasSubscription", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Subscription)
+        ], Controller.prototype, "getSubscription", null);
         __decorate([
             CanInvoke(true), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', []), 
             __metadata('design:returntype', void 0)
-        ], Controller.prototype, "$connect_", null);
+        ], Controller.prototype, "___connect", null);
+        __decorate([
+            CanInvoke(true), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [PropertyMessage]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "___getProperty", null);
         __decorate([
             CanInvoke(true), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', []), 
             __metadata('design:returntype', void 0)
-        ], Controller.prototype, "$close_", null);
+        ], Controller.prototype, "___close", null);
+        __decorate([
+            CanInvoke(true), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Subscription, String, String]), 
+            __metadata('design:returntype', Subscription)
+        ], Controller.prototype, "___subscribe", null);
+        __decorate([
+            CanInvoke(true), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [Subscription]), 
+            __metadata('design:returntype', Boolean)
+        ], Controller.prototype, "___unsubscribe", null);
         return Controller;
     }());
     ThorIO.Controller = Controller;
+    var PropertyMessage = (function () {
+        function PropertyMessage() {
+            this.messageId = ThorIOClient.Utils.newGuid();
+        }
+        return PropertyMessage;
+    }());
+    ThorIO.PropertyMessage = PropertyMessage;
 })(ThorIO = exports.ThorIO || (exports.ThorIO = {}));
 //# sourceMappingURL=thor-io.js.map

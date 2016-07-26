@@ -9,7 +9,7 @@
     <hr>
     <h2>Messages</h2>
     <div id="chatMessages"></div>
-    <script src="/src/thor-io.client.js">
+    <script src="/src/client/thor-io.client.js">
     </script>
     <script>
 
@@ -30,7 +30,19 @@
                 {
                         age = parseInt(this.value);
                         chat.SetProperty("age",age);
+
+                        // set the age property to the number specified?
+                    
+                        // we also get the property value by callong get property
+                        chat.GetProperty("age").then(function(value){
+                             console.log("age property is -> ",value);
+                        });
+
+
                 });
+
+
+               
 
                 document.querySelector("#chat-message").addEventListener("keyup", function(evt)
                 {

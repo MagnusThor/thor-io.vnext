@@ -1,4 +1,8 @@
 import { ThorIO } from "../src/thor-io";
+export declare class DataSync extends ThorIO.Controller {
+    private Person;
+    constructor(client: ThorIO.Connection);
+}
 export declare class ExampleController extends ThorIO.Controller {
     alias: string;
     clientInfo: any;
