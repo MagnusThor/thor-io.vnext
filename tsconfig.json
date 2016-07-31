@@ -9,13 +9,15 @@
     "removeComments": false,
     "noImplicitAny": false,
     "declaration": true,
-    "outDir": "./js"
+    "outDir": "./dist"
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".vscode"
   ],
   "files": [
-   "./ts/thor-io.ts",
+   "./thor-io.ts",
+   "./thor-io.client.ts",
    "./index.ts",
    "./typings/index.d.ts"
   ]

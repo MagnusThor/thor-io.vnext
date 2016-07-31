@@ -42,6 +42,8 @@ export namespace ThorIO {
    
 
     export class Engine {
+
+
         private controllers: Array < Plugin<Controller> > 
         private connections: Array < Connection > ;
         private _engine: Engine;
@@ -57,6 +59,11 @@ export namespace ThorIO {
             this.createSealdControllers();
             
         }
+
+        instantiate<T>(ctor: { new(...args: any[]): T }): T {
+            return new ctor()
+        }
+
         private createSealdControllers(){
             this.controllers.forEach( (controller:Plugin<Controller>) => {
                 if(Reflect.getMetadata("seald",controller.instance)) {
@@ -199,6 +206,8 @@ export namespace ThorIO {
         private registerSealdController(){
             throw "not yet implemented";
         }
+
+
         locateController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre:Controller) => {
@@ -210,8 +219,11 @@ export namespace ThorIO {
                     let resolved = this.controllers.filter((resolve:Plugin<Controller>) => {
                         return resolve.alias === alias &&  Reflect.getMetadata("seald",resolve.instance) === false;
                     })[0].instance;
-                    // hmm  fix this ... 
+                    // hmm  fix this ...
+                  
                     let controllerInstance = <Controller>(new resolved(this));
+
+
                     this.addControllerInstance(controllerInstance);
                 
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
@@ -377,6 +389,8 @@ export namespace ThorIO {
             } else
                 return false;
         };
+        // TCreator: { new (): T; }
+       
      
     }
 

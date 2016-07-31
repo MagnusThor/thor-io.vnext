@@ -63,6 +63,9 @@ var ThorIO;
             });
             this.createSealdControllers();
         }
+        Engine.prototype.instantiate = function (ctor) {
+            return new ctor();
+        };
         Engine.prototype.createSealdControllers = function () {
             var _this = this;
             this.controllers.forEach(function (controller) {
@@ -214,7 +217,7 @@ var ThorIO;
                     var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-                    // hmm  fix this ... 
+                    // hmm  fix this ...
                     var controllerInstance = (new resolved(this));
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);

@@ -16,6 +16,9 @@ export declare namespace ThorIO {
         private connections;
         private _engine;
         constructor(controllers: Array<any>);
+        instantiate<T>(ctor: {
+            new (...args: any[]): T;
+        }): T;
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;
