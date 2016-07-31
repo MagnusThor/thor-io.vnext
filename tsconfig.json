@@ -7,10 +7,16 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "declaration": true,
+    "outDir": "./js"
   },
   "exclude": [
     "node_modules"
-    
+  ],
+  "files": [
+   "./ts/thor-io.ts",
+   "./index.ts",
+   "./typings/index.d.ts"
   ]
 }

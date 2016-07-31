@@ -1,4 +1,3 @@
-import net = require("net");
 import "reflect-metadata";
 
 export function CanInvoke(state:boolean) {
@@ -19,39 +18,6 @@ export function ControllerProperties(alias:string,seald?:boolean){
 }
 
 export namespace ThorIO {
-    // todo: Finalize this thing , that enables raw ( rudimentary clients ) to connect , 
-    // in other words non ws/wss speaking clients to connect..
-    export class EndPoint {
-        private serializeMessage(data: string): string {
-            let parts = data.split("|");
-            return new ThorIO.Message(parts[0], parts[2] || {}, parts[1]).toString();
-        };
-        private deserializeMessage(data: any): string {
-            let message = JSON.parse(data);
-            let parts = new Array < string > ();
-            parts.push = message.C;
-            parts.push = message.T;
-            parts.push = message.D;
-            return parts.join("|");
-        }
-        constructor(port: number, private fn ? : Function) {
-            let self = this;
-            let server: net.Server = net.createServer(function(socket: any) {
-                socket.onmessage = function(event: MessageEvent) {};
-                socket.send = function(data: ThorIO.Message) {
-                    socket.write(self.deserializeMessage(data));
-                }
-                socket.on("data", (data: any) => {
-                    let message = self.serializeMessage(data.toString());
-                    socket["onmessage"].apply(socket, [{
-                        data: message
-                    }]);
-                });
-                self.fn(socket);
-            });
-            server.listen(port);
-        }
-    }
 
     export class Utils {
         static newGuid() {
@@ -419,7 +385,7 @@ export namespace ThorIO {
          value:any;
          messageId: string
          constructor(){
-             this.messageId = ThorIOClient.Utils.newGuid();
+             this.messageId = ThorIO.Utils.newGuid();
          }
         }
 }

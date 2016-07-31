@@ -1,14 +1,9 @@
 {
   "name": "thor-io.vnext",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": "6.2.0"
-  },
+  "main": "js/index.js",
+  "typings":" js/index",
   "dependencies": {
     "core-js": "^2.4.0",
     "express": "^4.13.4",
