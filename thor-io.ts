@@ -12,7 +12,6 @@ export function CanSet(state:boolean){
 }
 export function ControllerProperties(alias:string,seald?:boolean){
         return function(target:Function){
-            Reflect.defineMetadata("alias",alias,target);
             Reflect.defineMetadata("seald",seald || false,target);
         }
 }
@@ -25,6 +24,11 @@ export namespace ThorIO {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        }
+        static getInstance<T>(context: any,...args: any[]) : T {
+            var instance = Object.create(context.prototype);
+            instance.constructor.apply(instance, args);
+            return <T> instance;
         }
 
     }
@@ -59,19 +63,13 @@ export namespace ThorIO {
             this.createSealdControllers();
             
         }
-
-        instantiate<T>(ctor: { new(...args: any[]): T }): T {
-            return new ctor()
-        }
-
         private createSealdControllers(){
             this.controllers.forEach( (controller:Plugin<Controller>) => {
                 if(Reflect.getMetadata("seald",controller.instance)) {
-                    <Controller>new controller.instance(new ThorIO.Connection(null,this.connections, this.controllers));
+                    ThorIO.Utils.getInstance(controller.instance,new ThorIO.Connection(null,this.connections, this.controllers))
                 }
             });
         }
-        
         removeConnection(ws: any, reason: number) {
             try {
                 let connection = this.connections.filter((pre: Connection) => {
@@ -208,6 +206,8 @@ export namespace ThorIO {
         }
 
 
+
+
         locateController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre:Controller) => {
@@ -220,8 +220,8 @@ export namespace ThorIO {
                         return resolve.alias === alias &&  Reflect.getMetadata("seald",resolve.instance) === false;
                     })[0].instance;
                     // hmm  fix this ...
-                  
-                    let controllerInstance = <Controller>(new resolved(this));
+
+                   let controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved,this);
 
 
                     this.addControllerInstance(controllerInstance);

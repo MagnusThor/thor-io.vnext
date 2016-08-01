@@ -5,6 +5,7 @@ export declare function ControllerProperties(alias: string, seald?: boolean): (t
 export declare namespace ThorIO {
     class Utils {
         static newGuid(): string;
+        static getInstance<T>(context: any, ...args: any[]): T;
     }
     class Plugin<T> {
         alias: string;
@@ -16,9 +17,6 @@ export declare namespace ThorIO {
         private connections;
         private _engine;
         constructor(controllers: Array<any>);
-        instantiate<T>(ctor: {
-            new (...args: any[]): T;
-        }): T;
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;

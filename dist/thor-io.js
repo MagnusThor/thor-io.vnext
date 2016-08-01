@@ -23,7 +23,6 @@ function CanSet(state) {
 exports.CanSet = CanSet;
 function ControllerProperties(alias, seald) {
     return function (target) {
-        Reflect.defineMetadata("alias", alias, target);
         Reflect.defineMetadata("seald", seald || false, target);
     };
 }
@@ -38,6 +37,15 @@ var ThorIO;
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        };
+        Utils.getInstance = function (context) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
+            var instance = Object.create(context.prototype);
+            instance.constructor.apply(instance, args);
+            return instance;
         };
         return Utils;
     }());
@@ -63,14 +71,11 @@ var ThorIO;
             });
             this.createSealdControllers();
         }
-        Engine.prototype.instantiate = function (ctor) {
-            return new ctor();
-        };
         Engine.prototype.createSealdControllers = function () {
             var _this = this;
             this.controllers.forEach(function (controller) {
                 if (Reflect.getMetadata("seald", controller.instance)) {
-                    new controller.instance(new ThorIO.Connection(null, _this.connections, _this.controllers));
+                    ThorIO.Utils.getInstance(controller.instance, new ThorIO.Connection(null, _this.connections, _this.controllers));
                 }
             });
         };
@@ -218,7 +223,7 @@ var ThorIO;
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
                     // hmm  fix this ...
-                    var controllerInstance = (new resolved(this));
+                    var controllerInstance = ThorIO.Utils.getInstance(resolved, this);
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();
