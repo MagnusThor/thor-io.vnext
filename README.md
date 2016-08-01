@@ -40,8 +40,8 @@ Below you find an example controller (typescript). This is the WebRTC broker use
 
 
     @ControllerProperties("broker",false)
-export class BrokerController  extends ThorIO.Controller
-{
+    export class BrokerController  extends ThorIO.Controller
+    {
     public Connections:Array<PeerConnection>;
     public Peer:PeerConnection;
     public localPeerId:string;
@@ -92,7 +92,8 @@ export class BrokerController  extends ThorIO.Controller
                 });
         return match;
     }
-}
+    }
+    }
 
 
 
