@@ -1,6 +1,3 @@
-
-
-
  namespace ThorIOClient {
 
     export class Message {

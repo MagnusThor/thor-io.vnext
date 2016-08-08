@@ -5,7 +5,7 @@ export declare function ControllerProperties(alias: string, seald?: boolean): (t
 export declare namespace ThorIO {
     class Utils {
         static newGuid(): string;
-        static getInstance<T>(context: any, ...args: any[]): T;
+        static getInstance<T>(obj: any, ...args: any[]): T;
     }
     class Plugin<T> {
         alias: string;

@@ -24,6 +24,7 @@ exports.CanSet = CanSet;
 function ControllerProperties(alias, seald) {
     return function (target) {
         Reflect.defineMetadata("seald", seald || false, target);
+        Reflect.defineMetadata("alias", alias, target);
     };
 }
 exports.ControllerProperties = ControllerProperties;
@@ -38,12 +39,12 @@ var ThorIO;
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         };
-        Utils.getInstance = function (context) {
+        Utils.getInstance = function (obj) {
             var args = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 args[_i - 1] = arguments[_i];
             }
-            var instance = Object.create(context.prototype);
+            var instance = Object.create(obj.prototype);
             instance.constructor.apply(instance, args);
             return instance;
         };
@@ -52,7 +53,6 @@ var ThorIO;
     ThorIO.Utils = Utils;
     var Plugin = (function () {
         function Plugin(controller) {
-            // todo , throw if metaData not exists...
             this.alias = Reflect.getMetadata("alias", controller);
             this.instance = controller;
         }
@@ -164,10 +164,12 @@ var ThorIO;
         }
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
+                var keys = Reflect.getMetadataKeys(controller);
+                console.log("keys", keys);
                 if (!controller.canInvokeMethod(method))
                     throw "method " + method + " cant be invoked.";
                 if (typeof (controller[method]) === "function") {
-                    controller[method].apply(controller, [data, controller.alias]);
+                    controller[method].apply(controller, [data, method, controller.alias]);
                 }
                 else {
                     // todo : refactor and use PropertyMessage ?
@@ -224,6 +226,8 @@ var ThorIO;
                     })[0].instance;
                     // hmm  fix this ...
                     var controllerInstance = ThorIO.Utils.getInstance(resolved, this);
+                    //   var controllerInstance = new resolved(this);
+                    console.log(controllerInstance["sendHello"]);
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();

@@ -13,6 +13,7 @@ export function CanSet(state:boolean){
 export function ControllerProperties(alias:string,seald?:boolean){
         return function(target:Function){
             Reflect.defineMetadata("seald",seald || false,target);
+            Reflect.defineMetadata("alias",alias,target);
         }
 }
 
@@ -25,8 +26,8 @@ export namespace ThorIO {
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
-        static getInstance<T>(context: any,...args: any[]) : T {
-            var instance = Object.create(context.prototype);
+        static getInstance<T>(obj: any,...args: any[]) : T {
+            var instance = Object.create(obj.prototype);
             instance.constructor.apply(instance, args);
             return <T> instance;
         }
@@ -37,7 +38,6 @@ export namespace ThorIO {
         public alias: string;
         public instance: T;
         constructor(controller:T) {
-            // todo , throw if metaData not exists...
             this.alias = Reflect.getMetadata("alias",controller)
             this.instance = controller;
         }
@@ -66,7 +66,7 @@ export namespace ThorIO {
         private createSealdControllers(){
             this.controllers.forEach( (controller:Plugin<Controller>) => {
                 if(Reflect.getMetadata("seald",controller.instance)) {
-                    ThorIO.Utils.getInstance(controller.instance,new ThorIO.Connection(null,this.connections, this.controllers))
+                    ThorIO.Utils.getInstance<Controller>(controller.instance,new ThorIO.Connection(null,this.connections, this.controllers))
                 }
             });
         }
@@ -143,10 +143,17 @@ export namespace ThorIO {
         public clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
+                
+                var keys= Reflect.getMetadataKeys(controller);
+
+                console.log("keys",keys);
+
                     if(!controller.canInvokeMethod(method)) 
                         throw "method " + method + " cant be invoked."
+
                     if (typeof(controller[method]) === "function"){
-                        controller[method].apply(controller, [data, controller.alias]);
+                        controller[method].apply(controller, [data,method, controller.alias]);
+                    
                 } else {
                     // todo : refactor and use PropertyMessage ?
                     let prop = method;
@@ -221,7 +228,15 @@ export namespace ThorIO {
                     })[0].instance;
                     // hmm  fix this ...
 
-                   let controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved,this);
+
+
+                 
+                 var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved,this);
+
+                 //   var controllerInstance = new resolved(this);
+
+                                        console.log(controllerInstance["sendHello"]);
+
 
 
                     this.addControllerInstance(controllerInstance);
