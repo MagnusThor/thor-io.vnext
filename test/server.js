@@ -5,10 +5,11 @@ app = express()
 var thorio = require("../dist/index.js").ThorIO
 
 var testController = require("../test/TestController.js")
+var defaultControllers = require("../dist/thor-io.controllers.js").ThorIOControllers
 
 var controllers = [
-
-  testController.TestController
+  testController.TestController,
+  defaultControllers.BrokerController 
 
 ]
 

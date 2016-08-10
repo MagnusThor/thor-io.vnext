@@ -143,14 +143,8 @@ export namespace ThorIO {
         public clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
-                
-                var keys= Reflect.getMetadataKeys(controller);
-
-                console.log("keys",keys);
-
                     if(!controller.canInvokeMethod(method)) 
-                        throw "method " + method + " cant be invoked."
-
+                        throw "method '" + method + "' cant be invoked."
                     if (typeof(controller[method]) === "function"){
                         controller[method].apply(controller, [data,method, controller.alias]);
                     
@@ -226,18 +220,7 @@ export namespace ThorIO {
                     let resolved = this.controllers.filter((resolve:Plugin<Controller>) => {
                         return resolve.alias === alias &&  Reflect.getMetadata("seald",resolve.instance) === false;
                     })[0].instance;
-                    // hmm  fix this ...
-
-
-
-                 
                  var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved,this);
-
-                 //   var controllerInstance = new resolved(this);
-
-                                        console.log(controllerInstance["sendHello"]);
-
-
 
                     this.addControllerInstance(controllerInstance);
                 

@@ -108,13 +108,11 @@ var ThorIOClient;
         ;
         WebRTC.prototype.onConnected = function (p) {
             var pc = this.getPeerConnection(p);
-            // todo: fire event
         };
         WebRTC.prototype.onDisconnected = function (p) {
             var pc = this.getPeerConnection(p);
             pc.close();
             this.removePeerConnection(p);
-            // todo: fire event
         };
         WebRTC.prototype.remoteStreamlost = function (streamId, peerId) { };
         WebRTC.prototype.removePeerConnection = function (id) {

@@ -135,7 +135,6 @@ var ThorIO;
         return Listener;
     }());
     ThorIO.Listener = Listener;
-    // todo: refactor this, implememt PI for a sticky session?
     var ClientInfo = (function () {
         function ClientInfo(ci, controller) {
             this.CI = ci;
@@ -150,10 +149,9 @@ var ThorIO;
             this.controllers = controllers;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
-            // todo: Ugly , fuzzy due to the "seald" controllers, find a way / workaround..
             if (ws) {
                 this.ws = ws;
-                this.ws["$connectionId"] = this.id; // todo: replace this
+                this.ws["$connectionId"] = this.id;
                 this.ws.onmessage = function (message) {
                     var json = JSON.parse(message.data);
                     var controller = _this.locateController(json.C);
@@ -164,15 +162,12 @@ var ThorIO;
         }
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
-                var keys = Reflect.getMetadataKeys(controller);
-                console.log("keys", keys);
                 if (!controller.canInvokeMethod(method))
-                    throw "method " + method + " cant be invoked.";
+                    throw "method '" + method + "' cant be invoked.";
                 if (typeof (controller[method]) === "function") {
                     controller[method].apply(controller, [data, method, controller.alias]);
                 }
                 else {
-                    // todo : refactor and use PropertyMessage ?
                     var prop = method;
                     var propValue = data;
                     if (typeof (controller[prop]) === typeof (propValue))
@@ -194,7 +189,6 @@ var ThorIO;
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         };
-        // todo: refactor and improve..
         Connection.prototype.getController = function (alias) {
             try {
                 var match = this.controllerInstances.filter(function (pre) {
@@ -224,10 +218,7 @@ var ThorIO;
                     var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-                    // hmm  fix this ...
                     var controllerInstance = ThorIO.Utils.getInstance(resolved, this);
-                    //   var controllerInstance = new resolved(this);
-                    console.log(controllerInstance["sendHello"]);
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -242,7 +233,6 @@ var ThorIO;
         return Connection;
     }());
     ThorIO.Connection = Connection;
-    // maybe use EventEmitters, a bit fuzzy ? Comments?? 
     var Subscription = (function () {
         function Subscription(topic, controller) {
             this.topic = topic;
@@ -260,14 +250,12 @@ var ThorIO;
         Controller.prototype.canInvokeMethod = function (method) {
             return Reflect.getMetadata("invokeable", this, method);
         };
-        // todo: refine ( would be happy to discuess with UlfBjo)
         Controller.prototype.findOn = function (alias, predicate) {
             var connections = this.getConnections(alias).map(function (p) {
                 return p.getController(alias);
             });
             return connections.filter(predicate);
         };
-        //todo: find better name...
         Controller.prototype.getConnections = function (alias) {
             var _this = this;
             if (!alias) {
@@ -342,7 +330,6 @@ var ThorIO;
             return subscription[0];
         };
         Controller.prototype.___connect = function () {
-            // todo: remove this method        
         };
         Controller.prototype.___getProperty = function (data) {
             data.value = this[data.name];

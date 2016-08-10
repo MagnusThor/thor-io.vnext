@@ -6,7 +6,7 @@
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "removeComments": false,
+    "removeComments": true,
     "noImplicitAny": false,
     "declaration": false,
     "outDir": "./dist"
@@ -19,6 +19,8 @@
    "./thor-io.ts",
    "./thor-io.client.ts",
    "./index.ts",
-   "./typings/index.d.ts"
+   "./typings/index.d.ts",
+   "./thor-io.controllers.ts"
+
   ]
 }
