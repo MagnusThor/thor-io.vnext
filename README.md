@@ -12,7 +12,7 @@ This version of thor-io, called vNext, represents the next generation of thor-io
 
 Install thor-io.vnext using NPM ( you will get Engine, Clients etc )
 
-    npm install https://github.com/MagnusThor/thor-io.vnext.git#npm-module
+    npm install thor-io.vnext
 
 ##Examples
 The first examples based on the source found in this repo are deployed on heroku. 
