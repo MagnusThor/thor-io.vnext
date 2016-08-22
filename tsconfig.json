@@ -8,19 +8,18 @@
     "experimentalDecorators": true,
     "removeComments": true,
     "noImplicitAny": false,
-    "declaration": false,
-    "outDir": "./dist"
+    "declaration": true,
+    "outDir": "."
   },
   "exclude": [
     "node_modules",
     ".vscode"
+   
   ],
   "files": [
    "./thor-io.ts",
    "./thor-io.client.ts",
    "./index.ts",
-   "./typings/index.d.ts",
-   "./thor-io.controllers.ts"
-
+   "./typings/index.d.ts"
   ]
 }

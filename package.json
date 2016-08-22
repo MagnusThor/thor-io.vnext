@@ -1,7 +1,7 @@
 {
   "name": "thor-io.vnext",
   "description": "thor-io.vnext represents the next generation of thor-io .Written i Typescript. thor-io.vnext is a fundament for realtime in general. raw sockets -> webrtc of what ever you need.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "main": "js/index.js",
   "typings":" js/index",
