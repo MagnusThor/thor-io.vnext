@@ -64,7 +64,7 @@ var ThorIOClient;
         }
         WebRTC.prototype.onCandidate = function (event) {
             var msg = JSON.parse(event.message);
-            var candidate = msg.icGetCandidate;
+            var candidate = msg.iceCandidate;
             var pc = this.getPeerConnection(event.sender);
             pc.addIceCandidate(new RTCIceCandidate({
                 sdpMLineIndex: candidate.label,

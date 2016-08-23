@@ -1,22 +1,22 @@
 {
-  "name": "thor-io.vnext",
-  "description": "thor-io.vnext represents the next generation of thor-io .Written i Typescript. thor-io.vnext is a fundament for realtime in general. raw sockets -> webrtc of what ever you need.",
-  "version": "1.0.3",
-  "license": "MIT",
-  "main": "js/index.js",
-  "typings":" js/index",
-  "repository" :
-  { "type" : "git"
-  , "url" : "https://github.com/MagnusThor/thor-io.vnext.git"
-  },
-  "dependencies": {
-    "core-js": "^2.4.0",
-    "express": "^4.13.4",
-    "express-ws": "^1.0.0",
-    "reflect-metadata": "^0.1.3"
-  },
-  "devDependencies": {
-    "typescript": "^1.8.10",
-    "typings": "^0.8.1"
-  }
+    "name": "thor-io.vnext",
+    "description": "thor-io.vnext represents the next generation of thor-io. Written i TypeScript. thor-io.vnext is a fundament for realtime in general. raw-sockets -> webrtc of what ever you need.",
+    "version": "1.0.4",
+    "license": "MIT",
+    "main": "index.js",
+    "typings": " typings/index",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/MagnusThor/thor-io.vnext.git"
+    },
+    "dependencies": {
+        "core-js": "^2.4.0",
+        "express": "^4.13.4",
+        "express-ws": "^1.0.0",
+        "reflect-metadata": "^0.1.3"
+    },
+    "devDependencies": {
+        "typescript": "^1.8.10",
+        "typings": "^1.0.4"
+    }
 }

@@ -73,11 +73,11 @@ export declare namespace ThorIO {
         onclose(): void;
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector?: (item: T) => U): U[];
         invokeError(error: any): void;
-        invokeToAll(data: any, topic: string, controller: string): void;
-        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): void;
-        invoke(data: any, topic: string, controller: string): void;
-        publish(data: any, topic: string, controller: string): void;
-        publishToAll(data: any, topic: string, controller: string): void;
+        invokeToAll(data: any, topic: string, controller: string): Controller;
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller;
+        invoke(data: any, topic: string, controller: string): Controller;
+        publish(data: any, topic: string, controller: string): Controller;
+        publishToAll(data: any, topic: string, controller: string): Controller;
         hasSubscription(topic: string): boolean;
         getSubscription(topic: string): Subscription;
         ___connect(): void;

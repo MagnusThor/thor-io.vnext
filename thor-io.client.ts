@@ -1,11 +1,11 @@
- namespace ThorIOClient {
+namespace ThorIOClient {
 
     export class Message {
 
-         T: string;
-         D: any;
-         C: string;
-         id:string;
+        T: string;
+        D: any;
+        C: string;
+        id: string;
         get JSON(): any {
             return {
                 T: this.T,
@@ -13,7 +13,7 @@
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string,id?:string) {
+        constructor(topic: string, object: any, controller: string, id?: string) {
             this.D = object;
             this.T = topic;
             this.C = controller;
@@ -33,23 +33,23 @@
     export class Connection {
         public id: string;
         public rtcPeerConnection: webkitRTCPeerConnection;
-        public streams: Array < any > ;
-        constructor(id:string,rtcPeerConnection:RTCPeerConnection) {
+        public streams: Array<any>;
+        constructor(id: string, rtcPeerConnection: RTCPeerConnection) {
             this.id = id;
-            this.rtcPeerConnection =rtcPeerConnection;
-            this.streams = new Array < any > ();
+            this.rtcPeerConnection = rtcPeerConnection;
+            this.streams = new Array<any>();
         }
     }
     export class WebRTC {
-        public Peers: Array <Connection> ;
+        public Peers: Array<Connection>;
         public Peer: RTCPeerConnection;
         public localPeerId: string;
-        public localSteams: Array < any > ;
-    
-        constructor(private brokerChannel: ThorIOClient.Channel,private rtcConfig:RTCConfiguration) {
-    
-            this.Peers = new Array < any > ();
-            this.localSteams = new Array < any > ();
+        public localSteams: Array<any>;
+
+        constructor(private brokerChannel: ThorIOClient.Channel, private rtcConfig: RTCConfiguration) {
+
+            this.Peers = new Array<any>();
+            this.localSteams = new Array<any>();
 
             brokerChannel.On("contextSignal", (signal: any) => {
                 let msg = JSON.parse(signal.message);
@@ -70,7 +70,7 @@
         }
         private onCandidate(event) {
             let msg = JSON.parse(event.message);
-            let candidate = msg.icGetCandidate;
+            let candidate = msg.iceCandidate;
             let pc = this.getPeerConnection(event.sender);
 
             pc.addIceCandidate(new RTCIceCandidate({
@@ -85,13 +85,13 @@
             pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message))).then((p) => {
             });
         }
-        
+
         private onOffer(event) {
             let pc = this.getPeerConnection(event.sender);
             this.localSteams.forEach((stream) => {
                 pc.addStream(stream);
             });
-          pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
+            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
             pc.createAnswer((description) => {
                 pc.setLocalDescription(description);
                 let answer = {
@@ -100,15 +100,15 @@
                     message: JSON.stringify(description)
                 };
                 this.brokerChannel.Invoke("contextSignal", answer, "broker");
-              
+
             }, (error) => {
-        
+
             }, {
-                mandatory: {
-                    "offerToReceiveAudio": true,
-                    "offerToReceiveVideo": true
-                }
-            });
+                    mandatory: {
+                        "offerToReceiveAudio": true,
+                        "offerToReceiveVideo": true
+                    }
+                });
 
         }
 
@@ -116,7 +116,7 @@
             this.localSteams.push(stream);
             return this;
         };
-   
+
         private onConnected(p: any) {
             let pc = this.getPeerConnection(p);
             // todo: fire event
@@ -129,14 +129,14 @@
             // todo: fire event
         }
 
-        remoteStreamlost(streamId:string,peerId:string){}
+        remoteStreamlost(streamId: string, peerId: string) { }
 
         private removePeerConnection(id: string) {
             let connection = this.Peers.filter((conn: Connection) => {
                 return conn.id === id;
             })[0];
-            connection.streams.forEach( (stream:MediaStream) => {
-                    this.remoteStreamlost(stream.id,connection.id)
+            connection.streams.forEach((stream: MediaStream) => {
+                this.remoteStreamlost(stream.id, connection.id)
             });
             let index = this.Peers.indexOf(connection);
             if (index >= 0)
@@ -147,7 +147,7 @@
 
         private createPeerConnection(id: string): RTCPeerConnection {
             let rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
-            rtcPeerConnection.onsignalingstatechange = (state) => {};
+            rtcPeerConnection.onsignalingstatechange = (state) => { };
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
                 if (event.candidate) {
@@ -181,13 +181,13 @@
             };
             return rtcPeerConnection;
         }
-        public onRemoteStream(stream: MediaStream, connection: Connection) {};
+        public onRemoteStream(stream: MediaStream, connection: Connection) { };
         private getPeerConnection(id: string): webkitRTCPeerConnection {
             let match = this.Peers.filter((connection: Connection) => {
                 return connection.id === id;
             });
             if (match.length === 0) {
-                let pc = new Connection(id,this.createPeerConnection(id));
+                let pc = new Connection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
 
                 return pc.rtcPeerConnection;
@@ -214,22 +214,22 @@
                         offer, "broker"
                     );
 
-                }, function(err) {
-                  
+                }, function (err) {
+
                 });
             }, (err) => {
-              
+
             }, {
-                mandatory: {
-                    "offerToReceiveAudio": true,
-                    "offerToReceiveVideo": true
-                }
-            });
+                    mandatory: {
+                        "offerToReceiveAudio": true,
+                        "offerToReceiveVideo": true
+                    }
+                });
             return peerConnection;
         }
-        connect(peerConnections: Array < PeerConnection > ) {
+        connect(peerConnections: Array<PeerConnection>) {
             peerConnections.forEach((peer: PeerConnection) => {
-                let pc = new Connection(peer.peerId,this.createOffer(peer));
+                let pc = new Connection(peer.peerId, this.createOffer(peer));
                 this.Peers.push(pc);
             });
         }
@@ -241,11 +241,11 @@
             return `?${Object.keys(obj).map(key => (encodeURIComponent(key) + "=" +
                 encodeURIComponent(obj[key]))).join("&")}`;
         }
-        private channels: Array < ThorIOClient.Channel > ;
+        private channels: Array<ThorIOClient.Channel>;
         public IsConnected: boolean;
-        constructor(private url: string, controllers: Array < string > , params?: any) {
+        constructor(private url: string, controllers: Array<string>, params?: any) {
             let self = this;
-            this.channels = new Array < ThorIOClient.Channel > ();
+            this.channels = new Array<ThorIOClient.Channel>();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.onmessage = event => {
                 let message = JSON.parse(event.data);
@@ -279,16 +279,16 @@
         RemoveChannel() {
             throw "Not yet implemented";
         }
-        OnOpen(event: any) {};
+        OnOpen(event: any) { };
         OnError(error: any) {
             console.error(error);
         }
         OnClose(event: any) {
             console.error(event);
         }
-        
+
     }
- 
+
     export class Listener {
         fn: Function;
         topic: string;
@@ -309,42 +309,41 @@
 
     }
 
-    export class PromisedMessage
-    {
-        resolve:Function;
-        messageId:string;
-        constructor(id:string,resolve:Function){
+    export class PromisedMessage {
+        resolve: Function;
+        messageId: string;
+        constructor(id: string, resolve: Function) {
             this.messageId = id;
             this.resolve = resolve;
 
         }
     }
 
-     export class PropertyMessage  {
-         name:string;
-         value:any;
-         messageId: string
-         constructor(){
-             this.messageId = ThorIOClient.Utils.newGuid();
-         }
-        }   
+    export class PropertyMessage {
+        name: string;
+        value: any;
+        messageId: string
+        constructor() {
+            this.messageId = ThorIOClient.Utils.newGuid();
+        }
+    }
 
     export class Channel {
         IsConnected: boolean;
-        listeners: Array < ThorIOClient.Listener > ;
+        listeners: Array<ThorIOClient.Listener>;
         promisedMessages: Array<PromisedMessage>;
         constructor(public alias: string, private ws: WebSocket) {
             this.promisedMessages = new Array<PromisedMessage>();
-            this.listeners = new Array < ThorIOClient.Listener > ();
+            this.listeners = new Array<ThorIOClient.Listener>();
             this.IsConnected = false;
-            this.On("___getProperty", (data:PropertyMessage) => {
-                  let prom = this.promisedMessages.filter( (pre:PromisedMessage) => {
-                        return pre.messageId === data.messageId; 
-                  })[0];
-                  prom.resolve(data.value);
-                  
-                  let index = this.promisedMessages.indexOf(prom);
-                  this.promisedMessages.splice(index,1);
+            this.On("___getProperty", (data: PropertyMessage) => {
+                let prom = this.promisedMessages.filter((pre: PromisedMessage) => {
+                    return pre.messageId === data.messageId;
+                })[0];
+                prom.resolve(data.value);
+
+                let index = this.promisedMessages.indexOf(prom);
+                this.promisedMessages.splice(index, 1);
             });
         }
         Connect() {
@@ -388,23 +387,23 @@
             if (index >= 0) this.listeners.splice(index, 1);
             return this;
         };
-        Invoke(topic: string, d: any, c ? : string) {
+        Invoke(topic: string, d: any, c?: string) {
             this.ws.send(new ThorIOClient.Message(topic, d, c || this.alias));
             return this;
         };
-        SetProperty(propName: string, propValue: any, controller ? : string) {
+        SetProperty(propName: string, propValue: any, controller?: string) {
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
-        GetProperty(propName:string,controller ? : string):Promise<any>{
+        GetProperty(propName: string, controller?: string): Promise<any> {
             let propInfo = new PropertyMessage();
             propInfo.name = propName;
-            let wrapper = new PromisedMessage(propInfo.messageId,()=> {});;
+            let wrapper = new PromisedMessage(propInfo.messageId, () => { });;
             this.promisedMessages.push(wrapper);
-            let promise = new Promise((resolve,reject) =>{
-            wrapper.resolve = resolve;
+            let promise = new Promise((resolve, reject) => {
+                wrapper.resolve = resolve;
             });
-            this.Invoke("___getProperty",propInfo,controller || this.alias);
+            this.Invoke("___getProperty", propInfo, controller || this.alias);
             return promise;
         }
         Dispatch(topic: string, data: any) {
@@ -421,10 +420,10 @@
                 if (listener) listener.fn(JSON.parse(data));
             }
         };
-        OnOpen(event: any) {};
-        OnClose(event: any) {};
+        OnOpen(event: any) { };
+        OnClose(event: any) { };
     }
 
-      
+
 
 }

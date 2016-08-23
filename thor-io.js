@@ -202,6 +202,7 @@ var ThorIO;
         };
         Connection.prototype.addControllerInstance = function (controller) {
             this.controllerInstances.push(controller);
+            return controller;
         };
         Connection.prototype.registerSealdController = function () {
             throw "not yet implemented";
@@ -282,9 +283,11 @@ var ThorIO;
         };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
+            ;
             this.getConnections().forEach(function (connection) {
                 connection.getController(controller).invoke(data, topic, controller);
             });
+            return this;
         };
         ;
         Controller.prototype.invokeTo = function (predicate, data, topic, controller) {
@@ -293,18 +296,20 @@ var ThorIO;
             connections.forEach(function (controller) {
                 controller.invoke(data, topic, _this.alias);
             });
+            return this;
         };
         ;
         Controller.prototype.invoke = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias);
             if (this.client.ws)
                 this.client.ws.send(msg.toString());
+            return this;
         };
         ;
         Controller.prototype.publish = function (data, topic, controller) {
             if (!this.hasSubscription(topic))
                 return;
-            this.invoke(data, topic, this.alias);
+            return this.invoke(data, topic, this.alias);
         };
         ;
         Controller.prototype.publishToAll = function (data, topic, controller) {
@@ -316,6 +321,7 @@ var ThorIO;
                     connection.ws.send(msg.toString());
                 }
             });
+            return this;
         };
         Controller.prototype.hasSubscription = function (topic) {
             var p = this.subscriptions.filter(function (pre) {
@@ -415,31 +421,31 @@ var ThorIO;
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeToAll", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Function, Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeTo", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invoke", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "publish", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "publishToAll", null);
         __decorate([
             CanInvoke(false), 
