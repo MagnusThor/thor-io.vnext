@@ -74,7 +74,7 @@
         }
         private onCandidate(event) {
             let msg = JSON.parse(event.message);
-            let candidate = msg.icGetCandidate;
+            let candidate = msg.iceCandidate;
             let pc = this.getPeerConnection(event.sender);
 
             pc.addIceCandidate(new RTCIceCandidate({
