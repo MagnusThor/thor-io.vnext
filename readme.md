@@ -15,9 +15,11 @@ Install thor-io.vnext using NPM ( you will get Engine, Clients etc )
     npm install thor-io.vnext
 
 ##Examples
-The first examples based on the source found in this repo are deployed on heroku. See de "dev" branch test & examples.
+The first examples based on the source found in this repo are deployed on heroku. See de "dev" branch for test & examples.
 
- 
+###AngularJS2
+
+In this repo https://github.com/MagnusThor/thor-io.vnext.ng2.boilerplate you will find a angular2 example.  The example is a 1-n videoconference ( kind of ike the one mentioned below)
 
 ###Simple chat levering state-full controllers
 
