@@ -344,6 +344,19 @@ export namespace ThorIO {
             return !(p.length === 0);
         }
         @CanInvoke(false)
+        public addSubscription(topic:string): Subscription
+        {
+            let subscription = new Subscription(topic,this.alias);
+            return this.___subscribe(subscription,topic,this.alias);
+        }
+
+        @CanInvoke(false)
+        public removeSubscription(topic:string)
+        {
+            return this.___unsubscribe(this.getSubscription(topic));
+        }
+         
+        @CanInvoke(false)
         public getSubscription(topic: string): Subscription {
             let subscription = this.subscriptions.filter(
                 (pre: Subscription) => {
@@ -376,7 +389,9 @@ export namespace ThorIO {
         };
         @CanInvoke(true)
         ___unsubscribe(subscription: Subscription): boolean {
+
             let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
+
             if (index >= 0) {
                 let result = this.subscriptions.splice(index, 1);
                 return true;
