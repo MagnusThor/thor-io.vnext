@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var net = require("net");
 require("reflect-metadata");
 function CanInvoke(state) {
     return function (target, propertyKey, descriptor) {
@@ -24,50 +23,13 @@ function CanSet(state) {
 exports.CanSet = CanSet;
 function ControllerProperties(alias, seald) {
     return function (target) {
-        Reflect.defineMetadata("alias", alias, target);
         Reflect.defineMetadata("seald", seald || false, target);
+        Reflect.defineMetadata("alias", alias, target);
     };
 }
 exports.ControllerProperties = ControllerProperties;
 var ThorIO;
 (function (ThorIO) {
-    // todo: Finalize this thing , that enables raw ( rudimentary clients ) to connect , 
-    // in other words non ws/wss speaking clients to connect..
-    var EndPoint = (function () {
-        function EndPoint(port, fn) {
-            this.fn = fn;
-            var self = this;
-            var server = net.createServer(function (socket) {
-                socket.onmessage = function (event) { };
-                socket.send = function (data) {
-                    socket.write(self.deserializeMessage(data));
-                };
-                socket.on("data", function (data) {
-                    var message = self.serializeMessage(data.toString());
-                    socket["onmessage"].apply(socket, [{
-                            data: message
-                        }]);
-                });
-                self.fn(socket);
-            });
-            server.listen(port);
-        }
-        EndPoint.prototype.serializeMessage = function (data) {
-            var parts = data.split("|");
-            return new ThorIO.Message(parts[0], parts[2] || {}, parts[1]).toString();
-        };
-        ;
-        EndPoint.prototype.deserializeMessage = function (data) {
-            var message = JSON.parse(data);
-            var parts = new Array();
-            parts.push = message.C;
-            parts.push = message.T;
-            parts.push = message.D;
-            return parts.join("|");
-        };
-        return EndPoint;
-    }());
-    ThorIO.EndPoint = EndPoint;
     var Utils = (function () {
         function Utils() {
         }
@@ -77,12 +39,20 @@ var ThorIO;
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         };
+        Utils.getInstance = function (obj) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
+            var instance = Object.create(obj.prototype);
+            instance.constructor.apply(instance, args);
+            return instance;
+        };
         return Utils;
     }());
     ThorIO.Utils = Utils;
     var Plugin = (function () {
         function Plugin(controller) {
-            // todo , throw if metaData not exists...
             this.alias = Reflect.getMetadata("alias", controller);
             this.instance = controller;
         }
@@ -105,7 +75,7 @@ var ThorIO;
             var _this = this;
             this.controllers.forEach(function (controller) {
                 if (Reflect.getMetadata("seald", controller.instance)) {
-                    new controller.instance(new ThorIO.Connection(null, _this.connections, _this.controllers));
+                    ThorIO.Utils.getInstance(controller.instance, new ThorIO.Connection(null, _this.connections, _this.controllers));
                 }
             });
         };
@@ -180,10 +150,9 @@ var ThorIO;
             this.controllers = controllers;
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
-            // todo: Ugly , fuzzy due to the "seald" controllers, find a way / workaround..
             if (ws) {
                 this.ws = ws;
-                this.ws["$connectionId"] = this.id; // todo: replace this
+                this.ws["$connectionId"] = this.id; // todo: replace 
                 this.ws.onmessage = function (message) {
                     var json = JSON.parse(message.data);
                     var controller = _this.locateController(json.C);
@@ -195,9 +164,9 @@ var ThorIO;
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
                 if (!controller.canInvokeMethod(method))
-                    throw "method " + method + " cant be invoked.";
+                    throw "method '" + method + "' cant be invoked.";
                 if (typeof (controller[method]) === "function") {
-                    controller[method].apply(controller, [data, controller.alias]);
+                    controller[method].apply(controller, [data, method, controller.alias]);
                 }
                 else {
                     // todo : refactor and use PropertyMessage ?
@@ -236,6 +205,7 @@ var ThorIO;
         };
         Connection.prototype.addControllerInstance = function (controller) {
             this.controllerInstances.push(controller);
+            return controller;
         };
         Connection.prototype.registerSealdController = function () {
             throw "not yet implemented";
@@ -252,8 +222,7 @@ var ThorIO;
                     var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-                    // hmm  fix this ... 
-                    var controllerInstance = (new resolved(this));
+                    var controllerInstance = ThorIO.Utils.getInstance(resolved, this);
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
                     controllerInstance.onopen();
@@ -320,9 +289,11 @@ var ThorIO;
         };
         Controller.prototype.invokeToAll = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias).toString();
+            ;
             this.getConnections().forEach(function (connection) {
                 connection.getController(controller).invoke(data, topic, controller);
             });
+            return this;
         };
         ;
         Controller.prototype.invokeTo = function (predicate, data, topic, controller) {
@@ -331,18 +302,20 @@ var ThorIO;
             connections.forEach(function (controller) {
                 controller.invoke(data, topic, _this.alias);
             });
+            return this;
         };
         ;
         Controller.prototype.invoke = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias);
             if (this.client.ws)
                 this.client.ws.send(msg.toString());
+            return this;
         };
         ;
         Controller.prototype.publish = function (data, topic, controller) {
             if (!this.hasSubscription(topic))
                 return;
-            this.invoke(data, topic, this.alias);
+            return this.invoke(data, topic, this.alias);
         };
         ;
         Controller.prototype.publishToAll = function (data, topic, controller) {
@@ -354,12 +327,20 @@ var ThorIO;
                     connection.ws.send(msg.toString());
                 }
             });
+            return this;
         };
         Controller.prototype.hasSubscription = function (topic) {
             var p = this.subscriptions.filter(function (pre) {
                 return pre.topic === topic;
             });
             return !(p.length === 0);
+        };
+        Controller.prototype.addSubscription = function (topic) {
+            var subscription = new Subscription(topic, this.alias);
+            return this.___subscribe(subscription, topic, this.alias);
+        };
+        Controller.prototype.removeSubscription = function (topic) {
+            return this.___unsubscribe(this.getSubscription(topic));
         };
         Controller.prototype.getSubscription = function (topic) {
             var subscription = this.subscriptions.filter(function (pre) {
@@ -454,31 +435,31 @@ var ThorIO;
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeToAll", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Function, Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeTo", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "invoke", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "publish", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
             __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', void 0)
+            __metadata('design:returntype', Controller)
         ], Controller.prototype, "publishToAll", null);
         __decorate([
             CanInvoke(false), 
@@ -486,6 +467,18 @@ var ThorIO;
             __metadata('design:paramtypes', [String]), 
             __metadata('design:returntype', Boolean)
         ], Controller.prototype, "hasSubscription", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Subscription)
+        ], Controller.prototype, "addSubscription", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "removeSubscription", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
@@ -527,7 +520,7 @@ var ThorIO;
     ThorIO.Controller = Controller;
     var PropertyMessage = (function () {
         function PropertyMessage() {
-            this.messageId = ThorIOClient.Utils.newGuid();
+            this.messageId = ThorIO.Utils.newGuid();
         }
         return PropertyMessage;
     }());
