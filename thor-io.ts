@@ -10,10 +10,12 @@ export function CanSet(state: boolean) {
         Reflect.defineMetadata("invokeable", state, target, propertyKey);
     }
 }
-export function ControllerProperties(alias: string, seald?: boolean) {
+export function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number) {
     return function (target: Function) {
         Reflect.defineMetadata("seald", seald || false, target);
         Reflect.defineMetadata("alias", alias, target);
+        Reflect.defineMetadata("heartbeatInterval", heartbeatInterval || -1, target)
+
     }
 }
 
@@ -90,6 +92,8 @@ export namespace ThorIO {
                 this.removeConnection(ws, reason);
             });
 
+
+
         }
     }
 
@@ -136,8 +140,10 @@ export namespace ThorIO {
         }
     }
     export class Connection {
+
+        public pingPongInterval: number;
         public id: string;
-        public ws: WebSocket;
+        public ws: any;
         public controllerInstances: Array<ThorIO.Controller>;
         public connections: Array<ThorIO.Connection>;
         public clientInfo: ThorIO.ClientInfo;
@@ -159,18 +165,21 @@ export namespace ThorIO {
                 controller.invokeError(ex);
             }
         }
-        constructor(ws: WebSocket, connections: Array<Connection>, private controllers: Array<Plugin<Controller>>) {
+        constructor(ws: any, connections: Array<Connection>, private controllers: Array<Plugin<Controller>>) {
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
             if (ws) {
                 this.ws = ws;
                 this.ws["$connectionId"] = this.id; // todo: replace 
-                this.ws.onmessage = (message: MessageEvent) => {
+                this.ws.addEventListener("message", (message: MessageEvent) => {
                     let json = JSON.parse(message.data);
                     let controller = this.locateController(json.C);
                     this.methodInvoker(controller, json.T, JSON.parse(json.D));
-                };
+                });
+
+
             }
+
             this.controllerInstances = new Array<Controller>();
         }
         hasController(alias: string): boolean {
@@ -195,7 +204,7 @@ export namespace ThorIO {
                 return null
             }
         }
-        private addControllerInstance(controller: Controller):Controller{
+        private addControllerInstance(controller: Controller): Controller {
             this.controllerInstances.push(controller);
             return controller;
         }
@@ -246,18 +255,39 @@ export namespace ThorIO {
         @CanSet(false)
         public subscriptions: Array<Subscription>;
         @CanSet(false)
-        public client: Connection
+        public connection: Connection
+        @CanSet(false)
+        private lastPong: Date;
+        @CanSet(false)
+        private lastPing: Date;
+        @CanSet(false)
+        private heartbeatInterval: number;
 
         constructor(client: Connection) {
-            this.client = client;
+            this.connection = client;
             this.subscriptions = new Array<Subscription>();
             this.alias = Reflect.getMetadata("alias", this.constructor);
+
+            this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
+
+            if (this.heartbeatInterval >= 1000) this.enableHeartbeat();
+
+        }
+        @CanInvoke(false)
+        private enableHeartbeat() {
+            this.connection.ws.addEventListener("pong", () => {
+                this.lastPong = new Date();
+            });
+            let interval = setInterval(() => {
+                this.lastPing = new Date();
+                if (this.connection.ws.readyState === 1)
+                    this.connection.ws.ping();
+            }, this.heartbeatInterval);
         }
         @CanInvoke(false)
         public canInvokeMethod(method: string): any {
             return Reflect.getMetadata("invokeable", this, method);
         }
-        // todo: refine ( would be happy to discuess with UlfBjo)
         @CanInvoke(false)
         findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any> {
             let connections = this.getConnections(alias).map((p: Connection) => {
@@ -265,14 +295,13 @@ export namespace ThorIO {
             });
             return connections.filter(predicate);
         }
-        //todo: find better name...
         @CanInvoke(false)
         getConnections(alias?: string): Array<Connection> {
             if (!alias) {
-                return this.client.connections;
+                return this.connection.connections;
             }
             else {
-                return this.client.connections.map((conn: Connection) => {
+                return this.connection.connections.map((conn: Connection) => {
                     if (conn.hasController(this.alias))
                         return conn;
                 })
@@ -294,7 +323,7 @@ export namespace ThorIO {
             this.invoke(error, "___error", this.alias);
         }
         @CanInvoke(false)
-        invokeToAll(data: any, topic: string, controller: string):Controller {
+        invokeToAll(data: any, topic: string, controller: string): Controller {
             let msg = new Message(topic, data, this.alias).toString();;
             this.getConnections().forEach((connection: Connection) => {
                 connection.getController(controller).invoke(data, topic, controller);
@@ -303,7 +332,7 @@ export namespace ThorIO {
             return this;
         };
         @CanInvoke(false)
-        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string) :Controller{
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller {
             let connections = this.findOn(controller, predicate);
             connections.forEach((controller: Controller) => {
                 controller.invoke(data, topic, this.alias);
@@ -311,20 +340,20 @@ export namespace ThorIO {
             return this;
         };
         @CanInvoke(false)
-        invoke(data: any, topic: string, controller: string):Controller {
+        invoke(data: any, topic: string, controller: string): Controller {
             let msg = new Message(topic, data, this.alias);
-            if (this.client.ws)
-                this.client.ws.send(msg.toString());
+            if (this.connection.ws)
+                this.connection.ws.send(msg.toString());
             return this;
         };
         @CanInvoke(false)
-        publish(data: any, topic: string, controller: string) :Controller {
+        publish(data: any, topic: string, controller: string): Controller {
             if (!this.hasSubscription(topic)) return;
             return this.invoke(data, topic, this.alias);
-           
+
         };
         @CanInvoke(false)
-        publishToAll(data: any, topic: string, controller: string):Controller {
+        publishToAll(data: any, topic: string, controller: string): Controller {
             let msg = new Message(topic, data, this.alias);
             this.getConnections().forEach((connection: Connection) => {
                 let controller = connection.getController(this.alias);
@@ -343,6 +372,17 @@ export namespace ThorIO {
             );
             return !(p.length === 0);
         }
+        @CanInvoke(false)
+        public addSubscription(topic: string): Subscription {
+            let subscription = new Subscription(topic, this.alias);
+            return this.___subscribe(subscription, topic, this.alias);
+        }
+
+        @CanInvoke(false)
+        public removeSubscription(topic: string) {
+            return this.___unsubscribe(this.getSubscription(topic));
+        }
+
         @CanInvoke(false)
         public getSubscription(topic: string): Subscription {
             let subscription = this.subscriptions.filter(
@@ -363,7 +403,7 @@ export namespace ThorIO {
         }
         @CanInvoke(true)
         ___close() {
-            this.client.removeController(this.alias);
+            this.connection.removeController(this.alias);
             this.invoke({}, " ___close", this.alias);
         }
         @CanInvoke(true)
@@ -377,6 +417,7 @@ export namespace ThorIO {
         @CanInvoke(true)
         ___unsubscribe(subscription: Subscription): boolean {
             let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
+
             if (index >= 0) {
                 let result = this.subscriptions.splice(index, 1);
                 return true;
@@ -394,8 +435,3 @@ export namespace ThorIO {
         }
     }
 }
-
-
-
-
-

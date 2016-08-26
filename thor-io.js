@@ -21,10 +21,11 @@ function CanSet(state) {
     };
 }
 exports.CanSet = CanSet;
-function ControllerProperties(alias, seald) {
+function ControllerProperties(alias, seald, heartbeatInterval) {
     return function (target) {
         Reflect.defineMetadata("seald", seald || false, target);
         Reflect.defineMetadata("alias", alias, target);
+        Reflect.defineMetadata("heartbeatInterval", heartbeatInterval || -1, target);
     };
 }
 exports.ControllerProperties = ControllerProperties;
@@ -152,11 +153,11 @@ var ThorIO;
             if (ws) {
                 this.ws = ws;
                 this.ws["$connectionId"] = this.id;
-                this.ws.onmessage = function (message) {
+                this.ws.addEventListener("message", function (message) {
                     var json = JSON.parse(message.data);
                     var controller = _this.locateController(json.C);
                     _this.methodInvoker(controller, json.T, JSON.parse(json.D));
-                };
+                });
             }
             this.controllerInstances = new Array();
         }
@@ -244,10 +245,24 @@ var ThorIO;
     ThorIO.Subscription = Subscription;
     var Controller = (function () {
         function Controller(client) {
-            this.client = client;
+            this.connection = client;
             this.subscriptions = new Array();
             this.alias = Reflect.getMetadata("alias", this.constructor);
+            this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
+            if (this.heartbeatInterval >= 1000)
+                this.enableHeartbeat();
         }
+        Controller.prototype.enableHeartbeat = function () {
+            var _this = this;
+            this.connection.ws.addEventListener("pong", function () {
+                _this.lastPong = new Date();
+            });
+            var interval = setInterval(function () {
+                _this.lastPing = new Date();
+                if (_this.connection.ws.readyState === 1)
+                    _this.connection.ws.ping();
+            }, this.heartbeatInterval);
+        };
         Controller.prototype.canInvokeMethod = function (method) {
             return Reflect.getMetadata("invokeable", this, method);
         };
@@ -260,10 +275,10 @@ var ThorIO;
         Controller.prototype.getConnections = function (alias) {
             var _this = this;
             if (!alias) {
-                return this.client.connections;
+                return this.connection.connections;
             }
             else {
-                return this.client.connections.map(function (conn) {
+                return this.connection.connections.map(function (conn) {
                     if (conn.hasController(_this.alias))
                         return conn;
                 });
@@ -301,8 +316,8 @@ var ThorIO;
         ;
         Controller.prototype.invoke = function (data, topic, controller) {
             var msg = new Message(topic, data, this.alias);
-            if (this.client.ws)
-                this.client.ws.send(msg.toString());
+            if (this.connection.ws)
+                this.connection.ws.send(msg.toString());
             return this;
         };
         ;
@@ -329,6 +344,13 @@ var ThorIO;
             });
             return !(p.length === 0);
         };
+        Controller.prototype.addSubscription = function (topic) {
+            var subscription = new Subscription(topic, this.alias);
+            return this.___subscribe(subscription, topic, this.alias);
+        };
+        Controller.prototype.removeSubscription = function (topic) {
+            return this.___unsubscribe(this.getSubscription(topic));
+        };
         Controller.prototype.getSubscription = function (topic) {
             var subscription = this.subscriptions.filter(function (pre) {
                 return pre.topic === topic;
@@ -342,7 +364,7 @@ var ThorIO;
             this.invoke(data, "___getProperty", this.alias);
         };
         Controller.prototype.___close = function () {
-            this.client.removeController(this.alias);
+            this.connection.removeController(this.alias);
             this.invoke({}, " ___close", this.alias);
         };
         Controller.prototype.___subscribe = function (subscription, topic, controller) {
@@ -374,7 +396,25 @@ var ThorIO;
         __decorate([
             CanSet(false), 
             __metadata('design:type', Connection)
-        ], Controller.prototype, "client", void 0);
+        ], Controller.prototype, "connection", void 0);
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', Date)
+        ], Controller.prototype, "lastPong", void 0);
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', Date)
+        ], Controller.prototype, "lastPing", void 0);
+        __decorate([
+            CanSet(false), 
+            __metadata('design:type', Number)
+        ], Controller.prototype, "heartbeatInterval", void 0);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', []), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "enableHeartbeat", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
@@ -453,6 +493,18 @@ var ThorIO;
             __metadata('design:paramtypes', [String]), 
             __metadata('design:returntype', Boolean)
         ], Controller.prototype, "hasSubscription", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', Subscription)
+        ], Controller.prototype, "addSubscription", null);
+        __decorate([
+            CanInvoke(false), 
+            __metadata('design:type', Function), 
+            __metadata('design:paramtypes', [String]), 
+            __metadata('design:returntype', void 0)
+        ], Controller.prototype, "removeSubscription", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 

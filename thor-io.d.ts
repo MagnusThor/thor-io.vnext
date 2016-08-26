@@ -1,7 +1,7 @@
 import "reflect-metadata";
 export declare function CanInvoke(state: boolean): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function CanSet(state: boolean): (target: Object, propertyKey: string) => void;
-export declare function ControllerProperties(alias: string, seald?: boolean): (target: Function) => void;
+export declare function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number): (target: Function) => void;
 export declare namespace ThorIO {
     class Utils {
         static newGuid(): string;
@@ -42,13 +42,14 @@ export declare namespace ThorIO {
     }
     class Connection {
         private controllers;
+        pingPongInterval: number;
         id: string;
-        ws: WebSocket;
+        ws: any;
         controllerInstances: Array<ThorIO.Controller>;
         connections: Array<ThorIO.Connection>;
         clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller, method, data);
-        constructor(ws: WebSocket, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
+        constructor(ws: any, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
         hasController(alias: string): boolean;
         removeController(alias: string): void;
         getController(alias: string): Controller;
@@ -64,8 +65,12 @@ export declare namespace ThorIO {
     class Controller {
         alias: string;
         subscriptions: Array<Subscription>;
-        client: Connection;
+        connection: Connection;
+        private lastPong;
+        private lastPing;
+        private heartbeatInterval;
         constructor(client: Connection);
+        private enableHeartbeat();
         canInvokeMethod(method: string): any;
         findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any>;
         getConnections(alias?: string): Array<Connection>;
@@ -79,6 +84,8 @@ export declare namespace ThorIO {
         publish(data: any, topic: string, controller: string): Controller;
         publishToAll(data: any, topic: string, controller: string): Controller;
         hasSubscription(topic: string): boolean;
+        addSubscription(topic: string): Subscription;
+        removeSubscription(topic: string): boolean;
         getSubscription(topic: string): Subscription;
         ___connect(): void;
         ___getProperty(data: PropertyMessage): void;
