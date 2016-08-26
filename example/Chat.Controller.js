@@ -67,7 +67,7 @@ var ChatController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], ChatController.prototype, "sendChatMessage", null);
     ChatController = __decorate([
-        thor_io_1.ControllerProperties("chat", false), 
+        thor_io_1.ControllerProperties("chat", false, 2000), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], ChatController);
     return ChatController;

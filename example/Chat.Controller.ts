@@ -34,7 +34,7 @@ export class SealdController extends ThorIO.Controller{
 
 }
 
-@ControllerProperties("chat",false)
+@ControllerProperties("chat",false,2000)
 export class ChatController extends ThorIO.Controller {
    
     @CanSet(true) // this property can be modified (set) by the clients

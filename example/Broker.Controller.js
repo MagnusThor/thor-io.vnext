@@ -36,8 +36,8 @@ var Signal = (function () {
 }());
 var BrokerController = (function (_super) {
     __extends(BrokerController, _super);
-    function BrokerController(client) {
-        _super.call(this, client);
+    function BrokerController(connection) {
+        _super.call(this, connection);
         this.alias = "broker";
         this.Connections = new Array();
     }
@@ -46,7 +46,7 @@ var BrokerController = (function (_super) {
     };
     ;
     BrokerController.prototype.onopen = function () {
-        this.Peer = new PeerConnection(this.createId(), this.client.id);
+        this.Peer = new PeerConnection(this.createId(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     };
     BrokerController.prototype.instantMessage = function (data, topic, controller) {
@@ -62,7 +62,7 @@ var BrokerController = (function (_super) {
     };
     BrokerController.prototype.contextSignal = function (signal) {
         var expression = function (pre) {
-            return pre.client.id === signal.recipient;
+            return pre.connection.id === signal.recipient;
         };
         this.invokeTo(expression, signal, "contextSignal", this.alias);
     };
