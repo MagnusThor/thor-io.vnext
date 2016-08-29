@@ -1,7 +1,12 @@
 #thor-io.vnext
 
+## thor-io @ slack 
 
-##about
+
+Join us at slack on https://thor-io.slack.com/ to learn more, chat and maybe get involved?
+
+
+##About
 thor-io offers a variety of opportunities to create real-time applications, ranging from IoT applications to web apps where communication is primarily based on WebSockets for WebRTC (P2P) solutions. thor-io delivers an intuitive programming model which will help you to solve your problems instead of other frameworks which relate to communication and other things which you usually have to be concerned with. The things we have implemented are strongly influenced by the complete framework XSockets.NET.
 
 
@@ -19,7 +24,8 @@ The first examples based on the source found in this repo are deployed on heroku
 
 ###AngularJS2
 
-In this repo https://github.com/MagnusThor/thor-io.vnext.ng2.boilerplate you will find a angular2 example.  The example is a 1-n videoconference ( kind of ike the one mentioned below)
+In this repo https://github.com/MagnusThor/thor-io.vnext.ng2.boilerplate you will find a angular2 example.  The example is a 1-n videoconference ( kind of ike the one mentioned below).  There is a deplyed version found at https://webrtc-lab.herokuapp.com/
+
 
 ###Simple chat levering state-full controllers
 
