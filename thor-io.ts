@@ -44,26 +44,28 @@ export namespace ThorIO {
             this.instance = controller;
         }
     }
-
-
+    export class Error {
+            timeStamp:Date;
+            error: any;
+             constructor(err:any) {
+                 this.error = err;
+                 this.timeStamp = new Date();
+             }  
+    }
 
     export class Engine {
-
-
+        public errors:Array<Error>;
         private controllers: Array<Plugin<Controller>>
         private connections: Array<Connection>;
-        private _engine: Engine;
         constructor(controllers: Array<any>) {
-            this._engine = this;
+            this.errors = new Array<Error>();
             this.connections = new Array<Connection>();
             this.controllers = new Array<Plugin<Controller>>();
             controllers.forEach((ctrl: Controller) => {
                 let plugin = new Plugin<Controller>(ctrl);
                 this.controllers.push(plugin);
             });
-
             this.createSealdControllers();
-
         }
         private createSealdControllers() {
             this.controllers.forEach((controller: Plugin<Controller>) => {
@@ -74,9 +76,9 @@ export namespace ThorIO {
         }
         removeConnection(ws: any, reason: number) {
             try {
-                let connection = this.connections.filter((pre: Connection) => {
+                let connection = this.connections.find((pre: Connection) => {
                     return pre.id === ws["$connectionId"];
-                })[0];
+                });
                 let index = this.connections.indexOf(connection);
                 if (index >= 0)
                     this.connections.splice(index, 1);
@@ -91,8 +93,6 @@ export namespace ThorIO {
             ws.on("close", (reason) => {
                 this.removeConnection(ws, reason);
             });
-
-
 
         }
     }
@@ -150,12 +150,12 @@ export namespace ThorIO {
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
                 if (!controller.canInvokeMethod(method))
-                    throw "method '" + method + "' cant be invoked."
+                    throw "method '" + method + "' can't be invoked."
+
                 if (typeof (controller[method]) === "function") {
                     controller[method].apply(controller, [data, method, controller.alias]);
 
                 } else {
-                    // todo : refactor and use PropertyMessage ?
                     let prop = method;
                     let propValue = data;
                     if (typeof (controller[prop]) === typeof (propValue))
@@ -172,14 +172,11 @@ export namespace ThorIO {
                 this.ws = ws;
                 this.ws["$connectionId"] = this.id; // todo: replace 
                 this.ws.addEventListener("message", (message: MessageEvent) => {
-                    let json = JSON.parse(message.data);
-                    let controller = this.locateController(json.C);
-                    this.methodInvoker(controller, json.T, JSON.parse(json.D));
+                    let ioMessage = JSON.parse(message.data);
+                    let controller = this.locateController(ioMessage.C);
+                    this.methodInvoker(controller, ioMessage.T, JSON.parse(ioMessage.D));
                 });
-
-
             }
-
             this.controllerInstances = new Array<Controller>();
         }
         hasController(alias: string): boolean {
@@ -196,10 +193,10 @@ export namespace ThorIO {
         // todo: refactor and improve..
         getController(alias: string): Controller {
             try {
-                let match = this.controllerInstances.filter((pre: Controller) => {
+                let match = this.controllerInstances.find((pre: Controller) => {
                     return pre.alias == alias;
                 });
-                return match[0];
+                return match;
             } catch (error) {
                 return null
             }
@@ -213,15 +210,16 @@ export namespace ThorIO {
         }
         locateController(alias: string): Controller {
             try {
-                let match = this.controllerInstances.filter((pre: Controller) => {
+                let match = this.controllerInstances.find((pre: Controller) => {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
-                if (match.length > 0) {
-                    return match[0];
+                if (match) {
+                    return match;
                 } else {
-                    let resolved = this.controllers.filter((resolve: Plugin<Controller>) => {
+                    let resolved = this.controllers.find((resolve: Plugin<Controller>) => {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
-                    })[0].instance;
+                    }).instance;
+                    
                     var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
 
                     this.addControllerInstance(controllerInstance);
@@ -323,8 +321,8 @@ export namespace ThorIO {
             this.invoke(error, "___error", this.alias);
         }
         @CanInvoke(false)
-        invokeToAll(data: any, topic: string, controller: string): Controller {
-            let msg = new Message(topic, data, this.alias).toString();;
+        invokeToAll(data: any, topic: string, controller?: string): Controller {
+            let msg = new Message(topic, data,  controller || this.alias ).toString();;
             this.getConnections().forEach((connection: Connection) => {
                 connection.getController(controller).invoke(data, topic, controller);
 
@@ -334,30 +332,31 @@ export namespace ThorIO {
         @CanInvoke(false)
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller {
             let connections = this.findOn(controller, predicate);
-            connections.forEach((controller: Controller) => {
-                controller.invoke(data, topic, this.alias);
+            connections.forEach((connection: Controller) => {
+                connection.invoke(data, topic, controller || this.alias);
             });
             return this;
         };
         @CanInvoke(false)
-        invoke(data: any, topic: string, controller: string): Controller {
-            let msg = new Message(topic, data, this.alias);
+        invoke(data: any, topic: string, controller?: string): Controller {
+            let msg = new Message(topic, data, controller || this.alias);
             if (this.connection.ws)
                 this.connection.ws.send(msg.toString());
             return this;
         };
         @CanInvoke(false)
-        publish(data: any, topic: string, controller: string): Controller {
+        publish(data: any, topic: string, controller?: string): Controller {
             if (!this.hasSubscription(topic)) return;
-            return this.invoke(data, topic, this.alias);
+            return this.invoke(data, topic, controller || this.alias);
 
         };
         @CanInvoke(false)
-        publishToAll(data: any, topic: string, controller: string): Controller {
+        publishToAll(data: any, topic: string, controller?: string): Controller {
             let msg = new Message(topic, data, this.alias);
+
             this.getConnections().forEach((connection: Connection) => {
-                let controller = connection.getController(this.alias);
-                if (controller.getSubscription(topic)) {
+                let match = connection.getController(controller || this.alias);
+                if (match.getSubscription(topic)) {
                     connection.ws.send(msg.toString());
                 }
             });
@@ -385,12 +384,12 @@ export namespace ThorIO {
 
         @CanInvoke(false)
         public getSubscription(topic: string): Subscription {
-            let subscription = this.subscriptions.filter(
+            let subscription = this.subscriptions.find(
                 (pre: Subscription) => {
                     return pre.topic === topic;
                 }
             );
-            return subscription[0];
+            return subscription;
         }
         @CanInvoke(true)
         ___connect() {
