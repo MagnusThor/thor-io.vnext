@@ -12,15 +12,10 @@ export declare namespace ThorIO {
         instance: T;
         constructor(controller: T);
     }
-    class Error {
-        timeStamp: Date;
-        error: any;
-        constructor(err: any);
-    }
     class Engine {
-        errors: Array<Error>;
         private controllers;
         private connections;
+        private _engine;
         constructor(controllers: Array<any>);
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;

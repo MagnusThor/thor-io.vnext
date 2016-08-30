@@ -1,11 +1,11 @@
-var ThorIOClient;
-(function (ThorIOClient) {
+var ThorIO;
+(function (ThorIO) {
     var Message = (function () {
         function Message(topic, object, controller, id) {
             this.D = object;
             this.T = topic;
             this.C = controller;
-            this.id = id || ThorIOClient.Utils.newGuid();
+            this.id = id || ThorIO.Utils.newGuid();
         }
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
@@ -24,13 +24,12 @@ var ThorIOClient;
         };
         return Message;
     }());
-    ThorIOClient.Message = Message;
+    ThorIO.Message = Message;
     var PeerConnection = (function () {
         function PeerConnection() {
         }
         return PeerConnection;
     }());
-    ThorIOClient.PeerConnection = PeerConnection;
     var Connection = (function () {
         function Connection(id, rtcPeerConnection) {
             this.id = id;
@@ -39,15 +38,14 @@ var ThorIOClient;
         }
         return Connection;
     }());
-    ThorIOClient.Connection = Connection;
     var WebRTC = (function () {
-        function WebRTC(brokerChannel, rtcConfig) {
+        function WebRTC(brokerProxy, rtcConfig) {
             var _this = this;
-            this.brokerChannel = brokerChannel;
+            this.brokerProxy = brokerProxy;
             this.rtcConfig = rtcConfig;
             this.Peers = new Array();
             this.localSteams = new Array();
-            brokerChannel.On("contextSignal", function (signal) {
+            brokerProxy.On("contextSignal", function (signal) {
                 var msg = JSON.parse(signal.message);
                 switch (msg.type) {
                     case "offer":
@@ -92,7 +90,7 @@ var ThorIOClient;
                     recipient: event.sender,
                     message: JSON.stringify(description)
                 };
-                _this.brokerChannel.Invoke("contextSignal", answer, "broker");
+                _this.brokerProxy.Invoke("contextSignal", answer, "broker");
             }, function (error) {
             }, {
                 mandatory: {
@@ -143,7 +141,7 @@ var ThorIOClient;
                             iceCandidate: event.candidate
                         })
                     };
-                    _this.brokerChannel.Invoke("contextSignal", msg);
+                    _this.brokerProxy.Invoke("contextSignal", msg);
                 }
             };
             rtcPeerConnection.oniceconnectionstatechange = function (event) {
@@ -192,7 +190,7 @@ var ThorIOClient;
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
                     };
-                    _this.brokerChannel.Invoke("contextSignal", offer, "broker");
+                    _this.brokerProxy.Invoke("contextSignal", offer, "broker");
                 }, function (err) {
                 });
             }, function (err) {
@@ -213,17 +211,16 @@ var ThorIOClient;
         };
         return WebRTC;
     }());
-    ThorIOClient.WebRTC = WebRTC;
+    ThorIO.WebRTC = WebRTC;
     var Factory = (function () {
         function Factory(url, controllers, params) {
             var _this = this;
             this.url = url;
-            var self = this;
-            this.channels = new Array();
+            this.proxys = new Array();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.onmessage = function (event) {
                 var message = JSON.parse(event.data);
-                _this.GetChannel(message.C).Dispatch(message.T, message.D);
+                _this.GetProxy(message.C).Dispatch(message.T, message.D);
             };
             this.ws.onclose = function (event) {
                 _this.IsConnected = false;
@@ -234,10 +231,10 @@ var ThorIOClient;
             };
             this.ws.onopen = function (event) {
                 _this.IsConnected = true;
-                _this.OnOpen.apply(_this, _this.channels);
+                _this.OnOpen.apply(_this, _this.proxys);
             };
             controllers.forEach(function (alias) {
-                self.channels.push(new Channel(alias, self.ws));
+                _this.proxys.push(new Proxy(alias, _this.ws));
             });
         }
         Factory.prototype.toQuery = function (obj) {
@@ -248,25 +245,22 @@ var ThorIOClient;
             this.ws.close();
         };
         ;
-        Factory.prototype.GetChannel = function (alias) {
-            var channel = this.channels.filter(function (pre) { return (pre.alias === alias); });
+        Factory.prototype.GetProxy = function (alias) {
+            var channel = this.proxys.filter(function (pre) { return (pre.alias === alias); });
             return channel[0];
         };
         ;
-        Factory.prototype.RemoveChannel = function () {
-            throw "Not yet implemented";
+        Factory.prototype.RemoveProxy = function (alias) {
+            var index = this.proxys.indexOf(this.GetProxy(alias));
+            this.proxys.splice(index, 1);
         };
         Factory.prototype.OnOpen = function (event) { };
         ;
-        Factory.prototype.OnError = function (error) {
-            console.error(error);
-        };
-        Factory.prototype.OnClose = function (event) {
-            console.error(event);
-        };
+        Factory.prototype.OnError = function (error) { };
+        Factory.prototype.OnClose = function (event) { };
         return Factory;
     }());
-    ThorIOClient.Factory = Factory;
+    ThorIO.Factory = Factory;
     var Listener = (function () {
         function Listener(topic, fn) {
             this.fn = fn;
@@ -274,7 +268,7 @@ var ThorIOClient;
         }
         return Listener;
     }());
-    ThorIOClient.Listener = Listener;
+    ThorIO.Listener = Listener;
     var Utils = (function () {
         function Utils() {
         }
@@ -286,7 +280,7 @@ var ThorIOClient;
         };
         return Utils;
     }());
-    ThorIOClient.Utils = Utils;
+    ThorIO.Utils = Utils;
     var PromisedMessage = (function () {
         function PromisedMessage(id, resolve) {
             this.messageId = id;
@@ -294,16 +288,16 @@ var ThorIOClient;
         }
         return PromisedMessage;
     }());
-    ThorIOClient.PromisedMessage = PromisedMessage;
+    ThorIO.PromisedMessage = PromisedMessage;
     var PropertyMessage = (function () {
         function PropertyMessage() {
-            this.messageId = ThorIOClient.Utils.newGuid();
+            this.messageId = ThorIO.Utils.newGuid();
         }
         return PropertyMessage;
     }());
-    ThorIOClient.PropertyMessage = PropertyMessage;
-    var Channel = (function () {
-        function Channel(alias, ws) {
+    ThorIO.PropertyMessage = PropertyMessage;
+    var Proxy = (function () {
+        function Proxy(alias, ws) {
             var _this = this;
             this.alias = alias;
             this.ws = ws;
@@ -319,62 +313,62 @@ var ThorIOClient;
                 _this.promisedMessages.splice(index, 1);
             });
         }
-        Channel.prototype.Connect = function () {
-            this.ws.send(new ThorIOClient.Message("___connect", {}, this.alias));
+        Proxy.prototype.Connect = function () {
+            this.ws.send(new ThorIO.Message("___connect", {}, this.alias));
             return this;
         };
         ;
-        Channel.prototype.Close = function () {
-            this.ws.send(new ThorIOClient.Message("___close", {}, this.alias));
+        Proxy.prototype.Close = function () {
+            this.ws.send(new ThorIO.Message("___close", {}, this.alias));
             return this;
         };
         ;
-        Channel.prototype.Subscribe = function (topic, callback) {
+        Proxy.prototype.Subscribe = function (topic, callback) {
             this.On(topic, callback);
-            this.ws.send(new ThorIOClient.Message("___subscribe", {
+            this.ws.send(new ThorIO.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
         ;
-        Channel.prototype.Unsubscribe = function (topic) {
-            this.ws.send(new ThorIOClient.Message("___unsubscribe", {
+        Proxy.prototype.Unsubscribe = function (topic) {
+            this.ws.send(new ThorIO.Message("___unsubscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
             return this;
         };
         ;
-        Channel.prototype.On = function (topic, fn) {
-            this.listeners.push(new ThorIOClient.Listener(topic, fn));
+        Proxy.prototype.On = function (topic, fn) {
+            this.listeners.push(new ThorIO.Listener(topic, fn));
             return this;
         };
         ;
-        Channel.prototype.findListener = function (topic) {
+        Proxy.prototype.findListener = function (topic) {
             var listener = this.listeners.filter(function (pre) {
                 return pre.topic === topic;
             });
             return listener[0];
         };
-        Channel.prototype.Off = function (topic) {
+        Proxy.prototype.Off = function (topic) {
             var index = this.listeners.indexOf(this.findListener(topic));
             if (index >= 0)
                 this.listeners.splice(index, 1);
             return this;
         };
         ;
-        Channel.prototype.Invoke = function (topic, d, c) {
-            this.ws.send(new ThorIOClient.Message(topic, d, c || this.alias));
+        Proxy.prototype.Invoke = function (topic, d, c) {
+            this.ws.send(new ThorIO.Message(topic, d, c || this.alias));
             return this;
         };
         ;
-        Channel.prototype.SetProperty = function (propName, propValue, controller) {
+        Proxy.prototype.SetProperty = function (propName, propValue, controller) {
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
         ;
-        Channel.prototype.GetProperty = function (propName, controller) {
+        Proxy.prototype.GetProperty = function (propName, controller) {
             var propInfo = new PropertyMessage();
             propInfo.name = propName;
             var wrapper = new PromisedMessage(propInfo.messageId, function () { });
@@ -386,7 +380,7 @@ var ThorIOClient;
             this.Invoke("___getProperty", propInfo, controller || this.alias);
             return promise;
         };
-        Channel.prototype.Dispatch = function (topic, data) {
+        Proxy.prototype.Dispatch = function (topic, data) {
             if (topic === "___open") {
                 data = JSON.parse(data);
                 this.IsConnected = true;
@@ -404,12 +398,12 @@ var ThorIOClient;
             }
         };
         ;
-        Channel.prototype.OnOpen = function (event) { };
+        Proxy.prototype.OnOpen = function (event) { };
         ;
-        Channel.prototype.OnClose = function (event) { };
+        Proxy.prototype.OnClose = function (event) { };
         ;
-        return Channel;
+        return Proxy;
     }());
-    ThorIOClient.Channel = Channel;
-})(ThorIOClient || (ThorIOClient = {}));
+    ThorIO.Proxy = Proxy;
+})(ThorIO || (ThorIO = {}));
 //# sourceMappingURL=thor-io.client.js.map

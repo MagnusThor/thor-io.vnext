@@ -60,18 +60,10 @@ var ThorIO;
         return Plugin;
     }());
     ThorIO.Plugin = Plugin;
-    var Error = (function () {
-        function Error(err) {
-            this.error = err;
-            this.timeStamp = new Date();
-        }
-        return Error;
-    }());
-    ThorIO.Error = Error;
     var Engine = (function () {
         function Engine(controllers) {
             var _this = this;
-            this.errors = new Array();
+            this._engine = this;
             this.connections = new Array();
             this.controllers = new Array();
             controllers.forEach(function (ctrl) {
@@ -90,9 +82,9 @@ var ThorIO;
         };
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
-                var connection = this.connections.find(function (pre) {
+                var connection = this.connections.filter(function (pre) {
                     return pre.id === ws["$connectionId"];
-                });
+                })[0];
                 var index = this.connections.indexOf(connection);
                 if (index >= 0)
                     this.connections.splice(index, 1);
@@ -162,9 +154,9 @@ var ThorIO;
                 this.ws = ws;
                 this.ws["$connectionId"] = this.id;
                 this.ws.addEventListener("message", function (message) {
-                    var ioMessage = JSON.parse(message.data);
-                    var controller = _this.locateController(ioMessage.C);
-                    _this.methodInvoker(controller, ioMessage.T, JSON.parse(ioMessage.D));
+                    var json = JSON.parse(message.data);
+                    var controller = _this.locateController(json.C);
+                    _this.methodInvoker(controller, json.T, JSON.parse(json.D));
                 });
             }
             this.controllerInstances = new Array();
@@ -172,7 +164,7 @@ var ThorIO;
         Connection.prototype.methodInvoker = function (controller, method, data) {
             try {
                 if (!controller.canInvokeMethod(method))
-                    throw "method '" + method + "' can't be invoked.";
+                    throw "method '" + method + "' cant be invoked.";
                 if (typeof (controller[method]) === "function") {
                     controller[method].apply(controller, [data, method, controller.alias]);
                 }
@@ -200,10 +192,10 @@ var ThorIO;
         };
         Connection.prototype.getController = function (alias) {
             try {
-                var match = this.controllerInstances.find(function (pre) {
+                var match = this.controllerInstances.filter(function (pre) {
                     return pre.alias == alias;
                 });
-                return match;
+                return match[0];
             }
             catch (error) {
                 return null;
@@ -218,16 +210,16 @@ var ThorIO;
         };
         Connection.prototype.locateController = function (alias) {
             try {
-                var match = this.controllerInstances.find(function (pre) {
+                var match = this.controllerInstances.filter(function (pre) {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
-                if (match) {
-                    return match;
+                if (match.length > 0) {
+                    return match[0];
                 }
                 else {
-                    var resolved = this.controllers.find(function (resolve) {
+                    var resolved = this.controllers.filter(function (resolve) {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
-                    }).instance;
+                    })[0].instance;
                     var controllerInstance = ThorIO.Utils.getInstance(resolved, this);
                     this.addControllerInstance(controllerInstance);
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), " ___open", controllerInstance.alias);
@@ -360,10 +352,10 @@ var ThorIO;
             return this.___unsubscribe(this.getSubscription(topic));
         };
         Controller.prototype.getSubscription = function (topic) {
-            var subscription = this.subscriptions.find(function (pre) {
+            var subscription = this.subscriptions.filter(function (pre) {
                 return pre.topic === topic;
             });
-            return subscription;
+            return subscription[0];
         };
         Controller.prototype.___connect = function () {
         };
