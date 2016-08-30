@@ -30,14 +30,16 @@ var ThorIO;
         }
         return PeerConnection;
     }());
-    var Connection = (function () {
-        function Connection(id, rtcPeerConnection) {
+    ThorIO.PeerConnection = PeerConnection;
+    var ContextConnection = (function () {
+        function ContextConnection(id, rtcPeerConnection) {
             this.id = id;
             this.rtcPeerConnection = rtcPeerConnection;
             this.streams = new Array();
         }
-        return Connection;
+        return ContextConnection;
     }());
+    ThorIO.ContextConnection = ContextConnection;
     var WebRTC = (function () {
         function WebRTC(brokerProxy, rtcConfig) {
             var _this = this;
@@ -171,7 +173,7 @@ var ThorIO;
                 return connection.id === id;
             });
             if (match.length === 0) {
-                var pc = new Connection(id, this.createPeerConnection(id));
+                var pc = new ContextConnection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
                 return pc.rtcPeerConnection;
             }
@@ -205,7 +207,7 @@ var ThorIO;
         WebRTC.prototype.connect = function (peerConnections) {
             var _this = this;
             peerConnections.forEach(function (peer) {
-                var pc = new Connection(peer.peerId, _this.createOffer(peer));
+                var pc = new ContextConnection(peer.peerId, _this.createOffer(peer));
                 _this.Peers.push(pc);
             });
         };

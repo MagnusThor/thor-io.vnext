@@ -28,11 +28,11 @@
     }
 
 
-    class PeerConnection {
+    export class PeerConnection {
         context: string;
         peerId: string;
     }
-    class Connection {
+    export class ContextConnection{
         id: string;
         rtcPeerConnection: RTCPeerConnection;
         streams: Array < any > ;
@@ -44,7 +44,7 @@
     }
     export class WebRTC {
 
-        public Peers: Array < Connection > ;
+        public Peers: Array < ContextConnection > ;
         public Peer: RTCPeerConnection;
         public localPeerId: string;
         public localSteams: Array < any > ;
@@ -134,7 +134,7 @@
         remoteStreamlost(streamId:string,peerId:string){}
 
         private removePeerConnection(id: string) {
-            let connection = this.Peers.filter((conn: Connection) => {
+            let connection = this.Peers.filter((conn: ContextConnection) => {
                 return conn.id === id;
             })[0];
             connection.streams.forEach( (stream:MediaStream) => {
@@ -183,13 +183,13 @@
             };
             return rtcPeerConnection;
         }
-        public onRemoteStream(stream: MediaStream, connection: Connection) {};
-        private getPeerConnection(id: string): webkitRTCPeerConnection {
-            let match = this.Peers.filter((connection: Connection) => {
+        public onRemoteStream(stream: MediaStream, connection: ContextConnection) {};
+        private getPeerConnection(id: string): RTCPeerConnection {
+            let match = this.Peers.filter((connection: ContextConnection) => {
                 return connection.id === id;
             });
             if (match.length === 0) {
-                let pc = new Connection(id,this.createPeerConnection(id));
+                let pc = new ContextConnection(id,this.createPeerConnection(id));
                 this.Peers.push(pc);
 
                 return pc.rtcPeerConnection;
@@ -231,7 +231,7 @@
         }
         connect(peerConnections: Array < PeerConnection > ) {
             peerConnections.forEach((peer: PeerConnection) => {
-                let pc = new Connection(peer.peerId,this.createOffer(peer));
+                let pc = new ContextConnection(peer.peerId,this.createOffer(peer));
                 this.Peers.push(pc);
             })
         }

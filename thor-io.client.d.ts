@@ -1,4 +1,4 @@
-declare namespace ThorIOClient {
+declare namespace ThorIO {
     class Message {
         T: string;
         D: any;
@@ -12,20 +12,20 @@ declare namespace ThorIOClient {
         context: string;
         peerId: string;
     }
-    class Connection {
+    class ContextConnection {
         id: string;
-        rtcPeerConnection: webkitRTCPeerConnection;
+        rtcPeerConnection: RTCPeerConnection;
         streams: Array<any>;
         constructor(id: string, rtcPeerConnection: RTCPeerConnection);
     }
     class WebRTC {
-        private brokerChannel;
+        private brokerProxy;
         private rtcConfig;
-        Peers: Array<Connection>;
+        Peers: Array<ContextConnection>;
         Peer: RTCPeerConnection;
         localPeerId: string;
         localSteams: Array<any>;
-        constructor(brokerChannel: ThorIOClient.Channel, rtcConfig: RTCConfiguration);
+        constructor(brokerProxy: ThorIO.Proxy, rtcConfig: RTCConfiguration);
         private onCandidate(event);
         private onAnswer(event);
         private onOffer(event);
@@ -35,7 +35,7 @@ declare namespace ThorIOClient {
         remoteStreamlost(streamId: string, peerId: string): void;
         private removePeerConnection(id);
         private createPeerConnection(id);
-        onRemoteStream(stream: MediaStream, connection: Connection): void;
+        onRemoteStream(stream: MediaStream, connection: ContextConnection): void;
         private getPeerConnection(id);
         private createOffer(peer);
         connect(peerConnections: Array<PeerConnection>): void;
@@ -44,12 +44,12 @@ declare namespace ThorIOClient {
         private url;
         private ws;
         private toQuery(obj);
-        private channels;
+        private proxys;
         IsConnected: boolean;
         constructor(url: string, controllers: Array<string>, params?: any);
         Close(): void;
-        GetChannel(alias: string): ThorIOClient.Channel;
-        RemoveChannel(): void;
+        GetProxy(alias: string): ThorIO.Proxy;
+        RemoveProxy(alias: string): void;
         OnOpen(event: any): void;
         OnError(error: any): void;
         OnClose(event: any): void;
@@ -73,11 +73,11 @@ declare namespace ThorIOClient {
         messageId: string;
         constructor();
     }
-    class Channel {
+    class Proxy {
         alias: string;
         private ws;
         IsConnected: boolean;
-        listeners: Array<ThorIOClient.Listener>;
+        listeners: Array<ThorIO.Listener>;
         promisedMessages: Array<PromisedMessage>;
         constructor(alias: string, ws: WebSocket);
         Connect(): this;
