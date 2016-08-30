@@ -18,31 +18,31 @@ class ChatClient {
 
     }
     setAge(age: number) {
-        this.client.GetChannel("chat").SetProperty("age", age);
+        this.client.GetProxy("chat").SetProperty("age", age);
     }
     sendMessage(event: KeyboardEvent) {
 
         if (event.keyCode === 13) {
-            this.client.GetChannel("chat").Invoke("sendChatMessage",
+            this.client.GetProxy("chat").Invoke("sendChatMessage",
                 new ChatMessage(parseInt(this.txtAge.value),this.txtMessage.value)
             );
         }
     }
 
-    private client: ThorIOClient.Factory;
+    private client: ThorIO.Factory;
     private txtMessage:HTMLInputElement;
     private txtAge:HTMLInputElement;
     
 
     constructor() {
 
-        this.client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
+        this.client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
 
-        this.client.OnOpen = (channel: ThorIOClient.Channel) => {
-            channel.On("chatMessage", (message: ChatMessage) => {
+        this.client.OnOpen = (proxy: ThorIO.Proxy) => {
+            proxy.On("chatMessage", (message: ChatMessage) => {
             	this.showMessage(message);
             });
-            channel.Connect();
+            proxy.Connect();
         };
 
         this.txtMessage =  document.querySelector("#chat-message") as HTMLInputElement;
@@ -56,7 +56,6 @@ class ChatClient {
         this.txtAge.addEventListener("change", (event: any) => {
             this.setAge(event.target.value)
         });
-
     }
 
 }

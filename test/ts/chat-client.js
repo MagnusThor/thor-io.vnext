@@ -8,12 +8,12 @@ var ChatMessage = (function () {
 var ChatClient = (function () {
     function ChatClient() {
         var _this = this;
-        this.client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
-        this.client.OnOpen = function (channel) {
-            channel.On("chatMessage", function (message) {
+        this.client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
+        this.client.OnOpen = function (proxy) {
+            proxy.On("chatMessage", function (message) {
                 _this.showMessage(message);
             });
-            channel.Connect();
+            proxy.Connect();
         };
         this.txtMessage = document.querySelector("#chat-message");
         this.txtMessage.addEventListener("keyup", function (event) {
@@ -30,11 +30,11 @@ var ChatClient = (function () {
         document.querySelector("#chatMessages").appendChild(el);
     };
     ChatClient.prototype.setAge = function (age) {
-        this.client.GetChannel("chat").SetProperty("age", age);
+        this.client.GetProxy("chat").SetProperty("age", age);
     };
     ChatClient.prototype.sendMessage = function (event) {
         if (event.keyCode === 13) {
-            this.client.GetChannel("chat").Invoke("sendChatMessage", new ChatMessage(parseInt(this.txtAge.value), this.txtMessage.value));
+            this.client.GetProxy("chat").Invoke("sendChatMessage", new ChatMessage(parseInt(this.txtAge.value), this.txtMessage.value));
         }
     };
     return ChatClient;

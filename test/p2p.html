@@ -61,20 +61,20 @@
 
         var rtc;
         document.addEventListener("DOMContentLoaded", function() {
-            var client = new ThorIOClient.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
+            var client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
 
             // we connected to the server (.Engine) , onOpen will give us the channels to the Controllers, in this 
             // case we are specified  just the broker (BrokerController.ts ) 
-              client.OnOpen = function(brokerChannel) {
+              client.OnOpen = function(brokerProxy) {
                 // todo: add TURN server's to the config, to ensure "all" can connect..
-                rtc = new ThorIOClient.WebRTC(brokerChannel,{
+                rtc = new ThorIO.WebRTC(brokerProxy,{
                     iceServers:[
                         {
                             url: "stun:stun.l.google.com:19302"
                         }
                     ]
                 });
-                // todo:should evaluate if client supports this constraints...
+
                 var constraints = {
                     video: {
                         mandatory: {
@@ -98,14 +98,14 @@
 
                 // start the conference
                 $("#call").addEventListener("click", function(){
-                    brokerChannel.Invoke("connectContext", {}, "broker");
+                    brokerProxy.Invoke("connectContext", {}, "broker");
                     $("#hero").classList.add("hide");
                 });
                 
 
                 $("#im-text").addEventListener("keyup",function(evt){
                         if(evt.keyCode === 13){
-                            brokerChannel.Invoke("instantMessage", {
+                            brokerProxy.Invoke("instantMessage", {
                                 text: (new Date()).toTimeString().substring(0,5) + " : " + this.value // just a simple message
                             },"broker");
                             this.value = ""
@@ -123,10 +123,10 @@
                     console.log("streamLost",arguments);  //  todo: find the vido using the peerId, and remove the element
                 };
                 // When we change context, this event will fire...
-                brokerChannel.On("contextChanged", function(data) {
+                brokerProxy.On("contextChanged", function(data) {
                  location.hash = data.context;
                 });
-                brokerChannel.On("instantMessage", function(data){
+                brokerProxy.On("instantMessage", function(data){
                         var im = document.createElement("p");
                         im.textContent = data.text;
                         var parent =  $("#im-messages");
@@ -134,18 +134,18 @@
 
                 });
                 // fires when 'connectContext' is called, in this case we just connect to them, by calling .connect(arrPeers)
-                brokerChannel.On("connectTo", function(peers) {
+                brokerProxy.On("connectTo", function(peers) {
                     rtc.connect(peers);
                 });
 
                 // When we connect, we got our own context / room ... if we got a "hash" value, use that , otherwise generate a new room..
-                brokerChannel.On("contextCreated" , function(data) {
+                brokerProxy.On("contextCreated" , function(data) {
                     rtc.localPeerId = data.peerId;
                     // create a new "room/context" using the #hash 'parameter' if it exists, otherwise a random one..
                     var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
-                    brokerChannel.Invoke("changeContext",{context: context.replace("#","")},"broker");
+                    brokerProxy.Invoke("changeContext",{context: context.replace("#","")},"broker");
                 });
-                brokerChannel.Connect();
+                brokerProxy.Connect();
             };
         });
     </script>

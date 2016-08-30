@@ -1,59 +1,68 @@
 <html>
 
 <body>
-        <h1>Test</h1>
-        <div id="foo"></div>
-        <script src="/src/client/thor-io.client.js">
-        </script>
-        <script>
+    <h1>Simple chat</h1>
+    <p>
+        Messages will only be delivered to other client/connections with an age >= the age you specified.
+        </p>
+    Text:<input type="text" id="chat-message">Age:<input type="number" min="1"" max="99" value="1" id="chat-age">
+    <hr>
+    <h2>Messages</h2>
+    <div id="chatMessages"></div>
+    <script src="/src/client/thor-io.client.js">
+    </script>
+    <script>
 
-          
-                var temp1;
+        var showMessage = function(text)
+        {
+            var p = document.createElement("p");
+            p.textContent = text;
+            document.querySelector("#chatMessages").appendChild(p);
+        }
+        var age = 1;
+        document.addEventListener("DOMContentLoaded", function() {
+            // ws://localhost:1337
+            var client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["chat"], {});
 
-                // to set a new state on the controllers room property, to filter the chatMessage-to
-                // call temp1.SetProperty("room","any string");  setting it to "foo" will make the messages appear again
+            client.OnOpen = function(chat) {
 
-                var showMessage = function(data) {
-                        var p = document.createElement("pre");
-                        p.innerText = JSON.stringify(data);
-                        document.querySelector("#foo").appendChild(p);
-                };
+                document.querySelector("#chat-age").addEventListener("change", function()
+                {
+                        age = parseInt(this.value);
+                        chat.SetProperty("age",age);
 
-                document.addEventListener("DOMContentLoaded", function() {
-                        // ws://localhost:1337
-                        var client = new ThorIOClient.Factory("wss://thorio.herokuapp.com:443", ["example"], {});
-                        client.OnOpen = function(exampleChannel) {
-                                temp1 = exampleChannel;
-                                exampleChannel.Subscribe("mySub", function(message) {
-                                        showMessage(arguments);
-                                });
-                                exampleChannel.On("history", function(history)
-                                {
-                                        showMessage({message:"History length " + history.length});
-                                        showMessage(history);
-                                });
-                                exampleChannel.On("chatMessage-one", function() {
-                                        showMessage(arguments);
-                                });
-                                exampleChannel.On("chatMessage-all", function() {
-                                        showMessage(arguments);
-                                });
-                                exampleChannel.On("chatMessage-to", function() {
-                                        showMessage(arguments);
-                                });
-                                exampleChannel.OnOpen = function(ci) {
-                                        showMessage(ci);
-                                        setInterval(function() {
-                                                exampleChannel.Invoke("sendMessage", {
-                                                        dt: new Date(),
-                                                        txt: "Hello World!"
-                                                }, "example");
-                                        }, 15000);
-                                };
-                                exampleChannel.Connect();
-                        };
+                        // set the age property to the number specified?
+                    
+                        // we also get the property value by callong get property
+                        chat.GetProperty("age").then(function(value){
+                             console.log("age property is -> ",value);
+                        });
                 });
-        </script>
+
+
+               
+
+                document.querySelector("#chat-message").addEventListener("keyup", function(evt)
+                {
+                    if(evt.keyCode === 13){
+                        chat.Invoke("sendChatMessage",{
+                            age: age,
+                            message : this.value
+                        },"chat")
+                        this.value = "";
+                    }
+                }
+                );
+
+                console.log("connected to chatController");
+                chat.On("chatMessage", function(data) {
+                        showMessage(data.message);
+                })
+
+                chat.Connect();
+            };
+        });
+    </script>
 
 </body>
 
