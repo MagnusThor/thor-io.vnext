@@ -33,15 +33,17 @@ export namespace ThorIO {
             instance.constructor.apply(instance, args);
             return <T>instance;
         }
-
     }
-
     export class Plugin<T> {
         public alias: string;
         public instance: T;
+        public typeName : string;
         constructor(controller: T) {
             this.alias = Reflect.getMetadata("alias", controller)
             this.instance = controller;
+        }
+        newInstance<T>(...args: any[]):T{
+            return ThorIO.Utils.getInstance<T>(this,args);
         }
     }
 
@@ -53,7 +55,7 @@ export namespace ThorIO {
         private controllers: Array<Plugin<Controller>>
         private connections: Array<Connection>;
         private _engine: Engine;
-        constructor(controllers: Array<any>) {
+        constructor(controllers: Array<ThorIO.Controller>) {
             this._engine = this;
             this.connections = new Array<Connection>();
             this.controllers = new Array<Plugin<Controller>>();
@@ -176,8 +178,6 @@ export namespace ThorIO {
                     let controller = this.locateController(json.C);
                     this.methodInvoker(controller, json.T, JSON.parse(json.D));
                 });
-
-
             }
 
             this.controllerInstances = new Array<Controller>();
@@ -222,6 +222,7 @@ export namespace ThorIO {
                     let resolved = this.controllers.filter((resolve: Plugin<Controller>) => {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
+
                     var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
 
                     this.addControllerInstance(controllerInstance);

@@ -10,13 +10,15 @@ export declare namespace ThorIO {
     class Plugin<T> {
         alias: string;
         instance: T;
+        typeName: string;
         constructor(controller: T);
+        newInstance<T>(...args: any[]): T;
     }
     class Engine {
         private controllers;
         private connections;
         private _engine;
-        constructor(controllers: Array<any>);
+        constructor(controllers: Array<ThorIO.Controller>);
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;
