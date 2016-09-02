@@ -11,13 +11,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 require("reflect-metadata");
 function CanInvoke(state) {
     return function (target, propertyKey, descriptor) {
-        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+        Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     };
 }
 exports.CanInvoke = CanInvoke;
 function CanSet(state) {
     return function (target, propertyKey) {
-        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+        Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     };
 }
 exports.CanSet = CanSet;
@@ -39,6 +39,9 @@ var ThorIO;
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+        };
+        Utils.randomString = function () {
+            return Math.random().toString(36).substring(2);
         };
         Utils.getInstance = function (obj) {
             var args = [];
@@ -63,7 +66,6 @@ var ThorIO;
     var Engine = (function () {
         function Engine(controllers) {
             var _this = this;
-            this._engine = this;
             this.connections = new Array();
             this.controllers = new Array();
             controllers.forEach(function (ctrl) {
@@ -82,9 +84,9 @@ var ThorIO;
         };
         Engine.prototype.removeConnection = function (ws, reason) {
             try {
-                var connection = this.connections.filter(function (pre) {
+                var connection = this.connections.find(function (pre) {
                     return pre.id === ws["$connectionId"];
-                })[0];
+                });
                 var index = this.connections.indexOf(connection);
                 if (index >= 0)
                     this.connections.splice(index, 1);
@@ -192,7 +194,7 @@ var ThorIO;
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         };
-        // todo: refactor and improve..
+        // todo: refactor and improve..y
         Connection.prototype.getController = function (alias) {
             try {
                 var match = this.controllerInstances.filter(function (pre) {
@@ -213,11 +215,11 @@ var ThorIO;
         };
         Connection.prototype.locateController = function (alias) {
             try {
-                var match = this.controllerInstances.filter(function (pre) {
+                var match = this.controllerInstances.find(function (pre) {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
-                if (match.length > 0) {
-                    return match[0];
+                if (match) {
+                    return match;
                 }
                 else {
                     var resolved = this.controllers.filter(function (resolve) {
@@ -268,7 +270,7 @@ var ThorIO;
             }, this.heartbeatInterval);
         };
         Controller.prototype.canInvokeMethod = function (method) {
-            return Reflect.getMetadata("invokeable", this, method);
+            return Reflect.getMetadata("canInvokeOrSet", this, method);
         };
         Controller.prototype.findOn = function (alias, predicate) {
             var connections = this.getConnections(alias).map(function (p) {
@@ -356,10 +358,10 @@ var ThorIO;
             return this.___unsubscribe(this.getSubscription(topic));
         };
         Controller.prototype.getSubscription = function (topic) {
-            var subscription = this.subscriptions.filter(function (pre) {
+            var subscription = this.subscriptions.find(function (pre) {
                 return pre.topic === topic;
             });
-            return subscription[0];
+            return subscription;
         };
         Controller.prototype.___connect = function () {
             // todo: remove this method        

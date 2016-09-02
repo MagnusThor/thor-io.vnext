@@ -5,7 +5,6 @@ var ThorIO;
             this.D = object;
             this.T = topic;
             this.C = controller;
-            this.id = id || ThorIO.Utils.newGuid();
         }
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
@@ -43,9 +42,23 @@ var ThorIO;
             var _this = this;
             this.brokerProxy = brokerProxy;
             this.rtcConfig = rtcConfig;
+            this.Errors = new Array();
             this.Peers = new Array();
             this.localSteams = new Array();
-            brokerProxy.On("contextSignal", function (signal) {
+            this.signalHandlers();
+            brokerProxy.On("contextCreated", function (p) {
+                _this.onContextCreated(p);
+            });
+            brokerProxy.On("contextChanged", function (p) {
+                _this.onContextChanged(p);
+            });
+            brokerProxy.On("connectTo", function (p) {
+                _this.onConnectTo(p);
+            });
+        }
+        WebRTC.prototype.signalHandlers = function () {
+            var _this = this;
+            this.brokerProxy.On("contextSignal", function (signal) {
                 var msg = JSON.parse(signal.message);
                 switch (msg.type) {
                     case "offer":
@@ -57,10 +70,41 @@ var ThorIO;
                     case "candidate":
                         _this.onCandidate(signal);
                         break;
+                    default:
+                        // do op
+                        break;
                 }
             });
-        }
+        };
+        WebRTC.prototype.addError = function (err) {
+            this.addError(err);
+            this.onError(err);
+        };
+        WebRTC.prototype.onError = function (err) { };
+        WebRTC.prototype.onContextCreated = function (peerConnection) {
+        };
+        WebRTC.prototype.onContextChanged = function (context) { };
+        WebRTC.prototype.onRemoteStream = function (stream, connection) { };
+        ;
+        WebRTC.prototype.onRemoteStreamlost = function (streamId, peerId) { };
+        WebRTC.prototype.onLocalSteam = function (stream) { };
+        ;
+        WebRTC.prototype.onContextConnected = function (rtcPeerConnection) { };
+        WebRTC.prototype.onContextDisconnected = function (rtcPeerConnection) { };
+        WebRTC.prototype.onConnectTo = function (peerConnections) {
+            this.connect(peerConnections);
+        };
+        WebRTC.prototype.onConnected = function (peerId) {
+            this.onContextConnected(this.getPeerConnection(peerId));
+        };
+        WebRTC.prototype.onDisconnected = function (peerId) {
+            var pc = this.getPeerConnection(peerId);
+            pc.close();
+            this.onContextDisconnected(pc);
+            this.removePeerConnection(peerId);
+        };
         WebRTC.prototype.onCandidate = function (event) {
+            var _this = this;
             var msg = JSON.parse(event.message);
             var candidate = msg.iceCandidate;
             var pc = this.getPeerConnection(event.sender);
@@ -69,11 +113,15 @@ var ThorIO;
                 candidate: candidate.candidate
             })).then(function () {
             }).catch(function (err) {
+                _this.addError(err);
             });
         };
         WebRTC.prototype.onAnswer = function (event) {
+            var _this = this;
             var pc = this.getPeerConnection(event.sender);
             pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message))).then(function (p) {
+            }).catch(function (err) {
+                _this.addError(err);
             });
         };
         WebRTC.prototype.onOffer = function (event) {
@@ -90,8 +138,9 @@ var ThorIO;
                     recipient: event.sender,
                     message: JSON.stringify(description)
                 };
-                _this.brokerProxy.Invoke("contextSignal", answer, "broker");
-            }, function (error) {
+                _this.brokerProxy.Invoke("contextSignal", answer);
+            }, function (err) {
+                _this.addError(err);
             }, {
                 mandatory: {
                     "offerToReceiveAudio": true,
@@ -103,28 +152,20 @@ var ThorIO;
             this.localSteams.push(stream);
             return this;
         };
-        ;
-        WebRTC.prototype.onConnected = function (p) {
-            var pc = this.getPeerConnection(p);
-            // todo: fire event
+        WebRTC.prototype.addIceServer = function (iceServer) {
+            this.rtcConfig.iceServers.push(iceServer);
+            return this;
         };
-        WebRTC.prototype.onDisconnected = function (p) {
-            var pc = this.getPeerConnection(p);
-            pc.close();
-            this.removePeerConnection(p);
-            // todo: fire event
-        };
-        WebRTC.prototype.remoteStreamlost = function (streamId, peerId) { };
         WebRTC.prototype.removePeerConnection = function (id) {
             var _this = this;
             var connection = this.Peers.filter(function (conn) {
                 return conn.id === id;
             })[0];
             connection.streams.forEach(function (stream) {
-                _this.remoteStreamlost(stream.id, connection.id);
+                _this.onRemoteStreamlost(stream.id, connection.id);
             });
             var index = this.Peers.indexOf(connection);
-            if (index >= 0)
+            if (index > -1)
                 this.Peers.splice(index, 1);
         };
         WebRTC.prototype.createPeerConnection = function (id) {
@@ -166,24 +207,23 @@ var ThorIO;
             };
             return rtcPeerConnection;
         };
-        WebRTC.prototype.onRemoteStream = function (stream, connection) { };
-        ;
         WebRTC.prototype.getPeerConnection = function (id) {
-            var match = this.Peers.filter(function (connection) {
+            var match = this.Peers.find(function (connection) {
                 return connection.id === id;
             });
-            if (match.length === 0) {
+            if (match) {
                 var pc = new Connection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
                 return pc.rtcPeerConnection;
             }
-            return match[0].rtcPeerConnection;
+            return match.rtcPeerConnection;
         };
         WebRTC.prototype.createOffer = function (peer) {
             var _this = this;
             var peerConnection = this.createPeerConnection(peer.peerId);
             this.localSteams.forEach(function (stream) {
                 peerConnection.addStream(stream);
+                _this.onLocalSteam(stream);
             });
             peerConnection.createOffer(function (localDescription) {
                 peerConnection.setLocalDescription(localDescription, function () {
@@ -192,10 +232,12 @@ var ThorIO;
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
                     };
-                    _this.brokerProxy.Invoke("contextSignal", offer, "broker");
+                    _this.brokerProxy.Invoke("contextSignal", offer);
                 }, function (err) {
+                    _this.addError(err);
                 });
             }, function (err) {
+                _this.addError(err);
             }, {
                 mandatory: {
                     "offerToReceiveAudio": true,
@@ -204,12 +246,29 @@ var ThorIO;
             });
             return peerConnection;
         };
+        WebRTC.prototype.disconnect = function () {
+            this.Peers.forEach(function (p) {
+                p.rtcPeerConnection.close();
+            });
+            this.changeContext(Math.random().toString(36).substring(2));
+        };
         WebRTC.prototype.connect = function (peerConnections) {
             var _this = this;
             peerConnections.forEach(function (peer) {
                 var pc = new Connection(peer.peerId, _this.createOffer(peer));
                 _this.Peers.push(pc);
             });
+            return this;
+        };
+        WebRTC.prototype.changeContext = function (context) {
+            this.brokerProxy.Invoke("changeContext", { context: context });
+            return this;
+        };
+        WebRTC.prototype.connectPeers = function () {
+            this.brokerProxy.Invoke("connectContext", {});
+        };
+        WebRTC.prototype.connectContext = function () {
+            this.connectPeers();
         };
         return WebRTC;
     }());
@@ -220,6 +279,9 @@ var ThorIO;
             this.url = url;
             this.proxys = new Array();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
+            controllers.forEach(function (alias) {
+                _this.proxys.push(new Proxy(alias, _this.ws));
+            });
             this.ws.onmessage = function (event) {
                 var message = JSON.parse(event.data);
                 _this.GetProxy(message.C).Dispatch(message.T, message.D);
@@ -235,9 +297,6 @@ var ThorIO;
                 _this.IsConnected = true;
                 _this.OnOpen.apply(_this, _this.proxys);
             };
-            controllers.forEach(function (alias) {
-                _this.proxys.push(new Proxy(alias, _this.ws));
-            });
         }
         Factory.prototype.toQuery = function (obj) {
             return "?" + Object.keys(obj).map(function (key) { return (encodeURIComponent(key) + "=" +
@@ -256,7 +315,7 @@ var ThorIO;
             var index = this.proxys.indexOf(this.GetProxy(alias));
             this.proxys.splice(index, 1);
         };
-        Factory.prototype.OnOpen = function (event) { };
+        Factory.prototype.OnOpen = function (proxys) { };
         ;
         Factory.prototype.OnError = function (error) { };
         Factory.prototype.OnClose = function (event) { };
@@ -267,6 +326,7 @@ var ThorIO;
         function Listener(topic, fn) {
             this.fn = fn;
             this.topic = topic;
+            this.count = 0;
         }
         return Listener;
     }());
@@ -315,6 +375,10 @@ var ThorIO;
                 _this.promisedMessages.splice(index, 1);
             });
         }
+        Proxy.prototype.OnOpen = function (event) { };
+        ;
+        Proxy.prototype.OnClose = function (event) { };
+        ;
         Proxy.prototype.Connect = function () {
             this.ws.send(new ThorIO.Message("___connect", {}, this.alias));
             return this;
@@ -326,12 +390,11 @@ var ThorIO;
         };
         ;
         Proxy.prototype.Subscribe = function (topic, callback) {
-            this.On(topic, callback);
             this.ws.send(new ThorIO.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
-            return this;
+            return this.On(topic, callback);
         };
         ;
         Proxy.prototype.Unsubscribe = function (topic) {
@@ -339,12 +402,13 @@ var ThorIO;
                 topic: topic,
                 controller: this.alias
             }, this.alias));
-            return this;
         };
         ;
         Proxy.prototype.On = function (topic, fn) {
-            this.listeners.push(new ThorIO.Listener(topic, fn));
-            return this;
+            var listener = new ThorIO.Listener(topic, fn);
+            this.listeners.push(listener);
+            console.log("lst", listener);
+            return listener;
         };
         ;
         Proxy.prototype.findListener = function (topic) {
@@ -357,11 +421,10 @@ var ThorIO;
             var index = this.listeners.indexOf(this.findListener(topic));
             if (index >= 0)
                 this.listeners.splice(index, 1);
-            return this;
         };
         ;
-        Proxy.prototype.Invoke = function (topic, d, c) {
-            this.ws.send(new ThorIO.Message(topic, d, c || this.alias));
+        Proxy.prototype.Invoke = function (topic, data, controller) {
+            this.ws.send(new ThorIO.Message(topic, data, controller || this.alias));
             return this;
         };
         ;
@@ -384,9 +447,8 @@ var ThorIO;
         };
         Proxy.prototype.Dispatch = function (topic, data) {
             if (topic === "___open") {
-                data = JSON.parse(data);
                 this.IsConnected = true;
-                this.OnOpen(data);
+                this.OnOpen(JSON.parse(data));
                 return;
             }
             else if (topic === "___close") {
@@ -399,10 +461,6 @@ var ThorIO;
                     listener.fn(JSON.parse(data));
             }
         };
-        ;
-        Proxy.prototype.OnOpen = function (event) { };
-        ;
-        Proxy.prototype.OnClose = function (event) { };
         ;
         return Proxy;
     }());

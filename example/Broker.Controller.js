@@ -41,12 +41,8 @@ var BrokerController = (function (_super) {
         this.alias = "broker";
         this.Connections = new Array();
     }
-    BrokerController.prototype.createId = function () {
-        return Math.random().toString(36).substring(2);
-    };
-    ;
     BrokerController.prototype.onopen = function () {
-        this.Peer = new PeerConnection(this.createId(), this.connection.id);
+        this.Peer = new PeerConnection(thor_io_1.ThorIO.Utils.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     };
     BrokerController.prototype.instantMessage = function (data, topic, controller) {
@@ -102,7 +98,7 @@ var BrokerController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], BrokerController.prototype, "connectContext", null);
     BrokerController = __decorate([
-        thor_io_1.ControllerProperties("broker", false), 
+        thor_io_1.ControllerProperties("broker", false, 7500), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], BrokerController);
     return BrokerController;
