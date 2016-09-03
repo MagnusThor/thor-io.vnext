@@ -63,12 +63,9 @@
         document.addEventListener("DOMContentLoaded", function() {
             var client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
 
-            // we connected to the server (.Engine) , onOpen will give us the channels to the Controllers, in this 
+            // we connected to the server (.Engine) , onOpen will give us the proxy's' to the Controllers, in this 
             // case we are specified  just the broker (BrokerController.ts ) 
               client.OnOpen = function(brokerProxy) {
-                // todo: add TURN server's to the config, to ensure "all" can connect..
-
-
                 
                 rtc = new ThorIO.WebRTC(brokerProxy,{
                     iceServers:[
@@ -110,19 +107,23 @@
                 rtc.onRemoteStreamlost = function(streamId,peerId){
                     console.log("streamLost",arguments);  //  todo: find the vido using the peerId, and remove the element
                 };
+
                 rtc.onContextChanged = function(data) {
                     location.hash = data.context;
                 };
-                rtc.onConnectTo = function(peers) {
-                    rtc.connect(peers);
-                };
+
                 rtc.onContextCreated =  function(data) {
+                    // we just create a new context after we are connected if no "context" is pass in the location.hash
                     var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
                     rtc.changeContext(context);
                 };
 
-                // instantMessage
+                // this is not needed , as this is the default behavior, of ThorIO.WebRTC
+                rtc.onConnectTo = function(peers) {
+                    rtc.connect(peers);
+                };
 
+                // instantMessage , a simple chat exists in the 
                 $("#im-text").addEventListener("keyup",function(evt){
                         if(evt.keyCode === 13){
                             brokerProxy.Invoke("instantMessage", {

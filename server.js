@@ -3,26 +3,21 @@ app = express();
 
 var thorio = require("./src/thor-io.js").ThorIO;
 
-var rx = require("./example/Rx.Controller.js")
-var chat = require("./example/Chat.Controller.js")
-var broker = require("./example/Broker.Controller.js")
+var chat = require("./exampleControllers/Chat.Controller.js")
+
+
 
 var controllers = [
-    chat.ChatController
-    ,
-    broker.BrokerController,
-    rx.RxController
+    chat.ChatController,
+    thorio.Controllers.BrokerController
 ];
 
 var thorIO = new thorio.Engine(controllers);
 
 var expressWs = require("express-ws")(app);
+
 app.use("/test", express.static("test"));
 app.use("/client", express.static("test")); // make sure old links work.
-
-
-
-
 
 app.use("/src/", express.static("src"));
 
