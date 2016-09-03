@@ -1,9 +1,8 @@
-declare namespace ThorIO {
+declare namespace ThorIO.Client {
     class Message {
         T: string;
         D: any;
         C: string;
-        id: string;
         JSON: any;
         constructor(topic: string, object: any, controller: string, id?: string);
         toString(): string;
@@ -12,7 +11,7 @@ declare namespace ThorIO {
         context: string;
         peerId: string;
     }
-    class ContextConnection {
+    class Connection {
         id: string;
         rtcPeerConnection: RTCPeerConnection;
         streams: Array<any>;
@@ -21,24 +20,39 @@ declare namespace ThorIO {
     class WebRTC {
         private brokerProxy;
         private rtcConfig;
-        Peers: Array<ContextConnection>;
+        Peers: Array<Connection>;
         Peer: RTCPeerConnection;
         localPeerId: string;
         localSteams: Array<any>;
-        constructor(brokerProxy: ThorIO.Proxy, rtcConfig: RTCConfiguration);
+        Errors: Array<any>;
+        constructor(brokerProxy: ThorIO.Client.Proxy, rtcConfig: RTCConfiguration);
+        private signalHandlers();
+        private addError(err);
+        onError(err: any): void;
+        onContextCreated(peerConnection: PeerConnection): void;
+        onContextChanged(context: string): void;
+        onRemoteStream(stream: MediaStream, connection: Connection): void;
+        onRemoteStreamlost(streamId: string, peerId: string): void;
+        onLocalSteam(stream: MediaStream): void;
+        onContextConnected(rtcPeerConnection: RTCPeerConnection): void;
+        onContextDisconnected(rtcPeerConnection: RTCPeerConnection): void;
+        onConnectTo(peerConnections: Array<PeerConnection>): void;
+        onConnected(peerId: string): void;
+        onDisconnected(peerId: string): void;
         private onCandidate(event);
         private onAnswer(event);
         private onOffer(event);
-        addLocalStream(stream: any): this;
-        private onConnected(p);
-        private onDisconnected(p);
-        remoteStreamlost(streamId: string, peerId: string): void;
+        addLocalStream(stream: any): WebRTC;
+        addIceServer(iceServer: RTCIceServer): WebRTC;
         private removePeerConnection(id);
         private createPeerConnection(id);
-        onRemoteStream(stream: MediaStream, connection: ContextConnection): void;
         private getPeerConnection(id);
         private createOffer(peer);
-        connect(peerConnections: Array<PeerConnection>): void;
+        disconnect(): void;
+        connect(peerConnections: Array<PeerConnection>): WebRTC;
+        changeContext(context: string): WebRTC;
+        connectPeers(): void;
+        connectContext(): void;
     }
     class Factory {
         private url;
@@ -48,15 +62,16 @@ declare namespace ThorIO {
         IsConnected: boolean;
         constructor(url: string, controllers: Array<string>, params?: any);
         Close(): void;
-        GetProxy(alias: string): ThorIO.Proxy;
+        GetProxy(alias: string): ThorIO.Client.Proxy;
         RemoveProxy(alias: string): void;
-        OnOpen(event: any): void;
+        OnOpen(proxys: any): void;
         OnError(error: any): void;
         OnClose(event: any): void;
     }
     class Listener {
         fn: Function;
         topic: string;
+        count: number;
         constructor(topic: string, fn: Function);
     }
     class Utils {
@@ -77,21 +92,21 @@ declare namespace ThorIO {
         alias: string;
         private ws;
         IsConnected: boolean;
-        listeners: Array<ThorIO.Listener>;
-        promisedMessages: Array<PromisedMessage>;
+        private promisedMessages;
+        private listeners;
         constructor(alias: string, ws: WebSocket);
-        Connect(): this;
-        Close(): this;
-        Subscribe(topic: string, callback: any): this;
-        Unsubscribe(topic: string): this;
-        On(topic: string, fn: any): this;
-        private findListener(topic);
-        Off(topic: string): this;
-        Invoke(topic: string, d: any, c?: string): this;
-        SetProperty(propName: string, propValue: any, controller?: string): this;
-        GetProperty(propName: string, controller?: string): Promise<any>;
-        Dispatch(topic: string, data: any): void;
         OnOpen(event: any): void;
         OnClose(event: any): void;
+        Connect(): this;
+        Close(): this;
+        Subscribe(topic: string, callback: any): Listener;
+        Unsubscribe(topic: string): void;
+        On(topic: string, fn: any): Listener;
+        private findListener(topic);
+        Off(topic: string): void;
+        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy;
+        SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Client.Proxy;
+        GetProperty(propName: string, controller?: string): Promise<any>;
+        Dispatch(topic: string, data: any): void;
     }
 }

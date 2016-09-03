@@ -5,20 +5,18 @@ export declare function ControllerProperties(alias: string, seald?: boolean, hea
 export declare namespace ThorIO {
     class Utils {
         static newGuid(): string;
+        static randomString(): string;
         static getInstance<T>(obj: any, ...args: any[]): T;
     }
     class Plugin<T> {
         alias: string;
         instance: T;
-        typeName: string;
         constructor(controller: T);
-        newInstance<T>(...args: any[]): T;
     }
     class Engine {
         private controllers;
         private connections;
-        private _engine;
-        constructor(controllers: Array<ThorIO.Controller>);
+        constructor(controllers: Array<any>);
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;
         addConnection(ws: any): void;
@@ -100,5 +98,33 @@ export declare namespace ThorIO {
         value: any;
         messageId: string;
         constructor();
+    }
+    namespace Controllers {
+        class InstantMessage {
+            text: string;
+        }
+        class PeerConnection {
+            context: string;
+            peerId: string;
+            constructor(context?: string, peerId?: string);
+        }
+        class Signal {
+            recipient: string;
+            sender: string;
+            message: string;
+            constructor(recipient: string, sender: string, message: string);
+        }
+        class BrokerController extends ThorIO.Controller {
+            Connections: Array<PeerConnection>;
+            Peer: PeerConnection;
+            localPeerId: string;
+            constructor(connection: ThorIO.Connection);
+            onopen(): void;
+            instantMessage(data: any, topic: string, controller: string): void;
+            changeContext(change: PeerConnection): void;
+            contextSignal(signal: Signal): void;
+            connectContext(): void;
+            getPeerConnections(peerConnetion: PeerConnection): Array<BrokerController>;
+        }
     }
 }

@@ -1,26 +1,24 @@
 import "reflect-metadata";
 
 export function CanInvoke(state: boolean) {
-    return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
-        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    return function(target, propertyKey: string, descriptor: PropertyDescriptor) {
+        Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     }
 }
 export function CanSet(state: boolean) {
-    return function (target: Object, propertyKey: string) {
-        Reflect.defineMetadata("invokeable", state, target, propertyKey);
+    return function(target: Object, propertyKey: string) {
+        Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     }
 }
-export function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number) {
-    return function (target: Function) {
+export function ControllerProperties(alias: string, seald ? : boolean, heartbeatInterval ? : number) {
+    return function(target: Function) {
         Reflect.defineMetadata("seald", seald || false, target);
         Reflect.defineMetadata("alias", alias, target);
         Reflect.defineMetadata("heartbeatInterval", heartbeatInterval || -1, target)
-
     }
 }
 
 export namespace ThorIO {
-
     export class Utils {
         static newGuid() {
             function s4() {
@@ -28,39 +26,35 @@ export namespace ThorIO {
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
-        static getInstance<T>(obj: any, ...args: any[]): T {
+        static randomString() {
+            return Math.random().toString(36).substring(2);
+        }
+        static getInstance < T > (obj: any, ...args: any[]): T {
             var instance = Object.create(obj.prototype);
             instance.constructor.apply(instance, args);
-            return <T>instance;
+            return <T > instance;
         }
     }
-    export class Plugin<T> {
+    export class Plugin < T > {
         public alias: string;
         public instance: T;
-        public typeName : string;
         constructor(controller: T) {
             this.alias = Reflect.getMetadata("alias", controller)
             this.instance = controller;
         }
-        newInstance<T>(...args: any[]):T{
-            return ThorIO.Utils.getInstance<T>(this,args);
-        }
     }
-
-
 
     export class Engine {
 
+        private controllers: Array < Plugin < Controller >>
+            private connections: Array < Connection > ;
 
-        private controllers: Array<Plugin<Controller>>
-        private connections: Array<Connection>;
-        private _engine: Engine;
-        constructor(controllers: Array<ThorIO.Controller>) {
-            this._engine = this;
-            this.connections = new Array<Connection>();
-            this.controllers = new Array<Plugin<Controller>>();
+        constructor(controllers: Array < any > ) {
+
+            this.connections = new Array < Connection > ();
+            this.controllers = new Array < Plugin < Controller >> ();
             controllers.forEach((ctrl: Controller) => {
-                let plugin = new Plugin<Controller>(ctrl);
+                let plugin = new Plugin < Controller > (ctrl);
                 this.controllers.push(plugin);
             });
 
@@ -68,23 +62,21 @@ export namespace ThorIO {
 
         }
         private createSealdControllers() {
-            this.controllers.forEach((controller: Plugin<Controller>) => {
+            this.controllers.forEach((controller: Plugin < Controller > ) => {
                 if (Reflect.getMetadata("seald", controller.instance)) {
-                    ThorIO.Utils.getInstance<Controller>(controller.instance, new ThorIO.Connection(null, this.connections, this.controllers))
+                    ThorIO.Utils.getInstance < Controller > (controller.instance,
+                        new ThorIO.Connection(null, this.connections, this.controllers))
                 }
             });
         }
         removeConnection(ws: any, reason: number) {
-            try {
-                let connection = this.connections.filter((pre: Connection) => {
-                    return pre.id === ws["$connectionId"];
-                })[0];
-                let index = this.connections.indexOf(connection);
-                if (index >= 0)
-                    this.connections.splice(index, 1);
-            } catch (error) {
-                // todo: log error
-            }
+            let connection = this.connections.find((pre: Connection) => {
+                return pre.id === ws["$connectionId"];
+            });
+            let index = this.connections.indexOf(connection);
+            if (index >= 0)
+                this.connections.splice(index, 1);
+
         };
         addConnection(ws: any) {
             this.connections.push(
@@ -93,9 +85,6 @@ export namespace ThorIO {
             ws.on("close", (reason) => {
                 this.removeConnection(ws, reason);
             });
-
-
-
         }
     }
 
@@ -112,7 +101,7 @@ export namespace ThorIO {
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string, id?: string) {
+        constructor(topic: string, object: any, controller: string, id ? : string) {
             this.D = object;
             this.T = topic;
             this.C = controller;
@@ -146,28 +135,28 @@ export namespace ThorIO {
         public pingPongInterval: number;
         public id: string;
         public ws: any;
-        public controllerInstances: Array<ThorIO.Controller>;
-        public connections: Array<ThorIO.Connection>;
+        public controllerInstances: Array < ThorIO.Controller > ;
+        public connections: Array < ThorIO.Connection > ;
         public clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller: Controller, method: string, data: any) {
             try {
                 if (!controller.canInvokeMethod(method))
                     throw "method '" + method + "' cant be invoked."
-                if (typeof (controller[method]) === "function") {
+                if (typeof(controller[method]) === "function") {
                     controller[method].apply(controller, [data, method, controller.alias]);
 
                 } else {
                     // todo : refactor and use PropertyMessage ?
                     let prop = method;
                     let propValue = data;
-                    if (typeof (controller[prop]) === typeof (propValue))
+                    if (typeof(controller[prop]) === typeof(propValue))
                         controller[prop] = propValue;
                 }
             } catch (ex) {
                 controller.invokeError(ex);
             }
         }
-        constructor(ws: any, connections: Array<Connection>, private controllers: Array<Plugin<Controller>>) {
+        constructor(ws: any, connections: Array < Connection > , private controllers: Array < Plugin < Controller >> ) {
             this.connections = connections;
             this.id = ThorIO.Utils.newGuid();
             if (ws) {
@@ -180,7 +169,7 @@ export namespace ThorIO {
                 });
             }
 
-            this.controllerInstances = new Array<Controller>();
+            this.controllerInstances = new Array < Controller > ();
         }
         hasController(alias: string): boolean {
             let match = this.controllerInstances.filter((pre: Controller) => {
@@ -189,11 +178,11 @@ export namespace ThorIO {
             return match.length >= 0;
         }
         removeController(alias: string) {
-            let index = this.controllerInstances.indexOf(this.getController(alias));
-            if (index > -1)
-                this.controllerInstances.splice(index, 1);
-        }
-        // todo: refactor and improve..
+                let index = this.controllerInstances.indexOf(this.getController(alias));
+                if (index > -1)
+                    this.controllerInstances.splice(index, 1);
+            }
+            // todo: refactor and improve..y
         getController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre: Controller) => {
@@ -213,17 +202,16 @@ export namespace ThorIO {
         }
         locateController(alias: string): Controller {
             try {
-                let match = this.controllerInstances.filter((pre: Controller) => {
+                let match = this.controllerInstances.find((pre: Controller) => {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
-                if (match.length > 0) {
-                    return match[0];
+                if (match) {
+                    return match;
                 } else {
-                    let resolved = this.controllers.filter((resolve: Plugin<Controller>) => {
+                    let resolved = this.controllers.filter((resolve: Plugin < Controller > ) => {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-
-                    var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
+                    var controllerInstance = ThorIO.Utils.getInstance < Controller > (resolved, this);
 
                     this.addControllerInstance(controllerInstance);
 
@@ -243,7 +231,6 @@ export namespace ThorIO {
     export class Subscription {
         public topic: string;
         public controller: string
-
         constructor(topic: string, controller: string) {
             this.topic = topic;
             this.controller = controller;
@@ -254,7 +241,7 @@ export namespace ThorIO {
         @CanSet(false)
         public alias: string;
         @CanSet(false)
-        public subscriptions: Array<Subscription>;
+        public subscriptions: Array < Subscription > ;
         @CanSet(false)
         public connection: Connection
         @CanSet(false)
@@ -265,10 +252,10 @@ export namespace ThorIO {
         private heartbeatInterval: number;
 
         constructor(client: Connection) {
-            this.connection = client;
-            this.subscriptions = new Array<Subscription>();
-            this.alias = Reflect.getMetadata("alias", this.constructor);
 
+            this.connection = client;
+            this.subscriptions = new Array < Subscription > ();
+            this.alias = Reflect.getMetadata("alias", this.constructor);
             this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
 
             if (this.heartbeatInterval >= 1000) this.enableHeartbeat();
@@ -287,21 +274,20 @@ export namespace ThorIO {
         }
         @CanInvoke(false)
         public canInvokeMethod(method: string): any {
-            return Reflect.getMetadata("invokeable", this, method);
+            return Reflect.getMetadata("canInvokeOrSet", this, method);
         }
         @CanInvoke(false)
-        findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any> {
+        findOn < T > (alias: string, predicate: (item: any) => boolean): Array < any > {
             let connections = this.getConnections(alias).map((p: Connection) => {
                 return p.getController(alias);
             });
             return connections.filter(predicate);
         }
         @CanInvoke(false)
-        getConnections(alias?: string): Array<Connection> {
+        getConnections(alias ? : string): Array < Connection > {
             if (!alias) {
                 return this.connection.connections;
-            }
-            else {
+            } else {
                 return this.connection.connections.map((conn: Connection) => {
                     if (conn.hasController(this.alias))
                         return conn;
@@ -309,13 +295,11 @@ export namespace ThorIO {
             }
         }
         @CanInvoke(false)
-        onopen() {
-        }
+        onopen() {}
         @CanInvoke(false)
-        onclose() {
-        }
+        onclose() {}
         @CanInvoke(false)
-        find<T, U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x: T) => <U><any>x): U[] {
+        find < T, U > (array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x: T) => < U > < any > x): U[] {
             return array.filter(predicate).map(selector);
         }
         @CanInvoke(false)
@@ -333,7 +317,7 @@ export namespace ThorIO {
             return this;
         };
         @CanInvoke(false)
-        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller {
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller ? : string): Controller {
             let connections = this.findOn(controller, predicate);
             connections.forEach((controller: Controller) => {
                 controller.invoke(data, topic, this.alias);
@@ -386,12 +370,12 @@ export namespace ThorIO {
 
         @CanInvoke(false)
         public getSubscription(topic: string): Subscription {
-            let subscription = this.subscriptions.filter(
+            let subscription = this.subscriptions.find(
                 (pre: Subscription) => {
                     return pre.topic === topic;
                 }
             );
-            return subscription[0];
+            return subscription;
         }
         @CanInvoke(true)
         ___connect() {
@@ -435,8 +419,79 @@ export namespace ThorIO {
             this.messageId = ThorIO.Utils.newGuid();
         }
     }
+
+
+    export namespace Controllers {
+
+        export class InstantMessage {
+            text: string;
+        }
+
+        export class PeerConnection {
+            context: string;
+            peerId: string;
+            constructor(context ? : string, peerId ? : string) {
+                this.context = context;
+                this.peerId = peerId;
+            }
+        }
+        export class Signal {
+            recipient: string;
+            sender: string;
+            message: string
+            constructor(recipient: string, sender: string, message: string) {
+                this.recipient = recipient;
+                this.sender = sender;
+                this.message = message;
+            }
+        }
+        @ControllerProperties("broker", false, 7500)
+        export class BrokerController extends ThorIO.Controller {
+            public Connections: Array < PeerConnection > ;
+            public Peer: PeerConnection;
+            public localPeerId: string;
+
+            constructor(connection: ThorIO.Connection) {
+                super(connection);
+                this.alias = "broker";
+                this.Connections = new Array < PeerConnection > ();
+            }
+            onopen() {
+                this.Peer = new PeerConnection(ThorIO.Utils.newGuid(), this.connection.id);
+                this.invoke(this.Peer, "contextCreated", this.alias);
+            }
+            @CanInvoke(true)
+            instantMessage(data: any, topic: string, controller: string) {
+                var expression = (pre: BrokerController) => {
+                    return pre.Peer.context >= this.Peer.context
+                };
+                this.invokeTo(expression, data, "instantMessage", this.alias);
+            }
+            @CanInvoke(true)
+            changeContext(change: PeerConnection) {
+                this.Peer.context = change.context;
+                this.invoke(this.Peer, "contextChanged", this.alias);
+            }
+            @CanInvoke(true)
+            contextSignal(signal: Signal) {
+                let expression = (pre: BrokerController) => {
+                    return pre.connection.id === signal.recipient;
+                };
+                this.invokeTo(expression, signal, "contextSignal", this.alias);
+            }
+            @CanInvoke(true)
+            connectContext() {
+                let connections = this.getPeerConnections(this.Peer).map((p: BrokerController) => {
+                    return p.Peer
+                });
+                this.invoke(connections, "connectTo", this.alias);
+            }
+            getPeerConnections(peerConnetion: PeerConnection): Array < BrokerController > {
+                let match = this.findOn(this.alias, (pre: BrokerController) => {
+                    return pre.Peer.context === this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId
+                });
+                return match;
+            }
+        }
+    }
 }
-
-
-
-
