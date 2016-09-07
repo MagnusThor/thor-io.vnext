@@ -1,10 +1,9 @@
-namespace ThorIO {
-    export class Message {
 
+namespace ThorIO.Client {
+    export class Message {
         T: string;
         D: any;
         C: string;
-
         get JSON(): any {
             return {
                 T: this.T,
@@ -21,11 +20,11 @@ namespace ThorIO {
             return JSON.stringify(this.JSON);
         }
     }
-    class PeerConnection {
+    export class PeerConnection {
         context: string;
         peerId: string;
     }
-    class Connection {
+    export class Connection {
         id: string;
         rtcPeerConnection: RTCPeerConnection;
         streams: Array<any>;
@@ -42,11 +41,12 @@ namespace ThorIO {
         public Peer: RTCPeerConnection;
 
         public localPeerId: string;
+        public context: string;
         public localSteams: Array<any>;
 
         public Errors: Array<any>;
 
-        constructor(private brokerProxy: ThorIO.Proxy, private rtcConfig: RTCConfiguration) {
+        constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
 
             this.Errors = new Array<any>();
 
@@ -54,19 +54,19 @@ namespace ThorIO {
             this.localSteams = new Array<any>();
             this.signalHandlers();
 
-            brokerProxy.On("contextCreated", (p) => {
-               
-                this.onContextCreated(p);
+            brokerProxy.On("contextCreated", (peer:PeerConnection) => {
+                this.localPeerId = peer.peerId;
+                this.context = peer.context;
+                this.onContextCreated(peer);
             });
-            brokerProxy.On("contextChanged", (p) => {
-                this.onContextChanged(p);
-            });
-
-            brokerProxy.On("connectTo", (p) =>{
-                this.onConnectTo(p);
+            brokerProxy.On("contextChanged", (context:string) => {
+                this.context = context;
+                this.onContextChanged(context);
             });
 
-
+            brokerProxy.On("connectTo", (peers:Array<PeerConnection>) =>{
+                this.onConnectTo(peers);
+            });
 
 
         }
@@ -92,7 +92,6 @@ namespace ThorIO {
             });
         }
         private addError(err: any) {
-            this.addError(err);
             this.onError(err);
         }
         public onError(err: any) { }
@@ -176,8 +175,7 @@ namespace ThorIO {
             return this;
         }
         addIceServer(iceServer: RTCIceServer): WebRTC {
-
-            this.rtcConfig.iceServers.push(iceServer);
+        this.rtcConfig.iceServers.push(iceServer);
             return this;
         }
 
@@ -235,15 +233,15 @@ namespace ThorIO {
         }
 
         private getPeerConnection(id: string): RTCPeerConnection {
-            let match = this.Peers.find((connection: Connection) => {
+            let match = this.Peers.filter((connection: Connection) => {
                 return connection.id === id;
             });
-            if (match) {
+            if (match.length === 0) {
                 let pc = new Connection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
                 return pc.rtcPeerConnection;
             }
-            return match.rtcPeerConnection;
+            return match[0].rtcPeerConnection;
         }
         private createOffer(peer: PeerConnection) {
             let peerConnection = this.createPeerConnection(peer.peerId);
@@ -308,11 +306,11 @@ namespace ThorIO {
             return `?${Object.keys(obj).map(key => (encodeURIComponent(key) + "=" +
                 encodeURIComponent(obj[key]))).join("&")}`;
         }
-        private proxys: Array<ThorIO.Proxy>;
+        private proxys: Array<ThorIO.Client.Proxy>;
         public IsConnected: boolean;
         constructor(private url: string, controllers: Array<string>, params?: any) {
 
-            this.proxys = new Array<ThorIO.Proxy>();
+            this.proxys = new Array<ThorIO.Client.Proxy>();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             controllers.forEach(alias => {
                 this.proxys.push(
@@ -340,7 +338,7 @@ namespace ThorIO {
             this.ws.close();
         };
 
-        GetProxy(alias: string): ThorIO.Proxy {
+        GetProxy(alias: string): ThorIO.Client.Proxy {
             let channel = this.proxys.filter(pre => (pre.alias === alias));
             return channel[0];
         };
@@ -392,18 +390,18 @@ namespace ThorIO {
         value: any;
         messageId: string
         constructor() {
-            this.messageId = ThorIO.Utils.newGuid();
+            this.messageId = ThorIO.Client.Utils.newGuid();
         }
     }
 
     export class Proxy {
         IsConnected: boolean;
         private promisedMessages: Array<PromisedMessage>;
-        private listeners: Array<ThorIO.Listener>;
+        private listeners: Array<ThorIO.Client.Listener>;
 
         constructor(public alias: string, private ws: WebSocket) {
             this.promisedMessages = new Array<PromisedMessage>();
-            this.listeners = new Array<ThorIO.Listener>();
+            this.listeners = new Array<ThorIO.Client.Listener>();
             this.IsConnected = false;
             this.On("___getProperty", (data: PropertyMessage) => {
                 let prom = this.promisedMessages.filter((pre: PromisedMessage) => {
@@ -420,18 +418,18 @@ namespace ThorIO {
         OnClose(event: any) { };
 
         Connect() {
-            this.ws.send(new ThorIO.Message("___connect", {}, this.alias));
+            this.ws.send(new ThorIO.Client.Message("___connect", {}, this.alias));
             return this;
         };
 
         Close() {
-            this.ws.send(new ThorIO.Message("___close", {}, this.alias));
+            this.ws.send(new ThorIO.Client.Message("___close", {}, this.alias));
             return this;
         };
 
         Subscribe(topic: string, callback: any): Listener {
 
-            this.ws.send(new ThorIO.Message("___subscribe", {
+            this.ws.send(new ThorIO.Client.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -439,7 +437,7 @@ namespace ThorIO {
         };
 
         Unsubscribe(topic: string) {
-            this.ws.send(new ThorIO.Message("___unsubscribe", {
+            this.ws.send(new ThorIO.Client.Message("___unsubscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -447,9 +445,8 @@ namespace ThorIO {
         };
 
         On(topic: string, fn: any): Listener {
-            var listener = new ThorIO.Listener(topic, fn);
+            var listener = new ThorIO.Client.Listener(topic, fn);
             this.listeners.push(listener);
-            console.log("lst", listener);
             return listener;
         };
 
@@ -467,11 +464,11 @@ namespace ThorIO {
             if (index >= 0) this.listeners.splice(index, 1);
 
         };
-        Invoke(topic: string, data: any, controller?: string): ThorIO.Proxy {
-            this.ws.send(new ThorIO.Message(topic, data, controller || this.alias));
+        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy {
+            this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
             return this;
         };
-        SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Proxy {
+        SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Client.Proxy {
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };

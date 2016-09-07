@@ -61,13 +61,13 @@
 
         var rtc;
         document.addEventListener("DOMContentLoaded", function() {
-            var client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
+            var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
 
             // we connected to the server (.Engine) , onOpen will give us the proxy's' to the Controllers, in this 
             // case we are specified  just the broker (BrokerController.ts ) 
               client.OnOpen = function(brokerProxy) {
                 
-                rtc = new ThorIO.WebRTC(brokerProxy,{
+                rtc = new ThorIO.Client.WebRTC(brokerProxy,{
                     iceServers:[
                         {
                             url: "stun:stun.l.google.com:19302"
@@ -101,6 +101,7 @@
             
                 rtc.onRemoteStream = function(stream,connection) {
                         $("#hero").classList.add("hide")
+                        console.log("stream", stream)
                     $("#videos").appendChild(createVideoElement(stream,connection));
                 };
                 
@@ -109,17 +110,21 @@
                 };
 
                 rtc.onContextChanged = function(data) {
+
+                    console.log("onContextChanged",data);
                     location.hash = data.context;
                 };
 
                 rtc.onContextCreated =  function(data) {
                     // we just create a new context after we are connected if no "context" is pass in the location.hash
+                    console.log("onContextCreated",data);
                     var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
                     rtc.changeContext(context);
                 };
 
                 // this is not needed , as this is the default behavior, of ThorIO.WebRTC
                 rtc.onConnectTo = function(peers) {
+                    console.log("onConnectTo",peers);
                     rtc.connect(peers);
                 };
 

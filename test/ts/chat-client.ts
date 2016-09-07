@@ -29,16 +29,16 @@ class ChatClient {
         }
     }
 
-    private client: ThorIO.Factory;
+    private client: ThorIO.Client.Factory;
     private txtMessage:HTMLInputElement;
     private txtAge:HTMLInputElement;
     
 
     constructor() {
 
-        this.client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
+        this.client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
 
-        this.client.OnOpen = (proxy: ThorIO.Proxy) => {
+        this.client.OnOpen = (proxy: ThorIO.Client.Proxy) => {
             proxy.On("chatMessage", (message: ChatMessage) => {
             	this.showMessage(message);
             });

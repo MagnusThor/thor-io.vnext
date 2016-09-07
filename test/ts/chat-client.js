@@ -8,7 +8,7 @@ var ChatMessage = (function () {
 var ChatClient = (function () {
     function ChatClient() {
         var _this = this;
-        this.client = new ThorIO.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
+        this.client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["chat"]);
         this.client.OnOpen = function (proxy) {
             proxy.On("chatMessage", function (message) {
                 _this.showMessage(message);
