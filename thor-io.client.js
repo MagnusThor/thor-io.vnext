@@ -50,14 +50,17 @@ var ThorIO;
                 this.Peers = new Array();
                 this.localSteams = new Array();
                 this.signalHandlers();
-                brokerProxy.On("contextCreated", function (p) {
-                    _this.onContextCreated(p);
+                brokerProxy.On("contextCreated", function (peer) {
+                    _this.localPeerId = peer.peerId;
+                    _this.context = peer.context;
+                    _this.onContextCreated(peer);
                 });
-                brokerProxy.On("contextChanged", function (p) {
-                    _this.onContextChanged(p);
+                brokerProxy.On("contextChanged", function (context) {
+                    _this.context = context;
+                    _this.onContextChanged(context);
                 });
-                brokerProxy.On("connectTo", function (p) {
-                    _this.onConnectTo(p);
+                brokerProxy.On("connectTo", function (peers) {
+                    _this.onConnectTo(peers);
                 });
             }
             WebRTC.prototype.signalHandlers = function () {
@@ -80,7 +83,6 @@ var ThorIO;
                 });
             };
             WebRTC.prototype.addError = function (err) {
-                this.addError(err);
                 this.onError(err);
             };
             WebRTC.prototype.onError = function (err) { };
@@ -211,15 +213,15 @@ var ThorIO;
                 return rtcPeerConnection;
             };
             WebRTC.prototype.getPeerConnection = function (id) {
-                var match = this.Peers.find(function (connection) {
+                var match = this.Peers.filter(function (connection) {
                     return connection.id === id;
                 });
-                if (match) {
+                if (match.length === 0) {
                     var pc = new Connection(id, this.createPeerConnection(id));
                     this.Peers.push(pc);
                     return pc.rtcPeerConnection;
                 }
-                return match.rtcPeerConnection;
+                return match[0].rtcPeerConnection;
             };
             WebRTC.prototype.createOffer = function (peer) {
                 var _this = this;
@@ -410,7 +412,6 @@ var ThorIO;
             Proxy.prototype.On = function (topic, fn) {
                 var listener = new ThorIO.Client.Listener(topic, fn);
                 this.listeners.push(listener);
-                console.log("lst", listener);
                 return listener;
             };
             ;

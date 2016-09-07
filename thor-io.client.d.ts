@@ -23,6 +23,7 @@ declare namespace ThorIO.Client {
         Peers: Array<Connection>;
         Peer: RTCPeerConnection;
         localPeerId: string;
+        context: string;
         localSteams: Array<any>;
         Errors: Array<any>;
         constructor(brokerProxy: ThorIO.Client.Proxy, rtcConfig: RTCConfiguration);

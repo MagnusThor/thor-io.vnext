@@ -41,6 +41,7 @@ namespace ThorIO.Client {
         public Peer: RTCPeerConnection;
 
         public localPeerId: string;
+        public context: string;
         public localSteams: Array<any>;
 
         public Errors: Array<any>;
@@ -53,19 +54,19 @@ namespace ThorIO.Client {
             this.localSteams = new Array<any>();
             this.signalHandlers();
 
-            brokerProxy.On("contextCreated", (p) => {
-               
-                this.onContextCreated(p);
+            brokerProxy.On("contextCreated", (peer:PeerConnection) => {
+                this.localPeerId = peer.peerId;
+                this.context = peer.context;
+                this.onContextCreated(peer);
             });
-            brokerProxy.On("contextChanged", (p) => {
-                this.onContextChanged(p);
-            });
-
-            brokerProxy.On("connectTo", (p) =>{
-                this.onConnectTo(p);
+            brokerProxy.On("contextChanged", (context:string) => {
+                this.context = context;
+                this.onContextChanged(context);
             });
 
-
+            brokerProxy.On("connectTo", (peers:Array<PeerConnection>) =>{
+                this.onConnectTo(peers);
+            });
 
 
         }
@@ -91,7 +92,6 @@ namespace ThorIO.Client {
             });
         }
         private addError(err: any) {
-            this.addError(err);
             this.onError(err);
         }
         public onError(err: any) { }
@@ -175,8 +175,7 @@ namespace ThorIO.Client {
             return this;
         }
         addIceServer(iceServer: RTCIceServer): WebRTC {
-
-            this.rtcConfig.iceServers.push(iceServer);
+        this.rtcConfig.iceServers.push(iceServer);
             return this;
         }
 
@@ -234,15 +233,15 @@ namespace ThorIO.Client {
         }
 
         private getPeerConnection(id: string): RTCPeerConnection {
-            let match = this.Peers.find((connection: Connection) => {
+            let match = this.Peers.filter((connection: Connection) => {
                 return connection.id === id;
             });
-            if (match) {
+            if (match.length === 0) {
                 let pc = new Connection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
                 return pc.rtcPeerConnection;
             }
-            return match.rtcPeerConnection;
+            return match[0].rtcPeerConnection;
         }
         private createOffer(peer: PeerConnection) {
             let peerConnection = this.createPeerConnection(peer.peerId);
@@ -448,7 +447,6 @@ namespace ThorIO.Client {
         On(topic: string, fn: any): Listener {
             var listener = new ThorIO.Client.Listener(topic, fn);
             this.listeners.push(listener);
-            console.log("lst", listener);
             return listener;
         };
 
@@ -502,7 +500,4 @@ namespace ThorIO.Client {
             }
         };
     }
-
-
-
 }

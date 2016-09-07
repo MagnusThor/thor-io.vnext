@@ -18,7 +18,10 @@ export function ControllerProperties(alias: string, seald ? : boolean, heartbeat
     }
 }
 
+
 export namespace ThorIO {
+
+
     export class Utils {
         static newGuid() {
             function s4() {
@@ -34,7 +37,9 @@ export namespace ThorIO {
             instance.constructor.apply(instance, args);
             return <T > instance;
         }
+
     }
+
     export class Plugin < T > {
         public alias: string;
         public instance: T;
@@ -70,13 +75,16 @@ export namespace ThorIO {
             });
         }
         removeConnection(ws: any, reason: number) {
-            let connection = this.connections.find((pre: Connection) => {
-                return pre.id === ws["$connectionId"];
-            });
-            let index = this.connections.indexOf(connection);
-            if (index >= 0)
-                this.connections.splice(index, 1);
-
+            try {
+                let connection = this.connections.find((pre: Connection) => {
+                    return pre.id === ws["$connectionId"];
+                });
+                let index = this.connections.indexOf(connection);
+                if (index >= 0)
+                    this.connections.splice(index, 1);
+            } catch (error) {
+                // todo: log error
+            }
         };
         addConnection(ws: any) {
             this.connections.push(
@@ -85,6 +93,9 @@ export namespace ThorIO {
             ws.on("close", (reason) => {
                 this.removeConnection(ws, reason);
             });
+
+
+
         }
     }
 
@@ -423,7 +434,7 @@ export namespace ThorIO {
 
     export namespace Controllers {
 
-        export class InstantMessage {
+        class InstantMessage {
             text: string;
         }
 
@@ -467,6 +478,7 @@ export namespace ThorIO {
                 };
                 this.invokeTo(expression, data, "instantMessage", this.alias);
             }
+
             @CanInvoke(true)
             changeContext(change: PeerConnection) {
                 this.Peer.context = change.context;
@@ -493,5 +505,9 @@ export namespace ThorIO {
                 return match;
             }
         }
+
+
     }
+
+
 }

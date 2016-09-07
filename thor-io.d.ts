@@ -100,9 +100,6 @@ export declare namespace ThorIO {
         constructor();
     }
     namespace Controllers {
-        class InstantMessage {
-            text: string;
-        }
         class PeerConnection {
             context: string;
             peerId: string;

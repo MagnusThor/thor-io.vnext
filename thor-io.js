@@ -88,12 +88,16 @@ var ThorIO;
             });
         };
         Engine.prototype.removeConnection = function (ws, reason) {
-            var connection = this.connections.find(function (pre) {
-                return pre.id === ws["$connectionId"];
-            });
-            var index = this.connections.indexOf(connection);
-            if (index >= 0)
-                this.connections.splice(index, 1);
+            try {
+                var connection = this.connections.find(function (pre) {
+                    return pre.id === ws["$connectionId"];
+                });
+                var index = this.connections.indexOf(connection);
+                if (index >= 0)
+                    this.connections.splice(index, 1);
+            }
+            catch (error) {
+            }
         };
         ;
         Engine.prototype.addConnection = function (ws) {
@@ -559,7 +563,6 @@ var ThorIO;
             }
             return InstantMessage;
         }());
-        Controllers.InstantMessage = InstantMessage;
         var PeerConnection = (function () {
             function PeerConnection(context, peerId) {
                 this.context = context;
