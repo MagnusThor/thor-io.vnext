@@ -53,10 +53,12 @@ var ThorIO;
                 return listener;
             };
             ;
-            DataChannel.prototype.onMessage = function (event) {
+            DataChannel.prototype.OnOpen = function (event) { };
+            ;
+            DataChannel.prototype.OnClose = function (event) { };
+            DataChannel.prototype.OnMessage = function (event) {
                 //  console.log("..",message);
                 var msg = JSON.parse(event.data);
-                console.log("msg");
                 var listener = this.findListener(msg.T);
                 listener.fn.apply(this, [msg.D]);
             };
@@ -265,16 +267,15 @@ var ThorIO;
                 this.DataChannels.forEach(function (dc) {
                     dc.channel = rtcPeerConnection.createDataChannel(dc.name);
                     rtcPeerConnection.ondatachannel = function (event) {
-                        console.log("??", event);
                         var channel = event.channel;
                         channel.onopen = function (event) {
-                            console.log("channel open", channel);
+                            dc.OnOpen(event);
                         };
                         channel.onclose = function (event) {
-                            console.log("channel close", event);
+                            dc.OnClose(event);
                         };
                         channel.onmessage = function (message) {
-                            dc.onMessage(message);
+                            dc.OnMessage(message);
                         };
                     };
                 });

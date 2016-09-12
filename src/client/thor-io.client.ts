@@ -43,10 +43,8 @@ namespace ThorIO.Client {
         channel: RTCDataChannel;
 
         constructor(name: string,listeners?:Array<Listener>){
-          
             this.listeners = listeners || new Array<Listener>();
             this.name = name;
-
         }
 
         On(topic: string, fn: any): Listener {
@@ -55,11 +53,15 @@ namespace ThorIO.Client {
             return listener;
         };
 
+        
+        OnOpen(event:any){};
+        OnClose(event:any){}
 
-        onMessage(event:MessageEvent){
+
+        OnMessage(event:MessageEvent){
           //  console.log("..",message);
           var msg = JSON.parse(event.data) 
-          console.log("msg");
+         
           var listener = this.findListener(msg.T);
           listener.fn.apply(this,[msg.D]);
         }
@@ -315,37 +317,20 @@ namespace ThorIO.Client {
                 
 
                 rtcPeerConnection.ondatachannel = (event:RTCDataChannelEvent) =>{
-
-
-                console.log("??", event);
-
                 var channel = event.channel;
-
                 channel.onopen = (event) => {
-                       console.log("channel open", channel)
-                      
+                      dc.OnOpen(event);
                 };
-
                 channel.onclose = (event) => {
-                    console.log("channel close",event);  
+                    dc.OnClose(event);
                 };
-
                 channel.onmessage = (message) =>
                 {
-                        dc.onMessage(message);
-                       
+                        dc.OnMessage(message);
                 };
 
-              
-
             }   
-                    
-
-                
-
             });
-            
-
 
             return rtcPeerConnection;
         }

@@ -1,81 +1,62 @@
 <html>
+
 <body>
     <script src="adapter.js">
-    </script>   
+    </script>
     <script src="/src/client/thor-io.client.js">
-
     </script>
 
-  
-    <script>
 
-    var $ = function(selector,el){
-        if(!el) el = document;
-        return el.querySelector(selector);
-    }
+    <script>
+        var $ = function(selector, el) {
+            if (!el) el = document;
+            return el.querySelector(selector);
+        }
 
 
         var rtc, dc;
         document.addEventListener("DOMContentLoaded", function() {
             var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
-              client.OnOpen = function(brokerProxy) {
-                
-                rtc = new ThorIO.Client.WebRTC(brokerProxy,{
-                    iceServers:[
-                        {
+            client.OnOpen = function(brokerProxy) {
+
+                rtc = new ThorIO.Client.WebRTC(brokerProxy, {
+                    iceServers: [{
                             url: "stun:stun.l.google.com:19302"
                         }
-                        
                     ]
-                       
-                    
+
                 });
 
                 dc = rtc.createDataChannel("foo")
 
-                dc.On("bar", function(m){
-                        console.log("m",m);
-                })
-               
-                rtc.onContextChanged = function(data) {
-                    console.log("onContextChanged",data);
-              //      location.hash = data.context;
-
-                   rtc.connectContext()
-
+                dc.OnOpen = function() {
+                    console.log("open");
                 };
 
-                rtc.onContextCreated =  function(data) {
-                    // we just create a new context after we are connected if no "context" is pass in the location.hash
-                    console.log("onContextCreated",data);
-               //     var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
+                dc.OnClose = function() {
+                    console.log("close");
+                };
+
+
+                dc.On("bar", function(m) {
+                    console.log("got a message on a channel", m);
+                })
+
+                rtc.onContextChanged = function(data) {
+                    console.log("onContextChanged", data);
+                    rtc.connectContext()
+                };
+
+                rtc.onContextCreated = function(data) {
+                    console.log("onContextCreated", data);
                     rtc.changeContext("foo");
                 };
-
-                // this is not needed , as this is the default behavior, of ThorIO.WebRTC
                 rtc.onConnectTo = function(peers) {
-                    console.log("onConnectTo",peers);
+                    console.log("onConnectTo", peers);
                     rtc.connect(peers);
                 };
 
-                // instantMessage , a simple chat exists in the 
-                // $("#im-text").addEventListener("keyup",function(evt){
-                //         // if(evt.keyCode === 13){
-                //         //     brokerProxy.Invoke("instantMessage", {
-                //         //         text: (new Date()).toTimeString().substring(0,5) + " : " + this.value // just a simple message
-                //         //     },"broker");
-                //         //     this.value = ""
-                //         // }
-                // });
-                //  brokerProxy.On("instantMessage", function(data){
-                //         var im = document.createElement("p");
-                //         im.textContent = data.text;
-                //         var parent =  $("#im-messages");
-                //        parent.insertBefore(im,parent.firstChild);
-                // });
-
-                
-              brokerProxy.Connect();
+                brokerProxy.Connect();
             };
         });
     </script>
