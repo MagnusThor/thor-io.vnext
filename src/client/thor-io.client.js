@@ -26,27 +26,67 @@ var ThorIO;
             return Message;
         }());
         Client.Message = Message;
+        // todo: Move to separate namespace
         var PeerConnection = (function () {
             function PeerConnection() {
             }
             return PeerConnection;
         }());
         Client.PeerConnection = PeerConnection;
-        var Connection = (function () {
-            function Connection(id, rtcPeerConnection) {
+        var WebRTCConnection = (function () {
+            function WebRTCConnection(id, rtcPeerConnection) {
                 this.id = id;
                 this.rtcPeerConnection = rtcPeerConnection;
                 this.streams = new Array();
             }
-            return Connection;
+            return WebRTCConnection;
         }());
-        Client.Connection = Connection;
+        Client.WebRTCConnection = WebRTCConnection;
+        var DataChannel = (function () {
+            function DataChannel(name, listeners) {
+                this.listeners = listeners || new Array();
+                this.name = name;
+            }
+            DataChannel.prototype.On = function (topic, fn) {
+                var listener = new ThorIO.Client.Listener(topic, fn);
+                this.listeners.push(listener);
+                return listener;
+            };
+            ;
+            DataChannel.prototype.onMessage = function (event) {
+                //  console.log("..",message);
+                var msg = JSON.parse(event.data);
+                console.log("msg");
+                var listener = this.findListener(msg.T);
+                listener.fn.apply(this, [msg.D]);
+            };
+            DataChannel.prototype.findListener = function (topic) {
+                var listener = this.listeners.filter(function (pre) {
+                    return pre.topic === topic;
+                });
+                return listener[0];
+            };
+            DataChannel.prototype.Off = function (topic) {
+                var index = this.listeners.indexOf(this.findListener(topic));
+                if (index >= 0)
+                    this.listeners.splice(index, 1);
+            };
+            ;
+            DataChannel.prototype.Invoke = function (topic, data, controller) {
+                this.channel.send(new ThorIO.Client.Message(topic, data, this.name).toString());
+                return this;
+            };
+            ;
+            return DataChannel;
+        }());
+        Client.DataChannel = DataChannel;
         var WebRTC = (function () {
             function WebRTC(brokerProxy, rtcConfig) {
                 var _this = this;
                 this.brokerProxy = brokerProxy;
                 this.rtcConfig = rtcConfig;
                 this.Errors = new Array();
+                this.DataChannels = new Array();
                 this.Peers = new Array();
                 this.localSteams = new Array();
                 this.signalHandlers();
@@ -63,6 +103,15 @@ var ThorIO;
                     _this.onConnectTo(peers);
                 });
             }
+            WebRTC.prototype.createDataChannel = function (name) {
+                var channel = new DataChannel(name);
+                this.DataChannels.push(channel);
+                return channel;
+            };
+            WebRTC.prototype.removeDataChannel = function (name) {
+                var match = this.DataChannels.filter(function (p) { return p.name === name; })[0];
+                this.DataChannels.splice(this.DataChannels.indexOf(match), 1);
+            };
             WebRTC.prototype.signalHandlers = function () {
                 var _this = this;
                 this.brokerProxy.On("contextSignal", function (signal) {
@@ -150,7 +199,7 @@ var ThorIO;
                 }, {
                     mandatory: {
                         "offerToReceiveAudio": true,
-                        "offerToReceiveVideo": true
+                        "offerToReceiveVideo": true,
                     }
                 });
             };
@@ -177,6 +226,7 @@ var ThorIO;
             WebRTC.prototype.createPeerConnection = function (id) {
                 var _this = this;
                 var rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
+                rtcPeerConnection["id"] = id;
                 rtcPeerConnection.onsignalingstatechange = function (state) { };
                 rtcPeerConnection.onicecandidate = function (event) {
                     if (!event || !event.candidate)
@@ -211,6 +261,23 @@ var ThorIO;
                     connection.streams.push(event.stream);
                     _this.onRemoteStream(event.stream, connection);
                 };
+                // Cretae DataChannel's
+                this.DataChannels.forEach(function (dc) {
+                    dc.channel = rtcPeerConnection.createDataChannel(dc.name);
+                    rtcPeerConnection.ondatachannel = function (event) {
+                        console.log("??", event);
+                        var channel = event.channel;
+                        channel.onopen = function (event) {
+                            console.log("channel open", channel);
+                        };
+                        channel.onclose = function (event) {
+                            console.log("channel close", event);
+                        };
+                        channel.onmessage = function (message) {
+                            dc.onMessage(message);
+                        };
+                    };
+                });
                 return rtcPeerConnection;
             };
             WebRTC.prototype.getPeerConnection = function (id) {
@@ -218,7 +285,7 @@ var ThorIO;
                     return connection.id === id;
                 });
                 if (match.length === 0) {
-                    var pc = new Connection(id, this.createPeerConnection(id));
+                    var pc = new WebRTCConnection(id, this.createPeerConnection(id));
                     this.Peers.push(pc);
                     return pc.rtcPeerConnection;
                 }
@@ -247,7 +314,7 @@ var ThorIO;
                 }, {
                     mandatory: {
                         "offerToReceiveAudio": true,
-                        "offerToReceiveVideo": true
+                        "offerToReceiveVideo": true,
                     }
                 });
                 return peerConnection;
@@ -261,7 +328,7 @@ var ThorIO;
             WebRTC.prototype.connect = function (peerConnections) {
                 var _this = this;
                 peerConnections.forEach(function (peer) {
-                    var pc = new Connection(peer.peerId, _this.createOffer(peer));
+                    var pc = new WebRTCConnection(peer.peerId, _this.createOffer(peer));
                     _this.Peers.push(pc);
                 });
                 return this;

@@ -68,7 +68,7 @@ interface RTCOptionalMediaConstraint {
   // When true, will use DTLS/SCTP data channels
   DtlsSrtpKeyAgreement?: boolean;
   // When true will use Rtp-based data channels (depreicated)
-  RtpDataChannels?: boolean;
+  ƒ?: boolean;
 }
 
 // ks 12/20/12 - There's more here that doesn't seem to be documented very well yet.
