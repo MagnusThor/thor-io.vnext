@@ -57,10 +57,12 @@ var ThorIO;
             ;
             DataChannel.prototype.OnClose = function (event) { };
             DataChannel.prototype.OnMessage = function (event) {
-                //  console.log("..",message);
                 var msg = JSON.parse(event.data);
                 var listener = this.findListener(msg.T);
                 listener.fn.apply(this, [msg.D]);
+            };
+            DataChannel.prototype.Close = function () {
+                this.channel.close();
             };
             DataChannel.prototype.findListener = function (topic) {
                 var listener = this.listeners.filter(function (pre) {
@@ -228,7 +230,6 @@ var ThorIO;
             WebRTC.prototype.createPeerConnection = function (id) {
                 var _this = this;
                 var rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
-                rtcPeerConnection["id"] = id;
                 rtcPeerConnection.onsignalingstatechange = function (state) { };
                 rtcPeerConnection.onicecandidate = function (event) {
                     if (!event || !event.candidate)
@@ -263,7 +264,6 @@ var ThorIO;
                     connection.streams.push(event.stream);
                     _this.onRemoteStream(event.stream, connection);
                 };
-                // Cretae DataChannel's
                 this.DataChannels.forEach(function (dc) {
                     dc.channel = rtcPeerConnection.createDataChannel(dc.name);
                     rtcPeerConnection.ondatachannel = function (event) {

@@ -41,31 +41,25 @@ namespace ThorIO.Client {
         name:string;
         listeners: Array<Listener>;
         channel: RTCDataChannel;
-
         constructor(name: string,listeners?:Array<Listener>){
             this.listeners = listeners || new Array<Listener>();
             this.name = name;
         }
-
         On(topic: string, fn: any): Listener {
             var listener = new ThorIO.Client.Listener(topic, fn);
             this.listeners.push(listener);
             return listener;
         };
-
-        
-        OnOpen(event:any){};
-        OnClose(event:any){}
-
-
+        OnOpen(event:Event){};
+        OnClose(event:Event){}
         OnMessage(event:MessageEvent){
-          //  console.log("..",message);
           var msg = JSON.parse(event.data) 
-         
           var listener = this.findListener(msg.T);
           listener.fn.apply(this,[msg.D]);
         }
-
+        Close(){
+            this.channel.close();
+        }
         private findListener(topic: string): Listener {
             let listener = this.listeners.filter(
                 (pre: Listener) => {
@@ -78,15 +72,11 @@ namespace ThorIO.Client {
             let index =
                 this.listeners.indexOf(this.findListener(topic));
             if (index >= 0) this.listeners.splice(index, 1);
-
         };
         Invoke(topic: string, data: any, controller?: string) : ThorIO.Client.DataChannel {
          this.channel.send(new ThorIO.Client.Message(topic, data,this.name).toString())
             return this;
         };
-
-       
-        
     }
 
     export class WebRTC {
@@ -103,13 +93,11 @@ namespace ThorIO.Client {
         public Errors: Array<any>;
 
         constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
-
             this.Errors = new Array<any>();
             this.DataChannels = new Array<DataChannel>();
             this.Peers = new Array<any>();
             this.localSteams = new Array<any>();
             this.signalHandlers();
-
             brokerProxy.On("contextCreated", (peer:PeerConnection) => {
                 this.localPeerId = peer.peerId;
                 this.context = peer.context;
@@ -249,9 +237,6 @@ namespace ThorIO.Client {
         this.rtcConfig.iceServers.push(iceServer);
             return this;
         }
-
-
-
         private removePeerConnection(id: string) {
             let connection = this.Peers.filter((conn: WebRTCConnection) => {
                 return conn.id === id;
@@ -265,13 +250,7 @@ namespace ThorIO.Client {
         }
 
         private createPeerConnection(id: string): RTCPeerConnection {
-
             let rtcPeerConnection = new RTCPeerConnection(this.rtcConfig)
-           
-            rtcPeerConnection["id"] = id;
-
-       
-
             rtcPeerConnection.onsignalingstatechange = (state) => { };
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
@@ -304,34 +283,23 @@ namespace ThorIO.Client {
                 connection.streams.push(event.stream);
                 this.onRemoteStream(event.stream, connection);
             };
-
-            // Cretae DataChannel's
-
-
-
                 this.DataChannels.forEach( (dc:DataChannel)  => {
-
-
                 dc.channel =  rtcPeerConnection.createDataChannel(dc.name);
-
                 
-
                 rtcPeerConnection.ondatachannel = (event:RTCDataChannelEvent) =>{
                 var channel = event.channel;
-                channel.onopen = (event) => {
+                channel.onopen = (event:Event) => {
                       dc.OnOpen(event);
                 };
-                channel.onclose = (event) => {
+                channel.onclose = (event:Event) => {
                     dc.OnClose(event);
                 };
-                channel.onmessage = (message) =>
+                channel.onmessage = (message:MessageEvent) =>
                 {
                         dc.OnMessage(message);
                 };
-
             }   
             });
-
             return rtcPeerConnection;
         }
 
