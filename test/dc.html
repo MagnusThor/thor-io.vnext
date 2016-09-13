@@ -19,7 +19,7 @@
                     return el.querySelector(selector);
                 }
 
-                var rtc, dc;
+                var rtc, dc, recorder
                 document.addEventListener("DOMContentLoaded", function() {
                     var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["contextBroker"]);
                     client.OnOpen = function(brokerProxy) {
@@ -53,6 +53,23 @@
                             rtc.Connect(peers);
                         };
                         brokerProxy.Connect();
+
+
+                navigator.getUserMedia({audio:false,video:true}, (stream) => {
+                     recorder = new ThorIO.Client.Recorder(stream,"video/webm",false);
+
+                        console.log(recorder);
+
+
+                        recorder.OnRecordComplated = function(){
+                            console.log("OnRecordComplated",arguments);
+                        }
+
+                    },function(err){
+                         console.log("getUserMedia error", err);
+                    });
+
+
                     };
                 });
             </script>
