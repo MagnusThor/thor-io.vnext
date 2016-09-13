@@ -45,7 +45,8 @@ var ThorIO;
         var DataChannel = (function () {
             function DataChannel(name, listeners) {
                 this.listeners = listeners || new Array();
-                this.name = name;
+                this.PeerChannels = new Array();
+                this.Name = name;
             }
             DataChannel.prototype.On = function (topic, fn) {
                 var listener = new ThorIO.Client.Listener(topic, fn);
@@ -59,10 +60,13 @@ var ThorIO;
             DataChannel.prototype.OnMessage = function (event) {
                 var msg = JSON.parse(event.data);
                 var listener = this.findListener(msg.T);
-                listener.fn.apply(this, [msg.D]);
+                if (listener)
+                    listener.fn.apply(this, [msg.D]);
             };
             DataChannel.prototype.Close = function () {
-                this.channel.close();
+                this.PeerChannels.forEach(function (channel) {
+                    channel.close();
+                });
             };
             DataChannel.prototype.findListener = function (topic) {
                 var listener = this.listeners.filter(function (pre) {
@@ -77,10 +81,12 @@ var ThorIO;
             };
             ;
             DataChannel.prototype.Invoke = function (topic, data, controller) {
-                this.channel.send(new ThorIO.Client.Message(topic, data, this.name).toString());
+                var _this = this;
+                this.PeerChannels.forEach(function (channel) {
+                    channel.send(new ThorIO.Client.Message(topic, data, _this.Name).toString());
+                });
                 return this;
             };
-            ;
             return DataChannel;
         }());
         Client.DataChannel = DataChannel;
@@ -92,28 +98,28 @@ var ThorIO;
                 this.Errors = new Array();
                 this.DataChannels = new Array();
                 this.Peers = new Array();
-                this.localSteams = new Array();
+                this.LocalSteams = new Array();
                 this.signalHandlers();
                 brokerProxy.On("contextCreated", function (peer) {
-                    _this.localPeerId = peer.peerId;
-                    _this.context = peer.context;
-                    _this.onContextCreated(peer);
+                    _this.LocalPeerId = peer.peerId;
+                    _this.Context = peer.context;
+                    _this.OnContextCreated(peer);
                 });
                 brokerProxy.On("contextChanged", function (context) {
-                    _this.context = context;
-                    _this.onContextChanged(context);
+                    _this.Context = context;
+                    _this.OnContextChanged(context);
                 });
                 brokerProxy.On("connectTo", function (peers) {
-                    _this.onConnectTo(peers);
+                    _this.OnConnectTo(peers);
                 });
             }
-            WebRTC.prototype.createDataChannel = function (name) {
+            WebRTC.prototype.CreateDataChannel = function (name) {
                 var channel = new DataChannel(name);
                 this.DataChannels.push(channel);
                 return channel;
             };
-            WebRTC.prototype.removeDataChannel = function (name) {
-                var match = this.DataChannels.filter(function (p) { return p.name === name; })[0];
+            WebRTC.prototype.RemoveDataChannel = function (name) {
+                var match = this.DataChannels.filter(function (p) { return p.Name === name; })[0];
                 this.DataChannels.splice(this.DataChannels.indexOf(match), 1);
             };
             WebRTC.prototype.signalHandlers = function () {
@@ -137,29 +143,28 @@ var ThorIO;
                 });
             };
             WebRTC.prototype.addError = function (err) {
-                this.onError(err);
+                this.OnError(err);
             };
-            WebRTC.prototype.onError = function (err) { };
-            WebRTC.prototype.onContextCreated = function (peerConnection) {
-            };
-            WebRTC.prototype.onContextChanged = function (context) { };
-            WebRTC.prototype.onRemoteStream = function (stream, connection) { };
+            WebRTC.prototype.OnError = function (err) { };
+            WebRTC.prototype.OnContextCreated = function (peerConnection) { };
+            WebRTC.prototype.OnContextChanged = function (context) { };
+            WebRTC.prototype.OnRemoteStream = function (stream, connection) { };
             ;
-            WebRTC.prototype.onRemoteStreamlost = function (streamId, peerId) { };
-            WebRTC.prototype.onLocalSteam = function (stream) { };
+            WebRTC.prototype.OnRemoteStreamlost = function (streamId, peerId) { };
+            WebRTC.prototype.OnLocalSteam = function (stream) { };
             ;
-            WebRTC.prototype.onContextConnected = function (rtcPeerConnection) { };
-            WebRTC.prototype.onContextDisconnected = function (rtcPeerConnection) { };
-            WebRTC.prototype.onConnectTo = function (peerConnections) {
-                this.connect(peerConnections);
+            WebRTC.prototype.OnContextConnected = function (rtcPeerConnection) { };
+            WebRTC.prototype.OnContextDisconnected = function (rtcPeerConnection) { };
+            WebRTC.prototype.OnConnectTo = function (peerConnections) {
+                this.Connect(peerConnections);
             };
-            WebRTC.prototype.onConnected = function (peerId) {
-                this.onContextConnected(this.getPeerConnection(peerId));
+            WebRTC.prototype.OnConnected = function (peerId) {
+                this.OnContextConnected(this.getPeerConnection(peerId));
             };
-            WebRTC.prototype.onDisconnected = function (peerId) {
+            WebRTC.prototype.OnDisconnected = function (peerId) {
                 var pc = this.getPeerConnection(peerId);
                 pc.close();
-                this.onContextDisconnected(pc);
+                this.OnContextDisconnected(pc);
                 this.removePeerConnection(peerId);
             };
             WebRTC.prototype.onCandidate = function (event) {
@@ -186,14 +191,14 @@ var ThorIO;
             WebRTC.prototype.onOffer = function (event) {
                 var _this = this;
                 var pc = this.getPeerConnection(event.sender);
-                this.localSteams.forEach(function (stream) {
+                this.LocalSteams.forEach(function (stream) {
                     pc.addStream(stream);
                 });
                 pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
                 pc.createAnswer(function (description) {
                     pc.setLocalDescription(description);
                     var answer = {
-                        sender: _this.localPeerId,
+                        sender: _this.LocalPeerId,
                         recipient: event.sender,
                         message: JSON.stringify(description)
                     };
@@ -207,11 +212,11 @@ var ThorIO;
                     }
                 });
             };
-            WebRTC.prototype.addLocalStream = function (stream) {
-                this.localSteams.push(stream);
+            WebRTC.prototype.AddLocalStream = function (stream) {
+                this.LocalSteams.push(stream);
                 return this;
             };
-            WebRTC.prototype.addIceServer = function (iceServer) {
+            WebRTC.prototype.AddIceServer = function (iceServer) {
                 this.rtcConfig.iceServers.push(iceServer);
                 return this;
             };
@@ -221,7 +226,7 @@ var ThorIO;
                     return conn.id === id;
                 })[0];
                 connection.streams.forEach(function (stream) {
-                    _this.onRemoteStreamlost(stream.id, connection.id);
+                    _this.OnRemoteStreamlost(stream.id, connection.id);
                 });
                 var index = this.Peers.indexOf(connection);
                 if (index > -1)
@@ -236,7 +241,7 @@ var ThorIO;
                         return;
                     if (event.candidate) {
                         var msg = {
-                            sender: _this.localPeerId,
+                            sender: _this.LocalPeerId,
                             recipient: id,
                             message: JSON.stringify({
                                 type: 'candidate',
@@ -249,10 +254,10 @@ var ThorIO;
                 rtcPeerConnection.oniceconnectionstatechange = function (event) {
                     switch (event.target.iceConnectionState) {
                         case "connected":
-                            _this.onConnected(id);
+                            _this.OnConnected(id);
                             break;
                         case "disconnected":
-                            _this.onDisconnected(id);
+                            _this.OnDisconnected(id);
                             break;
                     }
                     ;
@@ -262,10 +267,10 @@ var ThorIO;
                         return p.id === id;
                     })[0];
                     connection.streams.push(event.stream);
-                    _this.onRemoteStream(event.stream, connection);
+                    _this.OnRemoteStream(event.stream, connection);
                 };
                 this.DataChannels.forEach(function (dc) {
-                    dc.channel = rtcPeerConnection.createDataChannel(dc.name);
+                    dc.PeerChannels.push(rtcPeerConnection.createDataChannel(dc.Name));
                     rtcPeerConnection.ondatachannel = function (event) {
                         var channel = event.channel;
                         channel.onopen = function (event) {
@@ -295,14 +300,14 @@ var ThorIO;
             WebRTC.prototype.createOffer = function (peer) {
                 var _this = this;
                 var peerConnection = this.createPeerConnection(peer.peerId);
-                this.localSteams.forEach(function (stream) {
+                this.LocalSteams.forEach(function (stream) {
                     peerConnection.addStream(stream);
-                    _this.onLocalSteam(stream);
+                    _this.OnLocalSteam(stream);
                 });
                 peerConnection.createOffer(function (localDescription) {
                     peerConnection.setLocalDescription(localDescription, function () {
                         var offer = {
-                            sender: _this.localPeerId,
+                            sender: _this.LocalPeerId,
                             recipient: peer.peerId,
                             message: JSON.stringify(localDescription)
                         };
@@ -320,13 +325,13 @@ var ThorIO;
                 });
                 return peerConnection;
             };
-            WebRTC.prototype.disconnect = function () {
+            WebRTC.prototype.Disconnect = function () {
                 this.Peers.forEach(function (p) {
                     p.rtcPeerConnection.close();
                 });
-                this.changeContext(Math.random().toString(36).substring(2));
+                this.ChangeContext(Math.random().toString(36).substring(2));
             };
-            WebRTC.prototype.connect = function (peerConnections) {
+            WebRTC.prototype.Connect = function (peerConnections) {
                 var _this = this;
                 peerConnections.forEach(function (peer) {
                     var pc = new WebRTCConnection(peer.peerId, _this.createOffer(peer));
@@ -334,15 +339,15 @@ var ThorIO;
                 });
                 return this;
             };
-            WebRTC.prototype.changeContext = function (context) {
+            WebRTC.prototype.ChangeContext = function (context) {
                 this.brokerProxy.Invoke("changeContext", { context: context });
                 return this;
             };
-            WebRTC.prototype.connectPeers = function () {
+            WebRTC.prototype.ConnectPeers = function () {
                 this.brokerProxy.Invoke("connectContext", {});
             };
-            WebRTC.prototype.connectContext = function () {
-                this.connectPeers();
+            WebRTC.prototype.ConnectContext = function () {
+                this.ConnectPeers();
             };
             return WebRTC;
         }());

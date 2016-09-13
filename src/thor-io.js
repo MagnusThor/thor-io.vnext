@@ -587,7 +587,6 @@ var ThorIO;
             __extends(BrokerController, _super);
             function BrokerController(connection) {
                 _super.call(this, connection);
-                this.alias = "broker";
                 this.Connections = new Array();
             }
             BrokerController.prototype.onopen = function () {
@@ -649,7 +648,7 @@ var ThorIO;
                 __metadata('design:returntype', void 0)
             ], BrokerController.prototype, "connectContext", null);
             BrokerController = __decorate([
-                ControllerProperties("broker", false, 7500), 
+                ControllerProperties("contextBroker", false, 7500), 
                 __metadata('design:paramtypes', [ThorIO.Connection])
             ], BrokerController);
             return BrokerController;

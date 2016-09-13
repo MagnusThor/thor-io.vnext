@@ -1,65 +1,61 @@
 <html>
 
 <body>
-    <script src="adapter.js">
-    </script>
-    <script src="/src/client/thor-io.client.js">
-    </script>
+
+    <h1>thor-io.vnext</h1>
+    <p>A small RTCDataChannel example</p>
+    <p>Open the console and type <code>dc.Invoke("chatMessage","Hello World!")</code>. You will need 1-n browser windows created.
+        <p>
 
 
-    <script>
-        var $ = function(selector, el) {
-            if (!el) el = document;
-            return el.querySelector(selector);
-        }
+            <script src="adapter.js">
+            </script>
+            <script src="/src/client/thor-io.client.js">
+            </script>
 
+            <script>
+                var $ = function(selector, el) {
+                    if (!el) el = document;
+                    return el.querySelector(selector);
+                }
 
-        var rtc, dc;
-        document.addEventListener("DOMContentLoaded", function() {
-            var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
-            client.OnOpen = function(brokerProxy) {
+                var rtc, dc;
+                document.addEventListener("DOMContentLoaded", function() {
+                    var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["contextBroker"]);
+                    client.OnOpen = function(brokerProxy) {
+                        rtc = new ThorIO.Client.WebRTC(brokerProxy, {
+                            iceServers: [{
+                                urls: "stun:stun.l.google.com:19302"
+                            }]
+                        });
 
-                rtc = new ThorIO.Client.WebRTC(brokerProxy, {
-                    iceServers: [{
-                            url: "stun:stun.l.google.com:19302"
-                        }
-                    ]
+                        dc = rtc.CreateDataChannel("foo")
 
+                        dc.OnOpen = function() {
+                            console.log("data channel open");
+                        };
+                        dc.OnClose = function() {
+                            console.log("data channel close");
+                        };
+                        dc.On("chatMessage", function(message) {
+                            console.log("got a message on a channel", message);
+                        })
+                        rtc.OnContextChanged = function(data) {
+                            console.log("onContextChanged", data);
+                            rtc.ConnectContext()
+                        };
+                        rtc.OnContextCreated = function(data) {
+                            console.log("onContextCreated", data);
+                            rtc.ChangeContext("foo");
+                        };
+                        rtc.OnConnectTo = function(peers) {
+                            console.log("onConnectTo", peers);
+                            rtc.Connect(peers);
+                        };
+                        brokerProxy.Connect();
+                    };
                 });
-
-                dc = rtc.createDataChannel("foo")
-
-                dc.OnOpen = function() {
-                    console.log("open");
-                };
-
-                dc.OnClose = function() {
-                    console.log("close");
-                };
-
-
-                dc.On("bar", function(m) {
-                    console.log("got a message on a channel", m);
-                })
-
-                rtc.onContextChanged = function(data) {
-                    console.log("onContextChanged", data);
-                    rtc.connectContext()
-                };
-
-                rtc.onContextCreated = function(data) {
-                    console.log("onContextCreated", data);
-                    rtc.changeContext("foo");
-                };
-                rtc.onConnectTo = function(peers) {
-                    console.log("onConnectTo", peers);
-                    rtc.connect(peers);
-                };
-
-                brokerProxy.Connect();
-            };
-        });
-    </script>
+            </script>
 
 </body>
 

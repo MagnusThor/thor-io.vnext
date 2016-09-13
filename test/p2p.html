@@ -87,7 +87,7 @@
                 // query for media access using the constraints , in this case audio and 720p video
                 if(navigator.getUserMedia){
                     navigator.getUserMedia(constraints, function(stream) {
-                        rtc.addLocalStream(stream);
+                        rtc.AddLocalStream(stream);
                         attachMediaStream($("#local"),stream);
                     },function(err){
                          console.log("getUserMedia error", err);
@@ -95,37 +95,37 @@
                 }
                 // start the conference
                 $("#call").addEventListener("click", function(){
-                    rtc.connectContext();
+                    rtc.ConnectContext();
                     $("#hero").classList.add("hide");
                 });
             
-                rtc.onRemoteStream = function(stream,connection) {
+                rtc.OnRemoteStream = function(stream,connection) {
                         $("#hero").classList.add("hide")
-                        console.log("stream", stream)
+                     
                     $("#videos").appendChild(createVideoElement(stream,connection));
                 };
                 
-                rtc.onRemoteStreamlost = function(streamId,peerId){
+                rtc.OnRemoteStreamlost = function(streamId,peerId){
                     console.log("streamLost",arguments);  //  todo: find the vido using the peerId, and remove the element
                 };
 
-                rtc.onContextChanged = function(data) {
+                rtc.OnContextChanged = function(data) {
 
                     console.log("onContextChanged",data);
                     location.hash = data.context;
                 };
 
-                rtc.onContextCreated =  function(data) {
+                rtc.OnContextCreated =  function(data) {
                     // we just create a new context after we are connected if no "context" is pass in the location.hash
                     console.log("onContextCreated",data);
                     var context = location.hash || Math.random().toString(36).replace(/[^a-z]+/g,"").substr(0, 10);
-                    rtc.changeContext(context);
+                    rtc.ChangeContext(context);
                 };
 
                 // this is not needed , as this is the default behavior, of ThorIO.WebRTC
-                rtc.onConnectTo = function(peers) {
+                rtc.OnConnectTo = function(peers) {
                     console.log("onConnectTo",peers);
-                    rtc.connect(peers);
+                    rtc.Connect(peers);
                 };
 
                 // instantMessage , a simple chat exists in the 
