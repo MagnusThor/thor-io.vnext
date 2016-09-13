@@ -406,6 +406,7 @@ var ThorIO;
             function Factory(url, controllers, params) {
                 var _this = this;
                 this.url = url;
+                this.proxys = new Array();
                 this.ws = new WebSocket(url + this.toQuery(params || {}));
                 controllers.forEach(function (alias) {
                     _this.proxys.push(new Proxy(alias, _this.ws));

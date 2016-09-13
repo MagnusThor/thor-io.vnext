@@ -67,6 +67,7 @@ namespace ThorIO.Client {
         private handleDataAvailable(event: any) {
             if (event.data.size > 0) {
                 this.blobs.push(event.data);
+            
             }
         }
       
@@ -93,7 +94,6 @@ namespace ThorIO.Client {
 
             this.recorder.start(ms || 100);
         }
-
     }
 
     export class DataChannel {
@@ -436,6 +436,8 @@ namespace ThorIO.Client {
         private proxys: Array<ThorIO.Client.Proxy>;
         public IsConnected: boolean;
         constructor(private url: string, controllers: Array<string>, params?: any) {
+
+            this.proxys = new Array<ThorIO.Client.Proxy>();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             controllers.forEach(alias => {
                 this.proxys.push(
