@@ -114,7 +114,6 @@ export declare namespace ThorIO {
         class BrokerController extends ThorIO.Controller {
             Connections: Array<PeerConnection>;
             Peer: PeerConnection;
-            localPeerId: string;
             constructor(connection: ThorIO.Connection);
             onopen(): void;
             instantMessage(data: any, topic: string, controller: string): void;

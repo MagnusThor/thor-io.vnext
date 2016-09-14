@@ -563,17 +563,14 @@ var ThorIO;
             }
             return InstantMessage;
         }());
-        lass;
-        PeerConnection;
-        {
-            context: string;
-            peerId: string;
-            constructor(context ?  : string, peerId ?  : string);
-            {
+        var PeerConnection = (function () {
+            function PeerConnection(context, peerId) {
                 this.context = context;
                 this.peerId = peerId;
             }
-        }
+            return PeerConnection;
+        }());
+        Controllers.PeerConnection = PeerConnection;
         var Signal = (function () {
             function Signal(recipient, sender, message) {
                 this.recipient = recipient;
@@ -632,7 +629,7 @@ var ThorIO;
             __decorate([
                 CanInvoke(true), 
                 __metadata('design:type', Function), 
-                __metadata('design:paramtypes', [Object]), 
+                __metadata('design:paramtypes', [PeerConnection]), 
                 __metadata('design:returntype', void 0)
             ], BrokerController.prototype, "changeContext", null);
             __decorate([

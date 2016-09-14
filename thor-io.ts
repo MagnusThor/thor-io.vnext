@@ -438,7 +438,7 @@ export namespace ThorIO {
             text: string;
         }
 
-        export lass PeerConnection {
+        export class PeerConnection {
             context: string;
             peerId: string;
             constructor(context?: string, peerId?: string) {
