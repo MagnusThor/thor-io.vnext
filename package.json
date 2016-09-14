@@ -1,16 +1,18 @@
 {
     "name": "thor-io.vnext",
     "author": {
-        "name": "Magnus Thor"
+        "name": "Magnus Thor",
+        "email": "magnus.thor74@gmail.com"
     },
-    "description": "thor-io.vnext represents the next generation of thor-io. Written i TypeScript. thor-io.vnext is a fundament for realtime in general. raw-sockets -> webrtc of what ever you need.",
-    "version": "1.2.1",
+    "description": "thor-io.vnext represents the next generation of thor-io. Written i TypeScript. thor-io.vnext is a fundament for stateful real-time communication.TCP/IP,WebSockets &  WebRTC or whatever you need and desire.",
+    "version": "1.2.2",
     "license": "MIT",
     "main": "index.js",
     "typings": " typings/index",
     "repository": {
         "type": "git",
         "url": "https://github.com/MagnusThor/thor-io.vnext.git"
+    
     },
     "keywords": [
         "realtime",
@@ -18,7 +20,11 @@
         "webrtc",
         "pubsub",
         "rpc",
-        "smart-rpc"
+        "smart-rpc",
+        "iot",
+        "nodeJS",
+        "rtc",
+        "typescript"
     ],
     "dependencies": {
         "core-js": "^2.4.0",

@@ -1,3 +1,4 @@
+declare var MediaRecorder: any;
 declare namespace ThorIO.Client {
     class Message {
         T: string;
@@ -11,49 +12,82 @@ declare namespace ThorIO.Client {
         context: string;
         peerId: string;
     }
-    class Connection {
+    class WebRTCConnection {
         id: string;
         rtcPeerConnection: RTCPeerConnection;
         streams: Array<any>;
         constructor(id: string, rtcPeerConnection: RTCPeerConnection);
     }
+    class Recorder {
+        private stream;
+        private mimeType;
+        private ignoreMutedMedia;
+        private recorder;
+        private blobs;
+        IsRecording: boolean;
+        constructor(stream: MediaStream, mimeType: string, ignoreMutedMedia: any);
+        private handleStop(event);
+        OnRecordComplated(blob: any, blobUrl: string): void;
+        private handleDataAvailable(event);
+        IsTypeSupported(type: string): void;
+        GetStats(): any;
+        Stop(): void;
+        Start(ms: number): void;
+    }
+    class DataChannel {
+        private listeners;
+        Name: string;
+        PeerChannels: Array<RTCDataChannel>;
+        constructor(name: string, listeners?: Array<Listener>);
+        On(topic: string, fn: any): Listener;
+        OnOpen(event: Event): void;
+        OnClose(event: Event): void;
+        OnMessage(event: MessageEvent): void;
+        Close(): void;
+        private findListener(topic);
+        Off(topic: string): void;
+        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel;
+    }
     class WebRTC {
         private brokerProxy;
         private rtcConfig;
-        Peers: Array<Connection>;
+        Peers: Array<WebRTCConnection>;
         Peer: RTCPeerConnection;
-        localPeerId: string;
-        context: string;
-        localSteams: Array<any>;
+        DataChannels: Array<DataChannel>;
+        LocalPeerId: string;
+        Context: string;
+        LocalSteams: Array<any>;
         Errors: Array<any>;
         constructor(brokerProxy: ThorIO.Client.Proxy, rtcConfig: RTCConfiguration);
+        CreateDataChannel(name: string): ThorIO.Client.DataChannel;
+        RemoveDataChannel(name: string): void;
         private signalHandlers();
         private addError(err);
-        onError(err: any): void;
-        onContextCreated(peerConnection: PeerConnection): void;
-        onContextChanged(context: string): void;
-        onRemoteStream(stream: MediaStream, connection: Connection): void;
-        onRemoteStreamlost(streamId: string, peerId: string): void;
-        onLocalSteam(stream: MediaStream): void;
-        onContextConnected(rtcPeerConnection: RTCPeerConnection): void;
-        onContextDisconnected(rtcPeerConnection: RTCPeerConnection): void;
-        onConnectTo(peerConnections: Array<PeerConnection>): void;
-        onConnected(peerId: string): void;
-        onDisconnected(peerId: string): void;
+        OnError(err: any): void;
+        OnContextCreated(peerConnection: PeerConnection): void;
+        OnContextChanged(context: string): void;
+        OnRemoteStream(stream: MediaStream, connection: WebRTCConnection): void;
+        OnRemoteStreamlost(streamId: string, peerId: string): void;
+        OnLocalSteam(stream: MediaStream): void;
+        OnContextConnected(rtcPeerConnection: RTCPeerConnection): void;
+        OnContextDisconnected(rtcPeerConnection: RTCPeerConnection): void;
+        OnConnectTo(peerConnections: Array<PeerConnection>): void;
+        OnConnected(peerId: string): void;
+        OnDisconnected(peerId: string): void;
         private onCandidate(event);
         private onAnswer(event);
         private onOffer(event);
-        addLocalStream(stream: any): WebRTC;
-        addIceServer(iceServer: RTCIceServer): WebRTC;
+        AddLocalStream(stream: any): WebRTC;
+        AddIceServer(iceServer: RTCIceServer): WebRTC;
         private removePeerConnection(id);
         private createPeerConnection(id);
         private getPeerConnection(id);
         private createOffer(peer);
-        disconnect(): void;
-        connect(peerConnections: Array<PeerConnection>): WebRTC;
-        changeContext(context: string): WebRTC;
-        connectPeers(): void;
-        connectContext(): void;
+        Disconnect(): void;
+        Connect(peerConnections: Array<PeerConnection>): WebRTC;
+        ChangeContext(context: string): WebRTC;
+        ConnectPeers(): void;
+        ConnectContext(): void;
     }
     class Factory {
         private url;

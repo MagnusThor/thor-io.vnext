@@ -1,4 +1,4 @@
-
+declare var MediaRecorder: any; 
 namespace ThorIO.Client {
     export class Message {
         T: string;
@@ -20,11 +20,13 @@ namespace ThorIO.Client {
             return JSON.stringify(this.JSON);
         }
     }
+    // todo: Move to separate namespace
     export class PeerConnection {
         context: string;
         peerId: string;
     }
-    export class Connection {
+
+    export class WebRTCConnection {
         id: string;
         rtcPeerConnection: RTCPeerConnection;
         streams: Array<any>;
@@ -34,44 +36,163 @@ namespace ThorIO.Client {
             this.streams = new Array<any>();
         }
     }
+
+
+ 
+    export class Recorder {
+       
+
+        private recorder: any;
+        private blobs: Array<any>;
+        public IsRecording: boolean;
+        constructor(private stream: MediaStream, private mimeType: string, private ignoreMutedMedia) {
+            this.recorder = new MediaRecorder(stream,
+                { mimeType: mimeType, ignoreMutedMedia: ignoreMutedMedia }
+            );
+            this.recorder.onstop = (event) => {
+                this.handleStop(event);
+            }
+            this.recorder.ondataavailable = (event) => {
+                this.handleDataAvailable(event)
+            };
+        }
+
+        private handleStop(event: any) {
+            this.IsRecording = false;
+            let blob = new Blob(this.blobs, { type: this.mimeType });
+            this.OnRecordComplated.apply(event, [blob, URL.createObjectURL(blob)]);
+        }
+
+        public OnRecordComplated(blob: any, blobUrl: string) { }
+
+        private handleDataAvailable(event: any) {
+            if (event.data.size > 0) {
+                this.blobs.push(event.data);
+            
+            }
+        }
+      
+        IsTypeSupported(type:string){
+                throw "not yet implemented";
+        }
+        GetStats():any{
+            return {
+                videoBitsPerSecond: this.recorder.videoBitsPerSecond,
+                audioBitsPerSecond: this.recorder.audioBitsPerSecond
+            }
+        }
+        Stop() {
+            this.recorder.stop();
+        }
+        Start(ms: number) {
+            this.blobs = new Array<any>();
+            if (this.IsRecording) {
+                this.Stop();
+                return;
+            }
+            this.blobs.length = 0;
+            this.IsRecording = true;
+
+            this.recorder.start(ms || 100);
+        }
+    }
+
+    export class DataChannel {
+        private listeners: Array<Listener>;
+
+        public Name: string;
+        public PeerChannels: Array<RTCDataChannel>;
+
+        constructor(name: string, listeners?: Array<Listener>) {
+            this.listeners = listeners || new Array<Listener>();
+            this.PeerChannels = new Array<RTCDataChannel>();
+            this.Name = name;
+        }
+        On(topic: string, fn: any): Listener {
+            var listener = new ThorIO.Client.Listener(topic, fn);
+            this.listeners.push(listener);
+            return listener;
+        };
+        OnOpen(event: Event) { };
+        OnClose(event: Event) { }
+        OnMessage(event: MessageEvent) {
+            var msg = JSON.parse(event.data)
+            var listener = this.findListener(msg.T);
+            if (listener)
+                listener.fn.apply(this, [msg.D]);
+        }
+        Close() {
+            this.PeerChannels.forEach((channel: RTCDataChannel) => {
+                channel.close();
+            });
+        }
+        private findListener(topic: string): Listener {
+            let listener = this.listeners.filter(
+                (pre: Listener) => {
+                    return pre.topic === topic;
+                }
+            );
+            return listener[0];
+        }
+        Off(topic: string) {
+            let index =
+                this.listeners.indexOf(this.findListener(topic));
+            if (index >= 0) this.listeners.splice(index, 1);
+        };
+        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel {
+            this.PeerChannels.forEach((channel: RTCDataChannel) => {
+                channel.send(new ThorIO.Client.Message(topic, data, this.Name).toString())
+            });
+            return this;
+        }
+    }
+
     export class WebRTC {
 
-        // todo: rename
-        public Peers: Array<Connection>;
+        public Peers: Array<WebRTCConnection>;
         public Peer: RTCPeerConnection;
-
-        public localPeerId: string;
-        public context: string;
-        public localSteams: Array<any>;
-
+        public DataChannels: Array<DataChannel>;
+        public LocalPeerId: string;
+        public Context: string;
+        public LocalSteams: Array<any>;
         public Errors: Array<any>;
 
         constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
-
             this.Errors = new Array<any>();
-
+            this.DataChannels = new Array<DataChannel>();
             this.Peers = new Array<any>();
-            this.localSteams = new Array<any>();
+            this.LocalSteams = new Array<any>();
             this.signalHandlers();
 
-            brokerProxy.On("contextCreated", (peer:PeerConnection) => {
-                this.localPeerId = peer.peerId;
-                this.context = peer.context;
-                this.onContextCreated(peer);
+            brokerProxy.On("contextCreated", (peer: PeerConnection) => {
+                this.LocalPeerId = peer.peerId;
+                this.Context = peer.context;
+                this.OnContextCreated(peer);
             });
-            brokerProxy.On("contextChanged", (context:string) => {
-                this.context = context;
-                this.onContextChanged(context);
-            });
-
-            brokerProxy.On("connectTo", (peers:Array<PeerConnection>) =>{
-                this.onConnectTo(peers);
+            brokerProxy.On("contextChanged", (context: string) => {
+                this.Context = context;
+                this.OnContextChanged(context);
             });
 
-
+            brokerProxy.On("connectTo", (peers: Array<PeerConnection>) => {
+                this.OnConnectTo(peers);
+            });
         }
 
 
+        CreateDataChannel(name: string): ThorIO.Client.DataChannel {
+            let channel = new DataChannel(name);
+
+            this.DataChannels.push(channel);
+
+            return channel;
+        }
+        RemoveDataChannel(name: string) {
+            var match = this.DataChannels.filter(
+                (p: DataChannel) => { return p.Name === name }
+            )[0];
+            this.DataChannels.splice(this.DataChannels.indexOf(match), 1);
+        }
         private signalHandlers() {
             this.brokerProxy.On("contextSignal", (signal: any) => {
                 let msg = JSON.parse(signal.message);
@@ -92,32 +213,29 @@ namespace ThorIO.Client {
             });
         }
         private addError(err: any) {
-            this.onError(err);
+            this.OnError(err);
         }
-        public onError(err: any) { }
+        public OnError(err: any) { }
+        OnContextCreated(peerConnection: PeerConnection) { }
+        OnContextChanged(context: string) { }
+        OnRemoteStream(stream: MediaStream, connection: WebRTCConnection) { };
+        OnRemoteStreamlost(streamId: string, peerId: string) { }
 
-        onContextCreated(peerConnection: PeerConnection) {
+        OnLocalSteam(stream: MediaStream) { };
+        OnContextConnected(rtcPeerConnection: RTCPeerConnection) { }
+        OnContextDisconnected(rtcPeerConnection: RTCPeerConnection) { }
 
+        OnConnectTo(peerConnections: Array<PeerConnection>) {
+            this.Connect(peerConnections);
         }
-        onContextChanged(context: string) { }
-        onRemoteStream(stream: MediaStream, connection: Connection) { };
-        onRemoteStreamlost(streamId: string, peerId: string) { }
-
-        onLocalSteam(stream: MediaStream) { };
-        onContextConnected(rtcPeerConnection: RTCPeerConnection) { }
-        onContextDisconnected(rtcPeerConnection: RTCPeerConnection) { }
-
-        onConnectTo(peerConnections: Array<PeerConnection>) {
-            this.connect(peerConnections);
-        }
-        onConnected(peerId: string) {
-            this.onContextConnected(this.getPeerConnection(peerId))
+        OnConnected(peerId: string) {
+            this.OnContextConnected(this.getPeerConnection(peerId))
 
         }
-        onDisconnected(peerId: string) {
+        OnDisconnected(peerId: string) {
             let pc = this.getPeerConnection(peerId);
             pc.close();
-            this.onContextDisconnected(pc);
+            this.OnContextDisconnected(pc);
             this.removePeerConnection(peerId);
 
         }
@@ -145,7 +263,7 @@ namespace ThorIO.Client {
 
         private onOffer(event) {
             let pc = this.getPeerConnection(event.sender);
-            this.localSteams.forEach((stream) => {
+            this.LocalSteams.forEach((stream) => {
                 pc.addStream(stream);
 
             });
@@ -153,7 +271,7 @@ namespace ThorIO.Client {
             pc.createAnswer((description) => {
                 pc.setLocalDescription(description);
                 let answer = {
-                    sender: this.localPeerId,
+                    sender: this.LocalPeerId,
                     recipient: event.sender,
                     message: JSON.stringify(description)
                 };
@@ -164,45 +282,38 @@ namespace ThorIO.Client {
             }, {
                     mandatory: {
                         "offerToReceiveAudio": true,
-                        "offerToReceiveVideo": true
+                        "offerToReceiveVideo": true,
                     }
                 });
 
         }
-
-        addLocalStream(stream: any): WebRTC {
-            this.localSteams.push(stream);
+        AddLocalStream(stream: any): WebRTC {
+            this.LocalSteams.push(stream);
             return this;
         }
-        addIceServer(iceServer: RTCIceServer): WebRTC {
-        this.rtcConfig.iceServers.push(iceServer);
+        AddIceServer(iceServer: RTCIceServer): WebRTC {
+            this.rtcConfig.iceServers.push(iceServer);
             return this;
         }
-
-
-
         private removePeerConnection(id: string) {
-            let connection = this.Peers.filter((conn: Connection) => {
+            let connection = this.Peers.filter((conn: WebRTCConnection) => {
                 return conn.id === id;
             })[0];
             connection.streams.forEach((stream: MediaStream) => {
-                this.onRemoteStreamlost(stream.id, connection.id)
+                this.OnRemoteStreamlost(stream.id, connection.id)
             });
             let index = this.Peers.indexOf(connection);
             if (index > -1)
                 this.Peers.splice(index, 1);
         }
-
         private createPeerConnection(id: string): RTCPeerConnection {
-
-            let rtcPeerConnection = new RTCPeerConnection(this.rtcConfig);
-
+            let rtcPeerConnection = new RTCPeerConnection(this.rtcConfig)
             rtcPeerConnection.onsignalingstatechange = (state) => { };
             rtcPeerConnection.onicecandidate = (event: any) => {
                 if (!event || !event.candidate) return;
                 if (event.candidate) {
                     let msg = {
-                        sender: this.localPeerId,
+                        sender: this.LocalPeerId,
                         recipient: id,
                         message: JSON.stringify({
                             type: 'candidate',
@@ -215,10 +326,10 @@ namespace ThorIO.Client {
             rtcPeerConnection.oniceconnectionstatechange = (event: any) => {
                 switch (event.target.iceConnectionState) {
                     case "connected":
-                        this.onConnected(id);
+                        this.OnConnected(id);
                         break;
                     case "disconnected":
-                        this.onDisconnected(id);
+                        this.OnDisconnected(id);
                         break;
                 };
             };
@@ -227,17 +338,35 @@ namespace ThorIO.Client {
                     return p.id === id;
                 })[0];
                 connection.streams.push(event.stream);
-                this.onRemoteStream(event.stream, connection);
+                this.OnRemoteStream(event.stream, connection);
             };
+            this.DataChannels.forEach((dc: DataChannel) => {
+
+                dc.PeerChannels.push(rtcPeerConnection.createDataChannel(dc.Name));
+
+                rtcPeerConnection.ondatachannel = (event: RTCDataChannelEvent) => {
+
+                    var channel = event.channel;
+
+                    channel.onopen = (event: Event) => {
+                        dc.OnOpen(event);
+                    };
+                    channel.onclose = (event: Event) => {
+                        dc.OnClose(event);
+                    };
+                    channel.onmessage = (message: MessageEvent) => {
+                        dc.OnMessage(message);
+                    };
+                }
+            });
             return rtcPeerConnection;
         }
-
         private getPeerConnection(id: string): RTCPeerConnection {
-            let match = this.Peers.filter((connection: Connection) => {
+            let match = this.Peers.filter((connection: WebRTCConnection) => {
                 return connection.id === id;
             });
             if (match.length === 0) {
-                let pc = new Connection(id, this.createPeerConnection(id));
+                let pc = new WebRTCConnection(id, this.createPeerConnection(id));
                 this.Peers.push(pc);
                 return pc.rtcPeerConnection;
             }
@@ -245,14 +374,14 @@ namespace ThorIO.Client {
         }
         private createOffer(peer: PeerConnection) {
             let peerConnection = this.createPeerConnection(peer.peerId);
-            this.localSteams.forEach((stream) => {
+            this.LocalSteams.forEach((stream) => {
                 peerConnection.addStream(stream);
-                this.onLocalSteam(stream);
+                this.OnLocalSteam(stream);
             });
             peerConnection.createOffer((localDescription: RTCSessionDescription) => {
                 peerConnection.setLocalDescription(localDescription, () => {
                     let offer = {
-                        sender: this.localPeerId,
+                        sender: this.LocalPeerId,
                         recipient: peer.peerId,
                         message: JSON.stringify(localDescription)
                     };
@@ -265,38 +394,37 @@ namespace ThorIO.Client {
             }, {
                     mandatory: {
                         "offerToReceiveAudio": true,
-                        "offerToReceiveVideo": true
+                        "offerToReceiveVideo": true,
                     }
                 });
             return peerConnection;
         }
 
-        disconnect() {
-            this.Peers.forEach((p: Connection) => {
+        Disconnect() {
+            this.Peers.forEach((p: WebRTCConnection) => {
                 p.rtcPeerConnection.close();
             });
 
-            this.changeContext(Math.random().toString(36).substring(2));
+            this.ChangeContext(Math.random().toString(36).substring(2));
         }
-        connect(peerConnections: Array<PeerConnection>): WebRTC {
+        Connect(peerConnections: Array<PeerConnection>): WebRTC {
             peerConnections.forEach((peer: PeerConnection) => {
-                let pc = new Connection(peer.peerId, this.createOffer(peer));
+                let pc = new WebRTCConnection(peer.peerId, this.createOffer(peer));
                 this.Peers.push(pc);
             })
             return this;
         }
 
-
-        changeContext(context: string): WebRTC {
+        ChangeContext(context: string): WebRTC {
             this.brokerProxy.Invoke("changeContext", { context: context });
             return this;
         }
 
-        connectPeers() {
+        ConnectPeers() {
             this.brokerProxy.Invoke("connectContext", {});
         }
-        connectContext() {
-            this.connectPeers();
+        ConnectContext() {
+            this.ConnectPeers();
         }
     }
 
@@ -494,10 +622,13 @@ namespace ThorIO.Client {
             } else {
                 let listener = this.findListener(topic);
 
-                if(listener)
+                if (listener)
                     listener.fn(JSON.parse(data));
 
             }
         };
     }
+
+
+
 }
