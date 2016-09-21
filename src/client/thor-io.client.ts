@@ -96,15 +96,27 @@ namespace ThorIO.Client {
         }
     }
 
+    export class PeerChannel {
+        dataChannel: RTCDataChannel
+        peerId: string;
+        label:string;
+        constructor(peerId,dataChannel,label){
+            this.peerId = peerId;
+            this.dataChannel = dataChannel;
+            this.label = label; // name
+        }
+
+    }
+
     export class DataChannel {
         private listeners: Array<Listener>;
 
         public Name: string;
-        public PeerChannels: Array<RTCDataChannel>;
+        public PeerChannels: Array<PeerChannel>;
 
         constructor(name: string, listeners?: Array<Listener>) {
             this.listeners = listeners || new Array<Listener>();
-            this.PeerChannels = new Array<RTCDataChannel>();
+            this.PeerChannels = new Array<PeerChannel>();
             this.Name = name;
         }
         On(topic: string, fn: any): Listener {
@@ -112,17 +124,17 @@ namespace ThorIO.Client {
             this.listeners.push(listener);
             return listener;
         };
-        OnOpen(event: Event) { };
-        OnClose(event: Event) { }
+        OnOpen(event: Event,peerId:string) { };
+        OnClose(event: Event,peerId:string) { }
         OnMessage(event: MessageEvent) {
             var msg = JSON.parse(event.data)
             var listener = this.findListener(msg.T);
             if (listener)
-                listener.fn.apply(this, [msg.D]);
+                listener.fn.apply(this, [JSON.parse(msg.D)  ]);
         }
         Close() {
-            this.PeerChannels.forEach((channel: RTCDataChannel) => {
-                channel.close();
+            this.PeerChannels.forEach((pc: PeerChannel) => {
+                pc.dataChannel.close();
             });
         }
         private findListener(topic: string): Listener {
@@ -139,10 +151,23 @@ namespace ThorIO.Client {
             if (index >= 0) this.listeners.splice(index, 1);
         };
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel {
-            this.PeerChannels.forEach((channel: RTCDataChannel) => {
-                channel.send(new ThorIO.Client.Message(topic, data, this.Name).toString())
+            this.PeerChannels.forEach((channel: PeerChannel) => {
+                if(channel.dataChannel.readyState === "open"){
+                    channel.dataChannel.send(new ThorIO.Client.Message(topic, data, this.Name).toString())
+                }
             });
             return this;
+        }
+        AddPeerChannel(pc:PeerChannel){
+            this.PeerChannels.push(pc);
+        }
+
+        RemovePeerChannel(id,dataChannel){
+            let match = this.PeerChannels.filter( (p:PeerChannel) => {
+                            return p.peerId === id ;
+                        })[0];
+            let index = this.PeerChannels.indexOf(match);
+            if(index> -1) this.PeerChannels.splice(index,1);
         }
     }
 
@@ -340,19 +365,17 @@ namespace ThorIO.Client {
                 this.OnRemoteStream(event.stream, connection);
             };
             this.DataChannels.forEach((dc: DataChannel) => {
-
-                dc.PeerChannels.push(rtcPeerConnection.createDataChannel(dc.Name));
-
+                let pc = new PeerChannel(id,rtcPeerConnection.createDataChannel(dc.Name),dc.Name);
+                dc.AddPeerChannel(pc);
                 rtcPeerConnection.ondatachannel = (event: RTCDataChannelEvent) => {
-
-                    var channel = event.channel;
-
+                    let channel = event.channel;
                     channel.onopen = (event: Event) => {
-                        dc.OnOpen(event);
+                        dc.OnOpen(event,id);
                     };
-                    channel.onclose = (event: Event) => {
-                        dc.OnClose(event);
-                    };
+                    channel.onclose = (event: any) => {
+                      dc.RemovePeerChannel(id,event.target);
+                      dc.OnClose(event,id);
+                  };
                     channel.onmessage = (message: MessageEvent) => {
                         dc.OnMessage(message);
                     };
@@ -360,6 +383,7 @@ namespace ThorIO.Client {
             });
             return rtcPeerConnection;
         }
+      
         private getPeerConnection(id: string): RTCPeerConnection {
             let match = this.Peers.filter((connection: WebRTCConnection) => {
                 return connection.id === id;
