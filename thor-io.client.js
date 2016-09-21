@@ -91,6 +91,15 @@ var ThorIO;
             return Recorder;
         }());
         Client.Recorder = Recorder;
+        var PeerChannel = (function () {
+            function PeerChannel(peerId, dataChannel, label) {
+                this.peerId = peerId;
+                this.dataChannel = dataChannel;
+                this.label = label;
+            }
+            return PeerChannel;
+        }());
+        Client.PeerChannel = PeerChannel;
         var DataChannel = (function () {
             function DataChannel(name, listeners) {
                 this.listeners = listeners || new Array();
@@ -103,18 +112,18 @@ var ThorIO;
                 return listener;
             };
             ;
-            DataChannel.prototype.OnOpen = function (event) { };
+            DataChannel.prototype.OnOpen = function (event, peerId) { };
             ;
-            DataChannel.prototype.OnClose = function (event) { };
+            DataChannel.prototype.OnClose = function (event, peerId) { };
             DataChannel.prototype.OnMessage = function (event) {
                 var msg = JSON.parse(event.data);
                 var listener = this.findListener(msg.T);
                 if (listener)
-                    listener.fn.apply(this, [msg.D]);
+                    listener.fn.apply(this, [JSON.parse(msg.D)]);
             };
             DataChannel.prototype.Close = function () {
-                this.PeerChannels.forEach(function (channel) {
-                    channel.close();
+                this.PeerChannels.forEach(function (pc) {
+                    pc.dataChannel.close();
                 });
             };
             DataChannel.prototype.findListener = function (topic) {
@@ -132,9 +141,22 @@ var ThorIO;
             DataChannel.prototype.Invoke = function (topic, data, controller) {
                 var _this = this;
                 this.PeerChannels.forEach(function (channel) {
-                    channel.send(new ThorIO.Client.Message(topic, data, _this.Name).toString());
+                    if (channel.dataChannel.readyState === "open") {
+                        channel.dataChannel.send(new ThorIO.Client.Message(topic, data, _this.Name).toString());
+                    }
                 });
                 return this;
+            };
+            DataChannel.prototype.AddPeerChannel = function (pc) {
+                this.PeerChannels.push(pc);
+            };
+            DataChannel.prototype.RemovePeerChannel = function (id, dataChannel) {
+                var match = this.PeerChannels.filter(function (p) {
+                    return p.peerId === id;
+                })[0];
+                var index = this.PeerChannels.indexOf(match);
+                if (index > -1)
+                    this.PeerChannels.splice(index, 1);
             };
             return DataChannel;
         }());
@@ -318,14 +340,16 @@ var ThorIO;
                     _this.OnRemoteStream(event.stream, connection);
                 };
                 this.DataChannels.forEach(function (dc) {
-                    dc.PeerChannels.push(rtcPeerConnection.createDataChannel(dc.Name));
+                    var pc = new PeerChannel(id, rtcPeerConnection.createDataChannel(dc.Name), dc.Name);
+                    dc.AddPeerChannel(pc);
                     rtcPeerConnection.ondatachannel = function (event) {
                         var channel = event.channel;
                         channel.onopen = function (event) {
-                            dc.OnOpen(event);
+                            dc.OnOpen(event, id);
                         };
                         channel.onclose = function (event) {
-                            dc.OnClose(event);
+                            dc.RemovePeerChannel(id, event.target);
+                            dc.OnClose(event, id);
                         };
                         channel.onmessage = function (message) {
                             dc.OnMessage(message);

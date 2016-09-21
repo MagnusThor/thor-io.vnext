@@ -1,4 +1,3 @@
-declare var MediaRecorder: any;
 declare namespace ThorIO.Client {
     class Message {
         T: string;
@@ -34,19 +33,27 @@ declare namespace ThorIO.Client {
         Stop(): void;
         Start(ms: number): void;
     }
+    class PeerChannel {
+        dataChannel: RTCDataChannel;
+        peerId: string;
+        label: string;
+        constructor(peerId: any, dataChannel: any, label: any);
+    }
     class DataChannel {
         private listeners;
         Name: string;
-        PeerChannels: Array<RTCDataChannel>;
+        PeerChannels: Array<PeerChannel>;
         constructor(name: string, listeners?: Array<Listener>);
         On(topic: string, fn: any): Listener;
-        OnOpen(event: Event): void;
-        OnClose(event: Event): void;
+        OnOpen(event: Event, peerId: string): void;
+        OnClose(event: Event, peerId: string): void;
         OnMessage(event: MessageEvent): void;
         Close(): void;
         private findListener(topic);
         Off(topic: string): void;
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel;
+        AddPeerChannel(pc: PeerChannel): void;
+        RemovePeerChannel(id: any, dataChannel: any): void;
     }
     class WebRTC {
         private brokerProxy;
