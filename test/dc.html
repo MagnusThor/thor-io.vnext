@@ -59,7 +59,7 @@
             var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["contextBroker"]);
 
             client.OnOpen = function(brokerProxy) {
-
+                    console.log("..",brokerProxy);
                 rtc = new ThorIO.Client.WebRTC(brokerProxy, {
                     iceServers: [{
                         urls: "stun:stun.l.google.com:19302"

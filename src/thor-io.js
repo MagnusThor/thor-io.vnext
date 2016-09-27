@@ -39,6 +39,30 @@ var ThorIO;
     var Utils = (function () {
         function Utils() {
         }
+        Utils.stingToBuffer = function (str) {
+            var len = str.length;
+            var arr = new Array(len);
+            for (var i = 0; i < len; i++) {
+                arr[i] = str.charCodeAt(i) & 0xFF;
+            }
+            return new Uint8Array(arr);
+        };
+        Utils.arrayToLong = function (byteArray) {
+            var value = 0;
+            for (var i = byteArray.byteLength - 1; i >= 0; i--) {
+                value = (value * 256) + byteArray[i];
+            }
+            return value;
+        };
+        Utils.longToArray = function (long) {
+            var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+            for (var index = 0; index < byteArray.length; index++) {
+                var byte = long & 0xff;
+                byteArray[index] = byte;
+                long = (long - byte) / 256;
+            }
+            return byteArray;
+        };
         Utils.newGuid = function () {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -100,7 +124,7 @@ var ThorIO;
             }
         };
         ;
-        Engine.prototype.addConnection = function (ws) {
+        Engine.prototype.addConnection = function (ws, req) {
             var _this = this;
             this.connections.push(new Connection(ws, this.connections, this.controllers));
             ws.on("close", function (reason) {
@@ -111,11 +135,13 @@ var ThorIO;
     }());
     ThorIO.Engine = Engine;
     var Message = (function () {
-        function Message(topic, object, controller, id) {
+        function Message(topic, object, controller, arrayBuffer) {
             this.D = object;
             this.T = topic;
             this.C = controller;
-            this.id = id;
+            this.B = arrayBuffer;
+            if (arrayBuffer)
+                this.isBinary = true;
         }
         Object.defineProperty(Message.prototype, "JSON", {
             get: function () {
@@ -131,6 +157,26 @@ var ThorIO;
         ;
         Message.prototype.toString = function () {
             return JSON.stringify(this.JSON);
+        };
+        Message.fromArrayBuffer = function (buffer) {
+            var headerLen = 8;
+            var header = buffer.slice(0, 8);
+            var payloadLength = ThorIO.Utils.arrayToLong(header);
+            var message = buffer.slice(headerLen, payloadLength + headerLen);
+            var blobOffset = headerLen + payloadLength;
+            var blob = buffer.slice(blobOffset, buffer.byteLength);
+            var data = JSON.parse(message.toString());
+            return new Message(data.T, JSON.parse(data.D), data.C, blob);
+        };
+        Message.prototype.toArrayBuffer = function () {
+            var messagePayload = this.toString();
+            var payloadLength = messagePayload.length;
+            var header = new Buffer(ThorIO.Utils.longToArray(payloadLength));
+            var message = new Buffer(payloadLength);
+            message.write(messagePayload, 0, payloadLength, "utf-8");
+            var blob = new Buffer(this.B);
+            var buffer = Buffer.concat([header, message, blob]);
+            return buffer;
         };
         return Message;
     }());
@@ -160,24 +206,33 @@ var ThorIO;
             this.id = ThorIO.Utils.newGuid();
             if (ws) {
                 this.ws = ws;
-                this.ws["$connectionId"] = this.id; // todo: replace 
-                this.ws.addEventListener("message", function (message) {
-                    var json = JSON.parse(message.data);
-                    var controller = _this.locateController(json.C);
-                    _this.methodInvoker(controller, json.T, JSON.parse(json.D));
+                this.ws["$connectionId"] = this.id; // todo: replace
+                this.ws.addEventListener("message", function (event) {
+                    if (!event.binary) {
+                        // todo: implement fromString(..) in Message
+                        var message = JSON.parse(event.data);
+                        var controller = _this.locateController(message.C);
+                        _this.methodInvoker(controller, message.T, JSON.parse(message.D));
+                    }
+                    else {
+                        var message = Message.fromArrayBuffer(event.data);
+                        var controller = _this.locateController(message.C);
+                        _this.methodInvoker(controller, message.T, message.D, message.B);
+                    }
                 });
             }
             this.controllerInstances = new Array();
         }
-        Connection.prototype.methodInvoker = function (controller, method, data) {
+        Connection.prototype.methodInvoker = function (controller, method, data, buffer) {
             try {
                 if (!controller.canInvokeMethod(method))
                     throw "method '" + method + "' cant be invoked.";
                 if (typeof (controller[method]) === "function") {
-                    controller[method].apply(controller, [data, method, controller.alias]);
+                    controller[method].apply(controller, [data, method,
+                        controller.alias, buffer]);
                 }
                 else {
-                    // todo : refactor and use PropertyMessage ?
+                    // todo : refactor and use PropertyMessage 
                     var prop = method;
                     var propValue = data;
                     if (typeof (controller[prop]) === typeof (propValue))
@@ -199,7 +254,6 @@ var ThorIO;
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         };
-        // todo: refactor and improve..y
         Connection.prototype.getController = function (alias) {
             try {
                 var match = this.controllerInstances.filter(function (pre) {
@@ -245,7 +299,7 @@ var ThorIO;
         return Connection;
     }());
     ThorIO.Connection = Connection;
-    // maybe use EventEmitters, a bit fuzzy ? Comments?? 
+    // maybe use EventEmitters, a bit fuzzy ? Comments??
     var Subscription = (function () {
         function Subscription(topic, controller) {
             this.topic = topic;
@@ -305,7 +359,7 @@ var ThorIO;
             var msg = new Message("___error", error, this.alias).toString();
             this.invoke(error, "___error", this.alias);
         };
-        Controller.prototype.invokeToAll = function (data, topic, controller) {
+        Controller.prototype.invokeToAll = function (data, topic, controller, buffer) {
             var msg = new Message(topic, data, this.alias).toString();
             ;
             this.getConnections().forEach(function (connection) {
@@ -314,19 +368,19 @@ var ThorIO;
             return this;
         };
         ;
-        Controller.prototype.invokeTo = function (predicate, data, topic, controller) {
+        Controller.prototype.invokeTo = function (predicate, data, topic, controller, buffer) {
             var _this = this;
             var connections = this.findOn(controller, predicate);
             connections.forEach(function (controller) {
-                controller.invoke(data, topic, _this.alias);
+                controller.invoke(data, topic, _this.alias, buffer);
             });
             return this;
         };
         ;
-        Controller.prototype.invoke = function (data, topic, controller) {
-            var msg = new Message(topic, data, this.alias);
+        Controller.prototype.invoke = function (data, topic, controller, buffer) {
+            var msg = new Message(topic, data, this.alias, buffer);
             if (this.connection.ws)
-                this.connection.ws.send(msg.toString());
+                this.connection.ws.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
             return this;
         };
         ;
@@ -367,7 +421,7 @@ var ThorIO;
             return subscription;
         };
         Controller.prototype.___connect = function () {
-            // todo: remove this method        
+            // todo: remove this method
         };
         Controller.prototype.___getProperty = function (data) {
             data.value = this[data.name];
@@ -470,19 +524,19 @@ var ThorIO;
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:paramtypes', [Object, String, String, Object]), 
             __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeToAll", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Function, Object, String, String]), 
+            __metadata('design:paramtypes', [Function, Object, String, String, Object]), 
             __metadata('design:returntype', Controller)
         ], Controller.prototype, "invokeTo", null);
         __decorate([
             CanInvoke(false), 
             __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String]), 
+            __metadata('design:paramtypes', [Object, String, String, Object]), 
             __metadata('design:returntype', Controller)
         ], Controller.prototype, "invoke", null);
         __decorate([

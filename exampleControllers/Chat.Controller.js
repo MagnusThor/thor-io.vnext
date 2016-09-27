@@ -56,6 +56,9 @@ var ChatController = (function (_super) {
         };
         this.invokeTo(expression, data, "chatMessage", this.alias);
     };
+    ChatController.prototype.fileShare = function (fileInfo, topic, controlle, blob) {
+        this.invokeToAll(fileInfo, "fileShare", this.alias, blob);
+    };
     __decorate([
         thor_io_1.CanSet(true), 
         __metadata('design:type', Number)
@@ -66,6 +69,12 @@ var ChatController = (function (_super) {
         __metadata('design:paramtypes', [ChatMessage, String, String]), 
         __metadata('design:returntype', void 0)
     ], ChatController.prototype, "sendChatMessage", null);
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [Object, Object, Object, Object]), 
+        __metadata('design:returntype', void 0)
+    ], ChatController.prototype, "fileShare", null);
     ChatController = __decorate([
         thor_io_1.ControllerProperties("chat", false, 2000), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])

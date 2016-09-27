@@ -27,11 +27,7 @@ export class SealdController extends ThorIO.Controller{
             let message = new ChatMessage(1,new Date().toString());
                 this.invokeToAll(message,"chatMessage","chat");
         },15000);
-
-
-
     };
-
 }
 
 @ControllerProperties("chat",false,2000)
@@ -50,6 +46,10 @@ export class ChatController extends ThorIO.Controller {
             return pre.age >= this.age;
         };
         this.invokeTo(expression, data, "chatMessage", this.alias);
+    }
+    @CanInvoke(true)
+    fileShare(fileInfo,topic,controlle,blob){
+        this.invokeToAll(fileInfo,"fileShare",this.alias,blob);
     }
 
 }

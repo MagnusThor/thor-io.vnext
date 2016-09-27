@@ -1,10 +1,59 @@
 
 declare var MediaRecorder: any;
 namespace ThorIO.Client {
+
+    export class BinaryMessage {
+
+        Buffer: ArrayBuffer;
+        private header: Uint8Array
+
+        static fromArrayBuffer(buffer: ArrayBuffer): any {
+            let headerLen = 8;
+            let header = new Uint8Array(buffer, 0, headerLen);
+
+            let payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+
+
+            let message = new Uint8Array(buffer, headerLen, payloadLength);
+
+            let blobOffset = headerLen + payloadLength;
+
+            let messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
+
+            let json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
+
+            return new Message(json.T, json.D, json.C, messageBuffer);
+
+        }
+
+
+        constructor(message: string, public arrayBuffer: ArrayBuffer) {
+            this.header = new Uint8Array(ThorIO.Client.Utils.longToArray(message.length));
+            this.Buffer = this.joinBuffers(this.joinBuffers(
+                this.header,
+                ThorIO.Client.Utils.stingToBuffer(message)),
+                arrayBuffer);
+        }
+
+        private joinBuffers(a: ArrayBuffer, b: ArrayBuffer): ArrayBuffer {
+
+            let newBuffer = new Uint8Array(a.byteLength + b.byteLength);
+            newBuffer.set(new Uint8Array(a), 0);
+            newBuffer.set(new Uint8Array(b), a.byteLength);
+            return newBuffer.buffer;
+
+        }
+
+
+
+    }
+
     export class Message {
+        B: ArrayBuffer
         T: string;
         D: any;
         C: string;
+
         get JSON(): any {
             return {
                 T: this.T,
@@ -12,14 +61,35 @@ namespace ThorIO.Client {
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string, id?: string) {
+        constructor(topic: string, object: any, controller: string, buffer?: ArrayBuffer) {
             this.D = object;
             this.T = topic;
             this.C = controller;
+            this.B = buffer;
         }
         toString() {
             return JSON.stringify(this.JSON);
         }
+
+        static fromArrayBuffer(buffer: ArrayBuffer): any {
+            let headerLen = 8;
+            let header = new Uint8Array(buffer, 0, headerLen);
+
+            let payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+
+
+            let message = new Uint8Array(buffer, headerLen, payloadLength);
+
+            let blobOffset = headerLen + payloadLength;
+
+            let messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
+
+            let json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
+
+            return new Message(json.T, json.D, json.C, messageBuffer);
+
+        }
+
     }
     // todo: Move to separate namespace
     export class PeerConnection {
@@ -39,9 +109,10 @@ namespace ThorIO.Client {
     }
 
 
+    declare var MediaRecorder: any;
 
     export class Recorder {
-        private recorder: MediaRecorder;
+        private recorder: any;
         private blobs: Array<any>;
         public IsRecording: boolean;
         constructor(private stream: MediaStream, private mimeType: string, private ignoreMutedMedia) {
@@ -67,14 +138,14 @@ namespace ThorIO.Client {
         private handleDataAvailable(event: any) {
             if (event.data.size > 0) {
                 this.blobs.push(event.data);
-            
+
             }
         }
-      
-        IsTypeSupported(type:string){
-                throw "not yet implemented";
+
+        IsTypeSupported(type: string) {
+            throw "not yet implemented";
         }
-        GetStats():any{
+        GetStats(): any {
             return {
                 videoBitsPerSecond: this.recorder.videoBitsPerSecond,
                 audioBitsPerSecond: this.recorder.audioBitsPerSecond
@@ -99,8 +170,8 @@ namespace ThorIO.Client {
     export class PeerChannel {
         dataChannel: RTCDataChannel
         peerId: string;
-        label:string;
-        constructor(peerId,dataChannel,label){
+        label: string;
+        constructor(peerId, dataChannel, label) {
             this.peerId = peerId;
             this.dataChannel = dataChannel;
             this.label = label; // name
@@ -124,13 +195,13 @@ namespace ThorIO.Client {
             this.listeners.push(listener);
             return listener;
         };
-        OnOpen(event: Event,peerId:string) { };
-        OnClose(event: Event,peerId:string) { }
+        OnOpen(event: Event, peerId: string) { };
+        OnClose(event: Event, peerId: string) { }
         OnMessage(event: MessageEvent) {
             var msg = JSON.parse(event.data)
             var listener = this.findListener(msg.T);
             if (listener)
-                listener.fn.apply(this, [JSON.parse(msg.D)  ]);
+                listener.fn.apply(this, [JSON.parse(msg.D)]);
         }
         Close() {
             this.PeerChannels.forEach((pc: PeerChannel) => {
@@ -152,22 +223,22 @@ namespace ThorIO.Client {
         };
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel {
             this.PeerChannels.forEach((channel: PeerChannel) => {
-                if(channel.dataChannel.readyState === "open"){
+                if (channel.dataChannel.readyState === "open") {
                     channel.dataChannel.send(new ThorIO.Client.Message(topic, data, this.Name).toString())
                 }
             });
             return this;
         }
-        AddPeerChannel(pc:PeerChannel){
+        AddPeerChannel(pc: PeerChannel) {
             this.PeerChannels.push(pc);
         }
 
-        RemovePeerChannel(id,dataChannel){
-            let match = this.PeerChannels.filter( (p:PeerChannel) => {
-                            return p.peerId === id ;
-                        })[0];
+        RemovePeerChannel(id, dataChannel) {
+            let match = this.PeerChannels.filter((p: PeerChannel) => {
+                return p.peerId === id;
+            })[0];
             let index = this.PeerChannels.indexOf(match);
-            if(index> -1) this.PeerChannels.splice(index,1);
+            if (index > -1) this.PeerChannels.splice(index, 1);
         }
     }
 
@@ -365,17 +436,17 @@ namespace ThorIO.Client {
                 this.OnRemoteStream(event.stream, connection);
             };
             this.DataChannels.forEach((dc: DataChannel) => {
-                let pc = new PeerChannel(id,rtcPeerConnection.createDataChannel(dc.Name),dc.Name);
+                let pc = new PeerChannel(id, rtcPeerConnection.createDataChannel(dc.Name), dc.Name);
                 dc.AddPeerChannel(pc);
                 rtcPeerConnection.ondatachannel = (event: RTCDataChannelEvent) => {
                     let channel = event.channel;
                     channel.onopen = (event: Event) => {
-                        dc.OnOpen(event,id);
+                        dc.OnOpen(event, id);
                     };
                     channel.onclose = (event: any) => {
-                      dc.RemovePeerChannel(id,event.target);
-                      dc.OnClose(event,id);
-                  };
+                        dc.RemovePeerChannel(id, event.target);
+                        dc.OnClose(event, id);
+                    };
                     channel.onmessage = (message: MessageEvent) => {
                         dc.OnMessage(message);
                     };
@@ -383,7 +454,7 @@ namespace ThorIO.Client {
             });
             return rtcPeerConnection;
         }
-      
+
         private getPeerConnection(id: string): RTCPeerConnection {
             let match = this.Peers.filter((connection: WebRTCConnection) => {
                 return connection.id === id;
@@ -463,14 +534,23 @@ namespace ThorIO.Client {
 
             this.proxys = new Array<ThorIO.Client.Proxy>();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
+            this.ws.binaryType = "arraybuffer";
             controllers.forEach(alias => {
                 this.proxys.push(
                     new Proxy(alias, this.ws)
                 );
             });
             this.ws.onmessage = event => {
-                let message = JSON.parse(event.data);
-                this.GetProxy(message.C).Dispatch(message.T, message.D);
+                if (typeof (event.data) !== "object") {
+                    let message = JSON.parse(event.data);
+                    this.GetProxy(message.C).Dispatch(message.T, message.D);
+
+                } else {
+
+                    let message = ThorIO.Client.Message.fromArrayBuffer(event.data);
+                    this.GetProxy(message.C).Dispatch(message.T, message.D, message.B)
+                }
+
             };
             this.ws.onclose = event => {
                 this.IsConnected = false;
@@ -517,6 +597,33 @@ namespace ThorIO.Client {
 
 
     export class Utils {
+        static stingToBuffer(str: string) {
+            let len = str.length;
+            var arr = new Array(len);
+            for (let i = 0; i < len; i++) {
+                arr[i] = str.charCodeAt(i) & 0xFF;
+            }
+            return new Uint8Array(arr);
+        }
+
+        static arrayToLong(byteArray: Uint8Array): number {
+            var value = 0;
+            for (var i = byteArray.byteLength - 1; i >= 0; i--) {
+                value = (value * 256) + byteArray[i];
+            }
+            return value;
+        }
+
+        static longToArray(long: number): Array<number> {
+            var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+            for (var index = 0; index < byteArray.length; index++) {
+                var byte = long & 0xff;
+                byteArray[index] = byte;
+                long = (long - byte) / 256;
+            }
+            return byteArray;
+        }
+
         static newGuid() {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -563,10 +670,14 @@ namespace ThorIO.Client {
                 let index = this.promisedMessages.indexOf(prom);
                 this.promisedMessages.splice(index, 1);
             });
+            this.On("___error", (err: any) => {
+                this.OnError(err)
+            });
         }
 
-        OnOpen(event: any) { };
-        OnClose(event: any) { };
+        OnError(event: any) { }
+        OnOpen(event: any) { }
+        OnClose(event: any) { }
 
         Connect() {
             this.ws.send(new ThorIO.Client.Message("___connect", {}, this.alias));
@@ -615,7 +726,28 @@ namespace ThorIO.Client {
             if (index >= 0) this.listeners.splice(index, 1);
 
         };
+
+        InvokeBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy {
+            if (buffer instanceof ArrayBuffer) {
+                this.ws.send(buffer)
+                return this;
+            } else {
+                throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage")
+            }
+        }
+        PublishBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy {
+            if (buffer instanceof ArrayBuffer) {
+                this.ws.send(buffer)
+                return this;
+            } else {
+                throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage")
+            }
+        }
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy {
+            this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
+            return this;
+        };
+        Publish(topic: string, data: any, controller?: string): ThorIO.Client.Proxy {
             this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
             return this;
         };
@@ -634,7 +766,7 @@ namespace ThorIO.Client {
             this.Invoke("___getProperty", propInfo, controller || this.alias);
             return promise;
         }
-        public Dispatch(topic: string, data: any) {
+        public Dispatch(topic: string, data: any, buffer?: ArrayBuffer) {
             if (topic === "___open") {
                 this.IsConnected = true;
                 this.OnOpen(JSON.parse(data));
@@ -646,7 +778,7 @@ namespace ThorIO.Client {
                 let listener = this.findListener(topic);
 
                 if (listener)
-                    listener.fn(JSON.parse(data));
+                    listener.fn(JSON.parse(data), buffer);
 
             }
         };
