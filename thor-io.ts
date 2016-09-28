@@ -23,6 +23,34 @@ export namespace ThorIO {
 
 
     export class Utils {
+        static stingToBuffer(str: string) {
+            let len = str.length;
+            var arr = new Array(len);
+            for (let i = 0; i < len; i++) {
+                arr[i] = str.charCodeAt(i) & 0xFF;
+            }
+            return new Uint8Array(arr);
+        }
+
+        static arrayToLong(byteArray: Uint8Array): number {
+            var value = 0;
+            for (var i = byteArray.byteLength - 1; i >= 0; i--) {
+                value = (value * 256) + byteArray[i];
+            }
+            return value;
+        }
+
+        static longToArray(long: number): Array<number> {
+            var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+            for (var index = 0; index < byteArray.length; index++) {
+                var byte = long & 0xff;
+                byteArray[index] = byte;
+                long = (long - byte) / 256;
+            }
+            return byteArray;
+        }
+
+
         static newGuid() {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -86,25 +114,25 @@ export namespace ThorIO {
                 // todo: log error
             }
         };
-        addConnection(ws: any) {
+        addConnection(ws: any,req:any) {
             this.connections.push(
                 new Connection(ws, this.connections, this.controllers)
             );
             ws.on("close", (reason) => {
                 this.removeConnection(ws, reason);
             });
-
-
-
         }
     }
 
     export class Message {
 
+        B: ArrayBuffer;
         T: string;
         D: any;
         C: string;
-        id: string;
+        
+        isBinary: Boolean
+       
         get JSON(): any {
             return {
                 T: this.T,
@@ -112,14 +140,38 @@ export namespace ThorIO {
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string, id?: string) {
+        constructor(topic: string, object: any, controller: string, arrayBuffer?: ArrayBuffer) {
             this.D = object;
             this.T = topic;
             this.C = controller;
-            this.id = id;
+            this.B = arrayBuffer;
+            if(arrayBuffer) this.isBinary = true;
         }
         toString() {
             return JSON.stringify(this.JSON);
+        }
+        static fromArrayBuffer(buffer: Buffer) {
+            let headerLen = 8;
+            let header = buffer.slice(0,8);
+            let payloadLength =  ThorIO.Utils.arrayToLong(header);
+            let message = buffer.slice(headerLen, payloadLength + headerLen);
+            let blobOffset = headerLen + payloadLength;
+            let blob = buffer.slice(blobOffset, buffer.byteLength);
+            let data = JSON.parse(message.toString());
+            return new Message(data.T, JSON.parse(data.D), data.C, blob);
+        }
+        toArrayBuffer() : ArrayBuffer{
+                let messagePayload = this.toString();
+                let payloadLength = messagePayload.length;
+                let header = new Buffer(ThorIO.Utils.longToArray(payloadLength));
+                let message = new Buffer(payloadLength);
+                message.write(messagePayload,0,payloadLength,"utf-8");
+                var blob = new Buffer(this.B);
+                var buffer = Buffer.concat([header,message,blob]);
+
+                return buffer
+
+
         }
 
     }
@@ -149,15 +201,17 @@ export namespace ThorIO {
         public controllerInstances: Array<ThorIO.Controller>;
         public connections: Array<ThorIO.Connection>;
         public clientInfo: ThorIO.ClientInfo;
-        private methodInvoker(controller: Controller, method: string, data: any) {
+        private methodInvoker(controller: Controller, method: string, data: any,buffer?:any) {
             try {
                 if (!controller.canInvokeMethod(method))
                     throw "method '" + method + "' cant be invoked."
                 if (typeof (controller[method]) === "function") {
-                    controller[method].apply(controller, [data, method, controller.alias]);
+                    controller[method].apply(
+                    controller, [data, method,
+                    controller.alias,buffer]);
 
                 } else {
-                    // todo : refactor and use PropertyMessage ?
+                    // todo : refactor and use PropertyMessage 
                     let prop = method;
                     let propValue = data;
                     if (typeof (controller[prop]) === typeof (propValue))
@@ -172,11 +226,18 @@ export namespace ThorIO {
             this.id = ThorIO.Utils.newGuid();
             if (ws) {
                 this.ws = ws;
-                this.ws["$connectionId"] = this.id; // todo: replace 
-                this.ws.addEventListener("message", (message: MessageEvent) => {
-                    let json = JSON.parse(message.data);
-                    let controller = this.locateController(json.C);
-                    this.methodInvoker(controller, json.T, JSON.parse(json.D));
+                this.ws["$connectionId"] = this.id; // todo: replace
+                this.ws.addEventListener("message", (event: any) => {
+                    if (!event.binary) {
+                        // todo: implement fromString(..) in Message
+                        let message = JSON.parse(event.data);
+                        let controller = this.locateController(message.C);
+                        this.methodInvoker(controller, message.T, JSON.parse(message.D));
+                    } else {
+                        let message = Message.fromArrayBuffer(event.data);
+                         let controller = this.locateController(message.C);
+                        this.methodInvoker(controller,message.T,message.D,message.B)
+                    }
                 });
             }
 
@@ -193,7 +254,6 @@ export namespace ThorIO {
             if (index > -1)
                 this.controllerInstances.splice(index, 1);
         }
-        // todo: refactor and improve..y
         getController(alias: string): Controller {
             try {
                 let match = this.controllerInstances.filter((pre: Controller) => {
@@ -238,7 +298,7 @@ export namespace ThorIO {
         }
     }
 
-    // maybe use EventEmitters, a bit fuzzy ? Comments?? 
+    // maybe use EventEmitters, a bit fuzzy ? Comments??
     export class Subscription {
         public topic: string;
         public controller: string
@@ -319,7 +379,7 @@ export namespace ThorIO {
             this.invoke(error, "___error", this.alias);
         }
         @CanInvoke(false)
-        invokeToAll(data: any, topic: string, controller: string): Controller {
+        invokeToAll(data: any, topic: string, controller?: string,buffer?:any): Controller {
             let msg = new Message(topic, data, this.alias).toString();;
             this.getConnections().forEach((connection: Connection) => {
                 connection.getController(controller).invoke(data, topic, controller);
@@ -328,18 +388,21 @@ export namespace ThorIO {
             return this;
         };
         @CanInvoke(false)
-        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller {
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string,buffer?:any): Controller {
             let connections = this.findOn(controller, predicate);
             connections.forEach((controller: Controller) => {
-                controller.invoke(data, topic, this.alias);
+                controller.invoke(data, topic, this.alias,buffer);
             });
             return this;
         };
         @CanInvoke(false)
-        invoke(data: any, topic: string, controller: string): Controller {
-            let msg = new Message(topic, data, this.alias);
+        invoke(data: any, topic: string, controller: string,buffer?:any): Controller {
+            let msg = new Message(topic, data, this.alias,buffer);
+           
             if (this.connection.ws)
-                this.connection.ws.send(msg.toString());
+                this.connection.ws.send( !msg.isBinary ? msg.toString() : msg.toArrayBuffer());
+            
+             
             return this;
         };
         @CanInvoke(false)
@@ -390,9 +453,9 @@ export namespace ThorIO {
         }
         @CanInvoke(true)
         ___connect() {
-            // todo: remove this method        
+            // todo: remove this method
         }
-        @CanInvoke(true) // Hmm
+        @CanInvoke(true) 
         ___getProperty(data: PropertyMessage) {
             data.value = this[data.name];
             this.invoke(data, "___getProperty", this.alias);
@@ -413,7 +476,6 @@ export namespace ThorIO {
         @CanInvoke(true)
         ___unsubscribe(subscription: Subscription): boolean {
             let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
-
             if (index >= 0) {
                 let result = this.subscriptions.splice(index, 1);
                 return true;
@@ -434,7 +496,7 @@ export namespace ThorIO {
 
     export namespace Controllers {
 
-        class InstantMessage {
+        export class InstantMessage {
             text: string;
         }
 
@@ -458,9 +520,11 @@ export namespace ThorIO {
         }
         @ControllerProperties("contextBroker", false, 7500)
         export class BrokerController extends ThorIO.Controller {
+            
             public Connections: Array<PeerConnection>;
             public Peer: PeerConnection;
-            
+            public LocalPeerId: string;
+
             constructor(connection: ThorIO.Connection) {
                 super(connection);
                 this.Connections = new Array<PeerConnection>();
@@ -503,8 +567,6 @@ export namespace ThorIO {
                 return match;
             }
         }
-
-
     }
 
 

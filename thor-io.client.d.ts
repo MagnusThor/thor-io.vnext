@@ -1,11 +1,22 @@
+declare var MediaRecorder: any;
 declare namespace ThorIO.Client {
+    class BinaryMessage {
+        arrayBuffer: ArrayBuffer;
+        Buffer: ArrayBuffer;
+        private header;
+        static fromArrayBuffer(buffer: ArrayBuffer): any;
+        constructor(message: string, arrayBuffer: ArrayBuffer);
+        private joinBuffers(a, b);
+    }
     class Message {
+        B: ArrayBuffer;
         T: string;
         D: any;
         C: string;
         JSON: any;
-        constructor(topic: string, object: any, controller: string, id?: string);
+        constructor(topic: string, object: any, controller: string, buffer?: ArrayBuffer);
         toString(): string;
+        static fromArrayBuffer(buffer: ArrayBuffer): any;
     }
     class PeerConnection {
         context: string;
@@ -117,6 +128,9 @@ declare namespace ThorIO.Client {
         constructor(topic: string, fn: Function);
     }
     class Utils {
+        static stingToBuffer(str: string): Uint8Array;
+        static arrayToLong(byteArray: Uint8Array): number;
+        static longToArray(long: number): Array<number>;
         static newGuid(): string;
     }
     class PromisedMessage {
@@ -137,6 +151,7 @@ declare namespace ThorIO.Client {
         private promisedMessages;
         private listeners;
         constructor(alias: string, ws: WebSocket);
+        OnError(event: any): void;
         OnOpen(event: any): void;
         OnClose(event: any): void;
         Connect(): this;
@@ -146,9 +161,12 @@ declare namespace ThorIO.Client {
         On(topic: string, fn: any): Listener;
         private findListener(topic);
         Off(topic: string): void;
+        InvokeBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy;
+        PublishBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy;
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy;
+        Publish(topic: string, data: any, controller?: string): ThorIO.Client.Proxy;
         SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Client.Proxy;
         GetProperty(propName: string, controller?: string): Promise<any>;
-        Dispatch(topic: string, data: any): void;
+        Dispatch(topic: string, data: any, buffer?: ArrayBuffer): void;
     }
 }

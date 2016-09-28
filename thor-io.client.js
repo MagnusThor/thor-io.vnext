@@ -2,11 +2,37 @@ var ThorIO;
 (function (ThorIO) {
     var Client;
     (function (Client) {
+        var BinaryMessage = (function () {
+            function BinaryMessage(message, arrayBuffer) {
+                this.arrayBuffer = arrayBuffer;
+                this.header = new Uint8Array(ThorIO.Client.Utils.longToArray(message.length));
+                this.Buffer = this.joinBuffers(this.joinBuffers(this.header, ThorIO.Client.Utils.stingToBuffer(message)), arrayBuffer);
+            }
+            BinaryMessage.fromArrayBuffer = function (buffer) {
+                var headerLen = 8;
+                var header = new Uint8Array(buffer, 0, headerLen);
+                var payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+                var message = new Uint8Array(buffer, headerLen, payloadLength);
+                var blobOffset = headerLen + payloadLength;
+                var messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
+                var json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
+                return new Message(json.T, json.D, json.C, messageBuffer);
+            };
+            BinaryMessage.prototype.joinBuffers = function (a, b) {
+                var newBuffer = new Uint8Array(a.byteLength + b.byteLength);
+                newBuffer.set(new Uint8Array(a), 0);
+                newBuffer.set(new Uint8Array(b), a.byteLength);
+                return newBuffer.buffer;
+            };
+            return BinaryMessage;
+        }());
+        Client.BinaryMessage = BinaryMessage;
         var Message = (function () {
-            function Message(topic, object, controller, id) {
+            function Message(topic, object, controller, buffer) {
                 this.D = object;
                 this.T = topic;
                 this.C = controller;
+                this.B = buffer;
             }
             Object.defineProperty(Message.prototype, "JSON", {
                 get: function () {
@@ -22,6 +48,16 @@ var ThorIO;
             ;
             Message.prototype.toString = function () {
                 return JSON.stringify(this.JSON);
+            };
+            Message.fromArrayBuffer = function (buffer) {
+                var headerLen = 8;
+                var header = new Uint8Array(buffer, 0, headerLen);
+                var payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+                var message = new Uint8Array(buffer, headerLen, payloadLength);
+                var blobOffset = headerLen + payloadLength;
+                var messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
+                var json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
+                return new Message(json.T, json.D, json.C, messageBuffer);
             };
             return Message;
         }());
@@ -430,12 +466,19 @@ var ThorIO;
                 this.url = url;
                 this.proxys = new Array();
                 this.ws = new WebSocket(url + this.toQuery(params || {}));
+                this.ws.binaryType = "arraybuffer";
                 controllers.forEach(function (alias) {
                     _this.proxys.push(new Proxy(alias, _this.ws));
                 });
                 this.ws.onmessage = function (event) {
-                    var message = JSON.parse(event.data);
-                    _this.GetProxy(message.C).Dispatch(message.T, message.D);
+                    if (typeof (event.data) !== "object") {
+                        var message = JSON.parse(event.data);
+                        _this.GetProxy(message.C).Dispatch(message.T, message.D);
+                    }
+                    else {
+                        var message = ThorIO.Client.Message.fromArrayBuffer(event.data);
+                        _this.GetProxy(message.C).Dispatch(message.T, message.D, message.B);
+                    }
                 };
                 this.ws.onclose = function (event) {
                     _this.IsConnected = false;
@@ -485,6 +528,30 @@ var ThorIO;
         var Utils = (function () {
             function Utils() {
             }
+            Utils.stingToBuffer = function (str) {
+                var len = str.length;
+                var arr = new Array(len);
+                for (var i = 0; i < len; i++) {
+                    arr[i] = str.charCodeAt(i) & 0xFF;
+                }
+                return new Uint8Array(arr);
+            };
+            Utils.arrayToLong = function (byteArray) {
+                var value = 0;
+                for (var i = byteArray.byteLength - 1; i >= 0; i--) {
+                    value = (value * 256) + byteArray[i];
+                }
+                return value;
+            };
+            Utils.longToArray = function (long) {
+                var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+                for (var index = 0; index < byteArray.length; index++) {
+                    var byte = long & 0xff;
+                    byteArray[index] = byte;
+                    long = (long - byte) / 256;
+                }
+                return byteArray;
+            };
             Utils.newGuid = function () {
                 function s4() {
                     return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -525,11 +592,13 @@ var ThorIO;
                     var index = _this.promisedMessages.indexOf(prom);
                     _this.promisedMessages.splice(index, 1);
                 });
+                this.On("___error", function (err) {
+                    _this.OnError(err);
+                });
             }
+            Proxy.prototype.OnError = function (event) { };
             Proxy.prototype.OnOpen = function (event) { };
-            ;
             Proxy.prototype.OnClose = function (event) { };
-            ;
             Proxy.prototype.Connect = function () {
                 this.ws.send(new ThorIO.Client.Message("___connect", {}, this.alias));
                 return this;
@@ -573,7 +642,30 @@ var ThorIO;
                     this.listeners.splice(index, 1);
             };
             ;
+            Proxy.prototype.InvokeBinary = function (buffer) {
+                if (buffer instanceof ArrayBuffer) {
+                    this.ws.send(buffer);
+                    return this;
+                }
+                else {
+                    throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage");
+                }
+            };
+            Proxy.prototype.PublishBinary = function (buffer) {
+                if (buffer instanceof ArrayBuffer) {
+                    this.ws.send(buffer);
+                    return this;
+                }
+                else {
+                    throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage");
+                }
+            };
             Proxy.prototype.Invoke = function (topic, data, controller) {
+                this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
+                return this;
+            };
+            ;
+            Proxy.prototype.Publish = function (topic, data, controller) {
                 this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
                 return this;
             };
@@ -595,7 +687,7 @@ var ThorIO;
                 this.Invoke("___getProperty", propInfo, controller || this.alias);
                 return promise;
             };
-            Proxy.prototype.Dispatch = function (topic, data) {
+            Proxy.prototype.Dispatch = function (topic, data, buffer) {
                 if (topic === "___open") {
                     this.IsConnected = true;
                     this.OnOpen(JSON.parse(data));
@@ -608,7 +700,7 @@ var ThorIO;
                 else {
                     var listener = this.findListener(topic);
                     if (listener)
-                        listener.fn(JSON.parse(data));
+                        listener.fn(JSON.parse(data), buffer);
                 }
             };
             ;

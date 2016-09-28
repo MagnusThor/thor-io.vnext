@@ -4,6 +4,9 @@ export declare function CanSet(state: boolean): (target: Object, propertyKey: st
 export declare function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number): (target: Function) => void;
 export declare namespace ThorIO {
     class Utils {
+        static stingToBuffer(str: string): Uint8Array;
+        static arrayToLong(byteArray: Uint8Array): number;
+        static longToArray(long: number): Array<number>;
         static newGuid(): string;
         static randomString(): string;
         static getInstance<T>(obj: any, ...args: any[]): T;
@@ -19,16 +22,19 @@ export declare namespace ThorIO {
         constructor(controllers: Array<any>);
         private createSealdControllers();
         removeConnection(ws: any, reason: number): void;
-        addConnection(ws: any): void;
+        addConnection(ws: any, req: any): void;
     }
     class Message {
+        B: ArrayBuffer;
         T: string;
         D: any;
         C: string;
-        id: string;
+        isBinary: Boolean;
         JSON: any;
-        constructor(topic: string, object: any, controller: string, id?: string);
+        constructor(topic: string, object: any, controller: string, arrayBuffer?: ArrayBuffer);
         toString(): string;
+        static fromArrayBuffer(buffer: Buffer): Message;
+        toArrayBuffer(): ArrayBuffer;
     }
     class Listener {
         fn: Function;
@@ -48,7 +54,7 @@ export declare namespace ThorIO {
         controllerInstances: Array<ThorIO.Controller>;
         connections: Array<ThorIO.Connection>;
         clientInfo: ThorIO.ClientInfo;
-        private methodInvoker(controller, method, data);
+        private methodInvoker(controller, method, data, buffer?);
         constructor(ws: any, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
         hasController(alias: string): boolean;
         removeController(alias: string): void;
@@ -78,9 +84,9 @@ export declare namespace ThorIO {
         onclose(): void;
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector?: (item: T) => U): U[];
         invokeError(error: any): void;
-        invokeToAll(data: any, topic: string, controller: string): Controller;
-        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string): Controller;
-        invoke(data: any, topic: string, controller: string): Controller;
+        invokeToAll(data: any, topic: string, controller?: string, buffer?: any): Controller;
+        invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string, buffer?: any): Controller;
+        invoke(data: any, topic: string, controller: string, buffer?: any): Controller;
         publish(data: any, topic: string, controller: string): Controller;
         publishToAll(data: any, topic: string, controller: string): Controller;
         hasSubscription(topic: string): boolean;
@@ -100,6 +106,9 @@ export declare namespace ThorIO {
         constructor();
     }
     namespace Controllers {
+        class InstantMessage {
+            text: string;
+        }
         class PeerConnection {
             context: string;
             peerId: string;
@@ -114,6 +123,7 @@ export declare namespace ThorIO {
         class BrokerController extends ThorIO.Controller {
             Connections: Array<PeerConnection>;
             Peer: PeerConnection;
+            LocalPeerId: string;
             constructor(connection: ThorIO.Connection);
             onopen(): void;
             instantMessage(data: any, topic: string, controller: string): void;
