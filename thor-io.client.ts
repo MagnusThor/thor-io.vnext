@@ -8,11 +8,10 @@ namespace ThorIO.Client {
         private header: Uint8Array
 
         static fromArrayBuffer(buffer: ArrayBuffer): any {
-            let headerLen = 8;
+            const headerLen = 8;
             let header = new Uint8Array(buffer, 0, headerLen);
 
             let payloadLength = ThorIO.Client.Utils.arrayToLong(header);
-
 
             let message = new Uint8Array(buffer, headerLen, payloadLength);
 
@@ -608,16 +607,18 @@ namespace ThorIO.Client {
 
         static arrayToLong(byteArray: Uint8Array): number {
             var value = 0;
-            for (var i = byteArray.byteLength - 1; i >= 0; i--) {
+            let byteLength = byteArray.byteLength;
+            for (let i = byteLength - 1; i >= 0; i--) {
                 value = (value * 256) + byteArray[i];
             }
             return value;
         }
 
-        static longToArray(long: number): Array<number> {
-            var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
-            for (var index = 0; index < byteArray.length; index++) {
-                var byte = long & 0xff;
+        static longToArray(long: number): Uint8Array {
+            var byteArray = new Uint8Array(8)
+            let byteLength = byteArray.length;
+            for (let index = 0; index <byteLength; index++) {
+                let byte = long & 0xff;
                 byteArray[index] = byte;
                 long = (long - byte) / 256;
             }
@@ -625,9 +626,9 @@ namespace ThorIO.Client {
         }
 
         static newGuid() {
-            function s4() {
+            function s4(){
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-            }
+            };
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
 
@@ -768,8 +769,9 @@ namespace ThorIO.Client {
         }
         public Dispatch(topic: string, data: any, buffer?: ArrayBuffer) {
             if (topic === "___open") {
-                this.IsConnected = true;
+                this.IsConnected = true;  
                 this.OnOpen(JSON.parse(data));
+
                 return;
             } else if (topic === "___close") {
                 this.OnClose([JSON.parse(data)]);

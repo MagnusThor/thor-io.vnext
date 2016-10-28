@@ -13,7 +13,7 @@ declare namespace ThorIO.Client {
         T: string;
         D: any;
         C: string;
-        JSON: any;
+        readonly JSON: any;
         constructor(topic: string, object: any, controller: string, buffer?: ArrayBuffer);
         toString(): string;
         static fromArrayBuffer(buffer: ArrayBuffer): any;
@@ -130,7 +130,7 @@ declare namespace ThorIO.Client {
     class Utils {
         static stingToBuffer(str: string): Uint8Array;
         static arrayToLong(byteArray: Uint8Array): number;
-        static longToArray(long: number): Array<number>;
+        static longToArray(long: number): Uint8Array;
         static newGuid(): string;
     }
     class PromisedMessage {
