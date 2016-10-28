@@ -10,6 +10,8 @@
     "noImplicitAny": false,
     "declaration": true,
     "outDir": "."
+
+
   },
   "exclude": [
     "node_modules",

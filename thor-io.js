@@ -603,7 +603,7 @@ var ThorIO;
         __decorate([
             CanInvoke(true), 
             __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object]), 
+            __metadata('design:paramtypes', [PropertyMessage]), 
             __metadata('design:returntype', void 0)
         ], Controller.prototype, "___getProperty", null);
         __decorate([
@@ -627,6 +627,13 @@ var ThorIO;
         return Controller;
     }());
     ThorIO.Controller = Controller;
+    var PropertyMessage = (function () {
+        function PropertyMessage() {
+            this.messageId = ThorIO.Utils.newGuid();
+        }
+        return PropertyMessage;
+    }());
+    ThorIO.PropertyMessage = PropertyMessage;
     var Controllers;
     (function (Controllers) {
         var InstantMessage = (function () {

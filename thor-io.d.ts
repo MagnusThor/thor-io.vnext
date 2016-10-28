@@ -30,7 +30,7 @@ export declare namespace ThorIO {
         D: any;
         C: string;
         isBinary: Boolean;
-        JSON: any;
+        readonly JSON: any;
         constructor(topic: string, object: any, controller: string, arrayBuffer?: ArrayBuffer);
         toString(): string;
         static fromArrayBuffer(buffer: Buffer): Message;
@@ -44,6 +44,7 @@ export declare namespace ThorIO {
     class ClientInfo {
         CI: string;
         C: string;
+        TS: Date;
         constructor(ci: string, controller: string);
     }
     class Connection {
@@ -75,20 +76,21 @@ export declare namespace ThorIO {
         private lastPong;
         private lastPing;
         private heartbeatInterval;
-        constructor(client: Connection);
+        constructor(connection: Connection);
         private enableHeartbeat();
-        canInvokeMethod(method: string): any;
+        canInvokeMethod(method: string): boolean;
         findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any>;
         getConnections(alias?: string): Array<Connection>;
         onopen(): void;
         onclose(): void;
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector?: (item: T) => U): U[];
         invokeError(error: any): void;
+        invokeToOthers(data: any, topic: string, controller?: string, buffer?: any): Controller;
         invokeToAll(data: any, topic: string, controller?: string, buffer?: any): Controller;
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string, buffer?: any): Controller;
-        invoke(data: any, topic: string, controller: string, buffer?: any): Controller;
-        publish(data: any, topic: string, controller: string): Controller;
-        publishToAll(data: any, topic: string, controller: string): Controller;
+        invoke(data: any, topic: string, controller?: string, buffer?: any): Controller;
+        publish(data: any, topic: string, controller?: string): Controller;
+        publishToAll(data: any, topic: string, controller?: string): Controller;
         hasSubscription(topic: string): boolean;
         addSubscription(topic: string): Subscription;
         removeSubscription(topic: string): boolean;
@@ -123,7 +125,7 @@ export declare namespace ThorIO {
         class BrokerController extends ThorIO.Controller {
             Connections: Array<PeerConnection>;
             Peer: PeerConnection;
-            LocalPeerId: string;
+            localPeerId: string;
             constructor(connection: ThorIO.Connection);
             onopen(): void;
             instantMessage(data: any, topic: string, controller: string): void;

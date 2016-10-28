@@ -169,8 +169,8 @@ export namespace ThorIO {
             let message = new Buffer(payloadLength);
             message.write(messagePayload, 0, payloadLength, "utf-8");
             var blob = new Buffer(this.B);
-            var buffer = Buffer.concat([header, message, blob]);
-
+            var buffer = Buffer.concat([header, message, blob]);        
+            
             return buffer
 
 
@@ -524,14 +524,14 @@ export namespace ThorIO {
         };
     }
 
-    // export class PropertyMessage {
-    //     name: string;
-    //     value: any;
-    //     messageId: string
-    //     constructor() {
-    //         this.messageId = ThorIO.Utils.newGuid();
-    //     }
-    // }
+    export class PropertyMessage {
+        name: string;
+        value: any;
+        messageId: string
+        constructor() {
+            this.messageId = ThorIO.Utils.newGuid();
+        }
+    }
 
 
     /*
