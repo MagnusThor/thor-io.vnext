@@ -36,8 +36,8 @@ export class ChatController extends ThorIO.Controller {
     @CanSet(true) // this property can be modified (set) by the clients
     age: number = 1;
 
-    constructor(client: ThorIO.Connection) {
-        super(client);
+    constructor(connection: ThorIO.Connection) {
+        super(connection);
     }
 
     @CanInvoke(true) // this method can be called / invoke by clients
@@ -50,6 +50,16 @@ export class ChatController extends ThorIO.Controller {
     @CanInvoke(true)
     fileShare(fileInfo,topic,controlle,blob){
         this.invokeToAll(fileInfo,"fileShare",this.alias,blob);
+    }
+    
+    @CanInvoke(true)
+    getFoo(){
+                this.publish(new Date(),"foo",this.alias);
+    }
+
+    @CanInvoke(true)
+    regExpMethod(size:number,age:number){
+        console.log(arguments);
     }
 
 }

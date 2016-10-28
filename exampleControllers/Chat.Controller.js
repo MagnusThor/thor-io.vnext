@@ -45,8 +45,8 @@ var SealdController = (function (_super) {
 exports.SealdController = SealdController;
 var ChatController = (function (_super) {
     __extends(ChatController, _super);
-    function ChatController(client) {
-        _super.call(this, client);
+    function ChatController(connection) {
+        _super.call(this, connection);
         this.age = 1;
     }
     ChatController.prototype.sendChatMessage = function (data, topic, controller) {
@@ -58,6 +58,12 @@ var ChatController = (function (_super) {
     };
     ChatController.prototype.fileShare = function (fileInfo, topic, controlle, blob) {
         this.invokeToAll(fileInfo, "fileShare", this.alias, blob);
+    };
+    ChatController.prototype.getFoo = function () {
+        this.publish(new Date(), "foo", this.alias);
+    };
+    ChatController.prototype.regExpMethod = function (size, age) {
+        console.log(arguments);
     };
     __decorate([
         thor_io_1.CanSet(true), 
@@ -75,6 +81,18 @@ var ChatController = (function (_super) {
         __metadata('design:paramtypes', [Object, Object, Object, Object]), 
         __metadata('design:returntype', void 0)
     ], ChatController.prototype, "fileShare", null);
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', []), 
+        __metadata('design:returntype', void 0)
+    ], ChatController.prototype, "getFoo", null);
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [Number, Number]), 
+        __metadata('design:returntype', void 0)
+    ], ChatController.prototype, "regExpMethod", null);
     ChatController = __decorate([
         thor_io_1.ControllerProperties("chat", false, 2000), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])

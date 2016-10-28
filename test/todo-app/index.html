@@ -1,0 +1,183 @@
+<html>
+
+<head>
+	<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+	<div id="todoApp" class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<div id="todoForm" class="form">
+					<div class="input-group">
+						<input type="text" id="task" name="task" data-bind="value:todo.topic,keyup:todo.topic|onTopicChange" 
+                        class="form-control" placeholder="What to do?">
+						<span class="input-group-btn">
+                            <button data-bind="click:createTodo" class="btn btn-default">Add</button>
+                        </span>
+					</div>
+
+				</div>
+			</div>
+		</div>
+		<hr>
+        <h2>Todo's
+            <small><span class="badge" data-bind="text:todos.length"></span></small></h2>
+		<div class="row">
+			<div class="col-xs-12">
+				<table class="table">
+					<tbody>
+						<tr data-repeat="todos">
+                            <td>
+									<input type="checkbox" data-bind="checkchange:completed|onStateChange,checked:completed,value:completed" />
+								</td>
+							<td>
+								<span data-bind="text:topic"></span>
+							</td>
+			
+							<td><span data-bind="text:created"></span>
+								
+                            <td>
+                                <i class="glyphicon glyphicon-remove" data-bind="click:$root.onRemove"></i>
+                            </td>
+
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</body>
+<script src="//cdnjs.cloudflare.com/ajax/libs/object-observe/0.2.6/object-observe.min.js"></script>
+<script src="/src/client/thor-io.client.js"></script>
+<script src="js/bob.the.binder.js"></script>
+<script>
+   
+  
+
+
+    var doc = document,factory;
+
+    var todoModel = function(id,topic,created,completed,onStateChange)
+    {
+        this.id = id;
+        this.topic= topic;
+        this.created = created;
+        this.completed = completed;
+        this.onStateChange = onStateChange;
+    }
+
+    var ViewModel = function (io) {
+        var self = this;
+        this.onSave = function(){}
+        this.todos = [];
+        this.todo = {
+            topic:"",
+        };
+        this.onTopicChange = function(value){
+
+
+            console.log(this,arguments)
+
+           
+        }
+        this.addTodo = function(todo){
+            this.todos.unshift(todo);
+        }
+        this.find = function(id){
+                var index = this.todos.findIndex(function(pre){             
+                        return pre.id === id;
+                });
+                return index;
+        }
+        this.removeTodo = function(id){
+           var index = this.todos.findIndex(function(pre){             
+                        return pre.id === id;
+            });
+            this.todos.splice(index,1);
+        }
+        this.updateTodo = function(change){
+            var match = this.todos.find(function(pre){
+                return pre.id === change.id;
+            });
+            if(match){
+                Object.keys(change).forEach(function(key){
+                    match[key]=change[key];
+                });
+            }
+        }    
+        this.createTodo = function(){
+            this.onSave.apply(this,[this.todo.topic])
+        }   
+       
+    };
+
+    var vm = new ViewModel();
+
+    $(function(e){
+
+    Bob.apply(Bob.binders).bind($("#todoApp"), vm);
+
+        factory = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["TodoController"]);
+
+        factory.OnOpen = function(todoProxy){            
+            
+                var onCompletedStateChange = function(evt){
+                    todoProxy.Invoke("setCompleted",this)
+                }
+
+                var onSaveTodo = function(topic,description){
+                    todoProxy.Invoke("addToDo",{topic:topic});
+                }
+                
+                var onRemoveTodo = function(todo){
+                   todoProxy.Invoke("removeToDo",todo);
+                }
+
+                vm.onSave = onSaveTodo
+                vm.onRemove = onRemoveTodo
+
+                todoProxy.OnOpen = function(ci){
+                    
+                    // when a todo's state is changed'
+                    todoProxy.On("stateChange",function(change){
+                            vm.updateTodo(change);
+                    })
+                    ;
+                    // getAll todo's
+                    todoProxy.Invoke("getToDos",{});
+                    todoProxy.On("todos",function(todos){
+                        todos.forEach(function(todo){
+                            var model = new todoModel(todo.id,
+                            todo.topic,todo.created,todo.completed,
+                            onCompletedStateChange
+                            );
+                            vm.addTodo(model)        
+                        });
+
+                    });
+                    // when a todo is removed
+                    todoProxy.On("todoRemoved", function(id){
+                        vm.removeTodo(id);
+                    });
+                    
+                    // when a todo is created ->
+                    todoProxy.On("todo",function(todo){
+                        var model = new todoModel(todo.id,
+                            todo.topic,todo.created,todo.completed,
+                            onCompletedStateChange
+                            );
+                            vm.addTodo(model)  
+                    });
+                }
+                todoProxy.Connect();
+        };  
+
+        
+    });
+
+
+
+    </script>
+
+</html>
