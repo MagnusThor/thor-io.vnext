@@ -1,1 +1,1 @@
-TBD
+See https://github.com/MagnusThor/thor-io.vnext/wiki for a brief documnentation.

@@ -1,4 +1,5 @@
-import "reflect-metadata";
+import * as net from 'net';
+import 'reflect-metadata';
 export declare function CanInvoke(state: boolean): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function CanSet(state: boolean): (target: Object, propertyKey: string) => void;
 export declare function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number): (target: Function) => void;
@@ -19,10 +20,15 @@ export declare namespace ThorIO {
     class Engine {
         private controllers;
         private connections;
+        private endpoints;
         constructor(controllers: Array<any>);
         private createSealdControllers();
-        removeConnection(ws: any, reason: number): void;
-        addConnection(ws: any, req: any): void;
+        removeConnection(id: string, reason: number): void;
+        addEndpoint(typeOfTransport: {
+            new (...args: any[]): ITransport;
+        }, host: string, port: number): net.Server;
+        addWebSocket(ws: any, req: any): void;
+        private addConnection(transport);
     }
     class Message {
         B: ArrayBuffer;
@@ -47,16 +53,56 @@ export declare namespace ThorIO {
         TS: Date;
         constructor(ci: string, controller: string);
     }
-    class Connection {
-        private controllers;
-        pingPongInterval: number;
+    interface ITransport {
         id: string;
-        ws: any;
+        send(data: any): any;
+        close(reason: number, message: any): any;
+        addEventListener(topic: string, fn: Function): any;
+        socket: any;
+        readyState: number;
+        ping(): any;
+        onMessage: (message: TransportMessage) => void;
+    }
+    class TransportMessage {
+        data: any;
+        binary: boolean;
+        constructor(data: any, binary: boolean);
+        toMessage(): Message;
+    }
+    class SimpleTransport implements ITransport {
+        socket: net.Socket;
+        id: string;
+        onMessage: (message: TransportMessage) => void;
+        send(data: any): void;
+        close(reason: number, message: any): void;
+        addEventListener(topic: string, fn: Function): void;
+        readonly readyState: number;
+        ping(): void;
+        constructor(socket: net.Socket);
+    }
+    class WebSocketTransport implements ITransport {
+        socket: any;
+        onMessage: (message: TransportMessage) => void;
+        id: string;
+        send(data: any): void;
+        close(reason: number, message: string): void;
+        addEventListener(event: string, fn: any): void;
+        constructor(socket: any);
+        readonly readyState: any;
+        ping(): void;
+    }
+    class Connection {
+        transport: ITransport;
+        connections: Array<Connection>;
+        private controllers;
+        errors: Array<any>;
+        pingPongInterval: number;
         controllerInstances: Array<ThorIO.Controller>;
-        connections: Array<ThorIO.Connection>;
         clientInfo: ThorIO.ClientInfo;
         private methodInvoker(controller, method, data, buffer?);
-        constructor(ws: any, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
+        readonly id: string;
+        constructor(transport: ITransport, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
+        private addError(error);
         hasController(alias: string): boolean;
         removeController(alias: string): void;
         getController(alias: string): Controller;
@@ -96,16 +142,9 @@ export declare namespace ThorIO {
         removeSubscription(topic: string): boolean;
         getSubscription(topic: string): Subscription;
         ___connect(): void;
-        ___getProperty(data: PropertyMessage): void;
         ___close(): void;
         ___subscribe(subscription: Subscription, topic: string, controller: string): Subscription;
         ___unsubscribe(subscription: Subscription): boolean;
-    }
-    class PropertyMessage {
-        name: string;
-        value: any;
-        messageId: string;
-        constructor();
     }
     namespace Controllers {
         class InstantMessage {
