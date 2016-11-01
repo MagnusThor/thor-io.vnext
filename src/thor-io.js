@@ -13,7 +13,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-require("reflect-metadata");
+var net = require('net');
+require('reflect-metadata');
 function CanInvoke(state) {
     return function (target, propertyKey, descriptor) {
         Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
@@ -95,8 +96,9 @@ var ThorIO;
     var Engine = (function () {
         function Engine(controllers) {
             var _this = this;
-            this.connections = new Array();
-            this.controllers = new Array();
+            this.endpoints = [];
+            this.connections = [];
+            this.controllers = [];
             controllers.forEach(function (ctrl) {
                 var plugin = new Plugin(ctrl);
                 _this.controllers.push(plugin);
@@ -111,10 +113,10 @@ var ThorIO;
                 }
             });
         };
-        Engine.prototype.removeConnection = function (ws, reason) {
+        Engine.prototype.removeConnection = function (id, reason) {
             try {
                 var connection = this.connections.find(function (pre) {
-                    return pre.id === ws["$connectionId"];
+                    return pre.id === id;
                 });
                 var index = this.connections.indexOf(connection);
                 if (index >= 0)
@@ -123,13 +125,27 @@ var ThorIO;
             catch (error) {
             }
         };
-        ;
-        Engine.prototype.addConnection = function (ws, req) {
+        Engine.prototype.addEndpoint = function (typeOfTransport, host, port) {
             var _this = this;
-            this.connections.push(new Connection(ws, this.connections, this.controllers));
-            ws.on("close", function (reason) {
-                _this.removeConnection(ws, reason);
+            var endpoint = net.createServer(function (socket) {
+                var transport = new typeOfTransport(socket);
+                _this.addConnection(transport);
             });
+            endpoint.listen(port, host, (function (listener) {
+            }));
+            this.endpoints.push(endpoint);
+            return endpoint;
+        };
+        Engine.prototype.addWebSocket = function (ws, req) {
+            var transport = new WebSocketTransport(ws);
+            this.addConnection(transport);
+        };
+        Engine.prototype.addConnection = function (transport) {
+            var _this = this;
+            transport.addEventListener("close", function (reason) {
+                _this.removeConnection(transport.id, reason);
+            });
+            this.connections.push(new Connection(transport, this.connections, this.controllers));
         };
         return Engine;
     }());
@@ -199,23 +215,99 @@ var ThorIO;
         return ClientInfo;
     }());
     ThorIO.ClientInfo = ClientInfo;
-    var Connection = (function () {
-        function Connection(ws, connections, controllers) {
+    var TransportMessage = (function () {
+        function TransportMessage(data, binary) {
+            this.data = data;
+            this.binary = binary;
+        }
+        TransportMessage.prototype.toMessage = function () {
+            return JSON.parse(this.data);
+        };
+        return TransportMessage;
+    }());
+    ThorIO.TransportMessage = TransportMessage;
+    var SimpleTransport = (function () {
+        function SimpleTransport(socket) {
             var _this = this;
+            this.socket = socket;
+            this.id = ThorIO.Utils.newGuid();
+            socket.addListener("data", function (buffer) {
+                var args = buffer.toString().split("|");
+                var message = new Message(args[1], args[2], args[0]);
+                _this.onMessage(new TransportMessage(message.toString(), false));
+            });
+        }
+        SimpleTransport.prototype.send = function (data) {
+            this.socket.write(new Buffer(data));
+        };
+        SimpleTransport.prototype.close = function (reason, message) {
+            this.socket.destroy();
+        };
+        SimpleTransport.prototype.addEventListener = function (topic, fn) {
+            this.socket.addListener(topic, fn);
+        };
+        Object.defineProperty(SimpleTransport.prototype, "readyState", {
+            get: function () {
+                return 1;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        SimpleTransport.prototype.ping = function () {
+            return;
+        };
+        return SimpleTransport;
+    }());
+    ThorIO.SimpleTransport = SimpleTransport;
+    var WebSocketTransport = (function () {
+        function WebSocketTransport(socket) {
+            var _this = this;
+            this.id = ThorIO.Utils.newGuid();
+            this.socket = socket;
+            this.socket.addEventListener("message", function (event) {
+                _this.onMessage(new TransportMessage(event.data, event.binary));
+            });
+        }
+        ;
+        WebSocketTransport.prototype.send = function (data) {
+            this.socket.send(data);
+        };
+        WebSocketTransport.prototype.close = function (reason, message) {
+            this.socket.close(reason, message);
+        };
+        WebSocketTransport.prototype.addEventListener = function (event, fn) {
+            this.socket.addEventListener(event, fn);
+        };
+        Object.defineProperty(WebSocketTransport.prototype, "readyState", {
+            get: function () {
+                return this.socket.readyState;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        WebSocketTransport.prototype.ping = function () {
+            this.socket.ping();
+        };
+        return WebSocketTransport;
+    }());
+    ThorIO.WebSocketTransport = WebSocketTransport;
+    var Connection = (function () {
+        function Connection(transport, connections, controllers) {
+            var _this = this;
+            this.transport = transport;
+            this.connections = connections;
             this.controllers = controllers;
             this.connections = connections;
-            this.id = ThorIO.Utils.newGuid();
-            if (ws) {
-                this.ws = ws;
-                this.ws["$connectionId"] = this.id; // todo: replace
-                this.ws.addEventListener("message", function (event) {
+            this.controllerInstances = [];
+            this.errors = [];
+            if (transport) {
+                this.transport.onMessage = function (event) {
                     try {
                         if (!event.binary) {
-                            // todo: implement fromString(..) in Message
-                            var message = JSON.parse(event.data);
+                            var message = event.toMessage();
                             var controller = _this.locateController(message.C);
                             if (controller)
-                                _this.methodInvoker(controller, message.T, JSON.parse(message.D));
+                                _this.methodInvoker(controller, message.T, message.D);
                         }
                         else {
                             var message = Message.fromArrayBuffer(event.data);
@@ -225,24 +317,22 @@ var ThorIO;
                         }
                     }
                     catch (error) {
-                        console.log("error", error);
+                        _this.addError(error);
                     }
-                });
+                };
             }
-            this.controllerInstances = new Array();
         }
         Connection.prototype.methodInvoker = function (controller, method, data, buffer) {
             try {
                 if (!controller.canInvokeMethod(method))
                     throw "method '" + method + "' cant be invoked.";
                 if (typeof (controller[method]) === "function") {
-                    controller[method].apply(controller, [data, method,
+                    controller[method].apply(controller, [JSON.parse(data), method,
                         controller.alias, buffer]);
                 }
                 else {
-                    // todo : refactor and use PropertyMessage 
                     var prop = method;
-                    var propValue = data;
+                    var propValue = JSON.parse(data);
                     if (typeof (controller[prop]) === typeof (propValue))
                         controller[prop] = propValue;
                 }
@@ -250,6 +340,16 @@ var ThorIO;
             catch (ex) {
                 controller.invokeError(ex);
             }
+        };
+        Object.defineProperty(Connection.prototype, "id", {
+            get: function () {
+                return this.transport.id;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Connection.prototype.addError = function (error) {
+            this.errors.push(error);
         };
         Connection.prototype.hasController = function (alias) {
             var match = this.controllerInstances.filter(function (pre) {
@@ -300,14 +400,13 @@ var ThorIO;
                 }
             }
             catch (error) {
-                this.ws.close(1011, "Cannot locate the specified controller, unknown i seald.'" + alias + "'. Connection closed");
+                this.transport.close(1011, "Cannot locate the specified controller, unknown i seald.'" + alias + "'. Connection closed");
                 return null;
             }
         };
         return Connection;
     }());
     ThorIO.Connection = Connection;
-    // maybe use EventEmitters, a bit fuzzy ? Comments??
     var Subscription = (function () {
         function Subscription(topic, controller) {
             this.topic = topic;
@@ -316,15 +415,10 @@ var ThorIO;
         return Subscription;
     }());
     ThorIO.Subscription = Subscription;
-    // export class ControllerBase {
-    //     constructor(connection:ThorIO.Connection){
-    //     }
-    // }
     var Controller = (function () {
         function Controller(connection) {
-            // super(connection);
             this.connection = connection;
-            this.subscriptions = new Array();
+            this.subscriptions = [];
             this.alias = Reflect.getMetadata("alias", this.constructor);
             this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
             if (this.heartbeatInterval >= 1000)
@@ -332,13 +426,13 @@ var ThorIO;
         }
         Controller.prototype.enableHeartbeat = function () {
             var _this = this;
-            this.connection.ws.addEventListener("pong", function () {
+            this.connection.transport.addEventListener("pong", function () {
                 _this.lastPong = new Date();
             });
             var interval = setInterval(function () {
                 _this.lastPing = new Date();
-                if (_this.connection.ws.readyState === 1)
-                    _this.connection.ws.ping();
+                if (_this.connection.transport.readyState === 1)
+                    _this.connection.transport.ping();
             }, this.heartbeatInterval);
         };
         Controller.prototype.canInvokeMethod = function (method) {
@@ -382,7 +476,6 @@ var ThorIO;
             });
             return this;
         };
-        ;
         Controller.prototype.invokeToAll = function (data, topic, controller, buffer) {
             var _this = this;
             this.getConnections().forEach(function (connection) {
@@ -390,7 +483,6 @@ var ThorIO;
             });
             return this;
         };
-        ;
         Controller.prototype.invokeTo = function (predicate, data, topic, controller, buffer) {
             var _this = this;
             var connections = this.findOn(controller || this.alias, predicate);
@@ -399,27 +491,24 @@ var ThorIO;
             });
             return this;
         };
-        ;
         Controller.prototype.invoke = function (data, topic, controller, buffer) {
             var msg = new Message(topic, data, controller || this.alias, buffer);
-            if (this.connection.ws)
-                this.connection.ws.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
+            if (this.connection.transport)
+                this.connection.transport.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
             return this;
         };
-        ;
         Controller.prototype.publish = function (data, topic, controller) {
             if (!this.hasSubscription(topic))
                 return;
             return this.invoke(data, topic, controller || this.alias);
         };
-        ;
         Controller.prototype.publishToAll = function (data, topic, controller) {
             var _this = this;
             var msg = new Message(topic, data, this.alias);
             this.getConnections().forEach(function (connection) {
                 var ctrl = connection.getController(controller || _this.alias);
                 if (ctrl.getSubscription(topic)) {
-                    connection.ws.send(msg.toString());
+                    connection.transport.send(msg.toString());
                 }
             });
             return this;
@@ -446,10 +535,6 @@ var ThorIO;
         Controller.prototype.___connect = function () {
             // todo: remove this method
         };
-        Controller.prototype.___getProperty = function (data) {
-            data.value = this[data.name];
-            this.invoke(data, "___getProperty", this.alias);
-        };
         Controller.prototype.___close = function () {
             this.connection.removeController(this.alias);
             this.invoke({}, " ___close", this.alias);
@@ -473,7 +558,6 @@ var ThorIO;
         };
         ;
         __decorate([
-            //extends ControllerBase{
             CanSet(false), 
             __metadata('design:type', String)
         ], Controller.prototype, "alias", void 0);
@@ -614,12 +698,6 @@ var ThorIO;
         __decorate([
             CanInvoke(true), 
             __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object]), 
-            __metadata('design:returntype', void 0)
-        ], Controller.prototype, "___getProperty", null);
-        __decorate([
-            CanInvoke(true), 
-            __metadata('design:type', Function), 
             __metadata('design:paramtypes', []), 
             __metadata('design:returntype', void 0)
         ], Controller.prototype, "___close", null);
@@ -638,17 +716,6 @@ var ThorIO;
         return Controller;
     }());
     ThorIO.Controller = Controller;
-    // export class PropertyMessage {
-    //     name: string;
-    //     value: any;
-    //     messageId: string
-    //     constructor() {
-    //         this.messageId = ThorIO.Utils.newGuid();
-    //     }
-    // }
-    /*
-        namespace contains built-in ThorIO.Controller's
-    */
     var Controllers;
     (function (Controllers) {
         var InstantMessage = (function () {
@@ -678,7 +745,7 @@ var ThorIO;
             __extends(BrokerController, _super);
             function BrokerController(connection) {
                 _super.call(this, connection);
-                this.Connections = new Array();
+                this.Connections = [];
             }
             BrokerController.prototype.onopen = function () {
                 this.Peer = new PeerConnection(ThorIO.Utils.newGuid(), this.connection.id);
