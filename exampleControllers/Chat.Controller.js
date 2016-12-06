@@ -21,33 +21,38 @@ var ChatMessage = (function () {
     }
     return ChatMessage;
 }());
-// This controller is seald, and cannot be connected to. A seald controller 
-// is created upon start of the ThorIO.Engine. Common use case would be some thing
-// that produces data, and passed it to other controllers 
-var SealdController = (function (_super) {
-    __extends(SealdController, _super);
-    function SealdController(client) {
-        var _this = this;
-        _super.call(this, client);
-        setInterval(function () {
-            // send a chatMessage event 15 seconds..
-            var message = new ChatMessage(1, new Date().toString());
-            _this.invokeToAll(message, "chatMessage", "chat");
-        }, 15000);
+var FooController = (function (_super) {
+    __extends(FooController, _super);
+    function FooController(connection) {
+        _super.call(this, connection);
     }
-    ;
-    SealdController = __decorate([
-        thor_io_1.ControllerProperties("chatMessageProducer", true), 
+    FooController.prototype.onopen = function () {
+        //   this.invoke({src:'open'},"fooMessage");
+    };
+    FooController.prototype.onclose = function () {
+    };
+    FooController.prototype.fooMessage = function (data) {
+        this.invokeToAll(data, "fooMessage", this.alias);
+    };
+    __decorate([
+        thor_io_1.CanInvoke(true), 
+        __metadata('design:type', Function), 
+        __metadata('design:paramtypes', [Object]), 
+        __metadata('design:returntype', void 0)
+    ], FooController.prototype, "fooMessage", null);
+    FooController = __decorate([
+        thor_io_1.ControllerProperties("fooController"), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
-    ], SealdController);
-    return SealdController;
+    ], FooController);
+    return FooController;
 }(thor_io_1.ThorIO.Controller));
-exports.SealdController = SealdController;
+exports.FooController = FooController;
 var ChatController = (function (_super) {
     __extends(ChatController, _super);
     function ChatController(connection) {
         _super.call(this, connection);
         this.age = 1;
+        this.alias = "chat";
     }
     ChatController.prototype.sendChatMessage = function (data, topic, controller) {
         var _this = this;
@@ -63,7 +68,7 @@ var ChatController = (function (_super) {
         this.publish(new Date(), "foo", this.alias);
     };
     ChatController.prototype.regExpMethod = function (size, age) {
-        console.log(arguments);
+        //   console.log(arguments);
     };
     __decorate([
         thor_io_1.CanSet(true), 
@@ -94,7 +99,7 @@ var ChatController = (function (_super) {
         __metadata('design:returntype', void 0)
     ], ChatController.prototype, "regExpMethod", null);
     ChatController = __decorate([
-        thor_io_1.ControllerProperties("chat", false, 2000), 
+        thor_io_1.ControllerProperties("chat"), 
         __metadata('design:paramtypes', [thor_io_1.ThorIO.Connection])
     ], ChatController);
     return ChatController;

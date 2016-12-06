@@ -61,7 +61,7 @@
 
         var rtc;
         document.addEventListener("DOMContentLoaded", function() {
-            var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["broker"]);
+            var client = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["contextBroker"]);
 
             // we connected to the server (.Engine) , onOpen will give us the proxy's' to the Controllers, in this 
             // case we are specified  just the broker (BrokerController.ts ) 
@@ -74,6 +74,9 @@
                         }
                     ]
                 });
+
+                // limit the video bandwidth to 250kbs/s and audio to 50kbs/s
+                rtc.setBandwithConstraints(250,50);
 
                 var constraints = {
                     video: {

@@ -14,23 +14,31 @@ class ChatMessage {
     }
 }
 
-// This controller is seald, and cannot be connected to. A seald controller 
-// is created upon start of the ThorIO.Engine. Common use case would be some thing
-// that produces data, and passed it to other controllers 
+@ControllerProperties("fooController")
+export class FooController extends ThorIO.Controller {
 
-@ControllerProperties("chatMessageProducer",true)
-export class SealdController extends ThorIO.Controller{
-    constructor(client:ThorIO.Connection){
-        super(client);
-        setInterval( () => {
-            // send a chatMessage event 15 seconds..
-            let message = new ChatMessage(1,new Date().toString());
-                this.invokeToAll(message,"chatMessage","chat");
-        },15000);
-    };
+    constructor(connection:ThorIO.Connection)
+    {
+        super(connection);
+    }
+
+    onopen(){
+         //   this.invoke({src:'open'},"fooMessage");
+    }
+
+    onclose() {
+
+    }
+    @CanInvoke(true)
+    fooMessage(data:any){
+      
+            this.invokeToAll(data,"fooMessage",this.alias);
+    }
+
 }
 
-@ControllerProperties("chat",false,2000)
+
+@ControllerProperties("chat")
 export class ChatController extends ThorIO.Controller {
    
     @CanSet(true) // this property can be modified (set) by the clients
@@ -38,6 +46,7 @@ export class ChatController extends ThorIO.Controller {
 
     constructor(connection: ThorIO.Connection) {
         super(connection);
+        this.alias = "chat";
     }
 
     @CanInvoke(true) // this method can be called / invoke by clients
@@ -59,7 +68,7 @@ export class ChatController extends ThorIO.Controller {
 
     @CanInvoke(true)
     regExpMethod(size:number,age:number){
-        console.log(arguments);
+     //   console.log(arguments);
     }
 
 }

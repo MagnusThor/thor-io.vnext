@@ -1,3 +1,4 @@
+import { BandwidthConstraints } from './thor-io.client';
 
 declare var MediaRecorder: any;
 namespace ThorIO.Client {
@@ -241,6 +242,11 @@ namespace ThorIO.Client {
         }
     }
 
+    export class BandwidthConstraints{
+        constructor(public videobandwidth:number,public audiobandwidth:number){
+        }
+    }
+
     export class WebRTC {
 
         public Peers: Array<WebRTCConnection>;
@@ -250,6 +256,7 @@ namespace ThorIO.Client {
         public Context: string;
         public LocalSteams: Array<any>;
         public Errors: Array<any>;
+        public bandwidthConstraints: BandwidthConstraints
 
         constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
             this.Errors = new Array<any>();
@@ -271,6 +278,47 @@ namespace ThorIO.Client {
             brokerProxy.On("connectTo", (peers: Array<PeerConnection>) => {
                 this.OnConnectTo(peers);
             });
+        }
+
+        setBandwithConstraints(videobandwidth:number,audiobandwidth:number){
+              this.bandwidthConstraints = new BandwidthConstraints(videobandwidth,audiobandwidth);
+        }
+
+        private setMediaBitrates(sdp:string):string {
+            return this.setMediaBitrate(this.setMediaBitrate(sdp, "video", this.bandwidthConstraints.videobandwidth),
+                 "audio", this.bandwidthConstraints.audiobandwidth);
+        }
+
+        private setMediaBitrate(sdp: string, media: string, bitrate: number):string {
+          
+            let lines = sdp.split("\n");
+            let line = -1;
+            for (var i = 0; i < lines.length; i++) {
+                if (lines[i].indexOf("m=" + media) === 0) {
+                    line = i;
+                    break;
+                }
+            }
+            if (line === -1) {
+
+                return sdp;
+            }
+            line++;
+
+
+            while (lines[line].indexOf("i=") === 0 || lines[line].indexOf("c=") === 0) {
+                line++;
+            }
+
+
+            if (lines[line].indexOf("b") === 0) {
+                lines[line] = "b=AS:" + bitrate;
+                return lines.join("\n");
+            }
+            var newLines = lines.slice(0, line)
+            newLines.push("b=AS:" + bitrate)
+            newLines = newLines.concat(lines.slice(line, lines.length))
+            return newLines.join("\n")
         }
 
 
@@ -364,6 +412,9 @@ namespace ThorIO.Client {
             pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
             pc.createAnswer((description) => {
                 pc.setLocalDescription(description);
+                if(this.bandwidthConstraints) description.sdp = this.setMediaBitrates(description.sdp);
+
+
                 let answer = {
                     sender: this.LocalPeerId,
                     recipient: event.sender,
@@ -471,13 +522,19 @@ namespace ThorIO.Client {
                 peerConnection.addStream(stream);
                 this.OnLocalSteam(stream);
             });
-            peerConnection.createOffer((localDescription: RTCSessionDescription) => {
-                peerConnection.setLocalDescription(localDescription, () => {
+            peerConnection.createOffer((description: RTCSessionDescription) => {
+                peerConnection.setLocalDescription(description, () => {
+
+                    // check if we need to modify SDP payload
+
+                    if(this.bandwidthConstraints) description.sdp = this.setMediaBitrates(description.sdp);
+
                     let offer = {
                         sender: this.LocalPeerId,
                         recipient: peer.peerId,
-                        message: JSON.stringify(localDescription)
+                        message: JSON.stringify(description)
                     };
+
                     this.brokerProxy.Invoke("contextSignal", offer);
                 }, (err) => {
                     this.addError(err);
@@ -617,7 +674,7 @@ namespace ThorIO.Client {
         static longToArray(long: number): Uint8Array {
             var byteArray = new Uint8Array(8)
             let byteLength = byteArray.length;
-            for (let index = 0; index <byteLength; index++) {
+            for (let index = 0; index < byteLength; index++) {
                 let byte = long & 0xff;
                 byteArray[index] = byte;
                 long = (long - byte) / 256;
@@ -626,7 +683,7 @@ namespace ThorIO.Client {
         }
 
         static newGuid() {
-            function s4(){
+            function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             };
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
@@ -769,7 +826,7 @@ namespace ThorIO.Client {
         }
         public Dispatch(topic: string, data: any, buffer?: ArrayBuffer) {
             if (topic === "___open") {
-                this.IsConnected = true;  
+                this.IsConnected = true;
                 this.OnOpen(JSON.parse(data));
 
                 return;
