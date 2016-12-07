@@ -66,6 +66,11 @@ declare namespace ThorIO.Client {
         AddPeerChannel(pc: PeerChannel): void;
         RemovePeerChannel(id: any, dataChannel: any): void;
     }
+    class BandwidthConstraints {
+        videobandwidth: number;
+        audiobandwidth: number;
+        constructor(videobandwidth: number, audiobandwidth: number);
+    }
     class WebRTC {
         private brokerProxy;
         private rtcConfig;
@@ -76,7 +81,11 @@ declare namespace ThorIO.Client {
         Context: string;
         LocalSteams: Array<any>;
         Errors: Array<any>;
+        bandwidthConstraints: BandwidthConstraints;
         constructor(brokerProxy: ThorIO.Client.Proxy, rtcConfig: RTCConfiguration);
+        setBandwithConstraints(videobandwidth: number, audiobandwidth: number): void;
+        private setMediaBitrates(sdp);
+        private setMediaBitrate(sdp, media, bitrate);
         CreateDataChannel(name: string): ThorIO.Client.DataChannel;
         RemoveDataChannel(name: string): void;
         private signalHandlers();
@@ -133,11 +142,6 @@ declare namespace ThorIO.Client {
         static longToArray(long: number): Uint8Array;
         static newGuid(): string;
     }
-    class PromisedMessage {
-        resolve: Function;
-        messageId: string;
-        constructor(id: string, resolve: Function);
-    }
     class PropertyMessage {
         name: string;
         value: any;
@@ -148,7 +152,6 @@ declare namespace ThorIO.Client {
         alias: string;
         private ws;
         IsConnected: boolean;
-        private promisedMessages;
         private listeners;
         constructor(alias: string, ws: WebSocket);
         OnError(event: any): void;
@@ -166,7 +169,6 @@ declare namespace ThorIO.Client {
         Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy;
         Publish(topic: string, data: any, controller?: string): ThorIO.Client.Proxy;
         SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Client.Proxy;
-        GetProperty(propName: string, controller?: string): Promise<any>;
         Dispatch(topic: string, data: any, buffer?: ArrayBuffer): void;
     }
 }

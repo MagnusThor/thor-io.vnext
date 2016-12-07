@@ -100,10 +100,12 @@ var ThorIO;
             this.connections = [];
             this.controllers = [];
             controllers.forEach(function (ctrl) {
+                if (!Reflect.hasOwnMetadata("alias", ctrl)) {
+                    throw "Faild to register on of the specified ThorIO.Controller's";
+                }
                 var plugin = new Plugin(ctrl);
                 _this.controllers.push(plugin);
             });
-            this.createSealdControllers();
         }
         Engine.prototype.createSealdControllers = function () {
             var _this = this;
@@ -137,7 +139,7 @@ var ThorIO;
             return endpoint;
         };
         Engine.prototype.addWebSocket = function (ws, req) {
-            var transport = new WebSocketTransport(ws);
+            var transport = new WebSocketMessageTransport(ws);
             this.addConnection(transport);
         };
         Engine.prototype.addConnection = function (transport) {
@@ -214,82 +216,180 @@ var ThorIO;
         return ClientInfo;
     }());
     ThorIO.ClientInfo = ClientInfo;
-    var TransportMessage = (function () {
-        function TransportMessage(data, binary) {
+    var PipeMessage = (function () {
+        function PipeMessage(data, binary) {
+            this.data = data;
+            this.binary = binary;
+            this.message = JSON.parse(this.data);
+            this.arr = new Array();
+            this.arr.push(this.message.C);
+            this.arr.push(this.message.T);
+            this.arr.push(this.message.D);
+        }
+        PipeMessage.prototype.toBuffer = function () {
+            return new Buffer(this.arr.join("|"));
+        };
+        PipeMessage.prototype.toMessage = function () {
+            return this.message;
+        };
+        return PipeMessage;
+    }());
+    ThorIO.PipeMessage = PipeMessage;
+    var BufferMessage = (function () {
+        function BufferMessage(data, binary) {
             this.data = data;
             this.binary = binary;
         }
-        TransportMessage.prototype.toMessage = function () {
+        BufferMessage.prototype.toMessage = function () {
+            var headerLen = 3;
+            var tLen = this.data.readUInt8(0);
+            var cLen = this.data.readUInt8(1);
+            var dLen = this.data.readUInt8(2);
+            var offset = headerLen;
+            var topic = this.data.toString("utf-8", offset, tLen + offset);
+            offset += tLen;
+            var controller = this.data.toString("utf-8", offset, offset + cLen);
+            offset += cLen;
+            var data = this.data.toString("utf-8", offset, offset + dLen);
+            var message = new ThorIO.Message(topic, data, controller);
+            return message;
+        };
+        BufferMessage.prototype.toBuffer = function () {
+            var message = JSON.parse(this.data.toString());
+            var header = 3;
+            var offset = 0;
+            var tLen = message.T.length;
+            var dLen = message.D.length;
+            var cLen = message.C.length;
+            var bufferSize = header + tLen + dLen + cLen;
+            var buffer = new Buffer(bufferSize);
+            buffer.writeUInt8(tLen, 0);
+            buffer.writeUInt8(cLen, 1);
+            buffer.writeInt8(dLen, 2);
+            offset = header;
+            buffer.write(message.T, offset);
+            offset += tLen;
+            buffer.write(message.C, offset);
+            offset += cLen;
+            buffer.write(message.D, offset);
+            return buffer;
+        };
+        return BufferMessage;
+    }());
+    ThorIO.BufferMessage = BufferMessage;
+    var WebSocketMessage = (function () {
+        function WebSocketMessage(data, binary) {
+            this.data = data;
+            this.binary = binary;
+        }
+        WebSocketMessage.prototype.toBuffer = function () {
+            throw "not yet implemented";
+        };
+        WebSocketMessage.prototype.toMessage = function () {
             return JSON.parse(this.data);
         };
-        return TransportMessage;
+        return WebSocketMessage;
     }());
-    ThorIO.TransportMessage = TransportMessage;
-    var SimpleTransport = (function () {
-        function SimpleTransport(socket) {
+    ThorIO.WebSocketMessage = WebSocketMessage;
+    var BufferMessageTransport = (function () {
+        function BufferMessageTransport(socket) {
             var _this = this;
             this.socket = socket;
             this.id = ThorIO.Utils.newGuid();
-            socket.addListener("data", function (buffer) {
-                var args = buffer.toString().split("|");
-                var message = new Message(args[1], args[2], args[0]);
-                _this.onMessage(new TransportMessage(message.toString(), false));
+            this.socket.addListener("data", function (buffer) {
+                var bm = new BufferMessage(buffer, false);
+                _this.onMessage(bm);
             });
         }
-        SimpleTransport.prototype.send = function (data) {
-            this.socket.write(new Buffer(data));
-        };
-        SimpleTransport.prototype.close = function (reason, message) {
-            this.socket.destroy();
-        };
-        SimpleTransport.prototype.addEventListener = function (topic, fn) {
-            this.socket.addListener(topic, fn);
-        };
-        Object.defineProperty(SimpleTransport.prototype, "readyState", {
+        Object.defineProperty(BufferMessageTransport.prototype, "readyState", {
             get: function () {
                 return 1;
             },
             enumerable: true,
             configurable: true
         });
-        SimpleTransport.prototype.ping = function () {
+        BufferMessageTransport.prototype.send = function (data) {
+            var bm = new BufferMessage(new Buffer(data), false);
+            this.socket.write(bm.toBuffer());
+        };
+        BufferMessageTransport.prototype.addEventListener = function (name, fn) {
+            this.socket.addListener(name, fn);
+        };
+        BufferMessageTransport.prototype.ping = function () {
             return;
         };
-        return SimpleTransport;
+        BufferMessageTransport.prototype.close = function () {
+            this.socket.destroy();
+        };
+        return BufferMessageTransport;
     }());
-    ThorIO.SimpleTransport = SimpleTransport;
-    var WebSocketTransport = (function () {
-        function WebSocketTransport(socket) {
+    ThorIO.BufferMessageTransport = BufferMessageTransport;
+    var PipeMessageTransport = (function () {
+        function PipeMessageTransport(socket) {
+            var _this = this;
+            this.socket = socket;
+            this.id = ThorIO.Utils.newGuid();
+            socket.addListener("data", function (buffer) {
+                var args = buffer.toString().split("|");
+                var message = new Message(args[1], args[2], args[0]);
+                _this.onMessage(new PipeMessage(message.toString(), false));
+            });
+        }
+        PipeMessageTransport.prototype.send = function (data) {
+            var message = new PipeMessage(data, false);
+            this.socket.write(message.toBuffer());
+        };
+        PipeMessageTransport.prototype.close = function (reason, message) {
+            this.socket.destroy();
+        };
+        PipeMessageTransport.prototype.addEventListener = function (name, fn) {
+            this.socket.addListener(name, fn);
+        };
+        Object.defineProperty(PipeMessageTransport.prototype, "readyState", {
+            get: function () {
+                return 1;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        PipeMessageTransport.prototype.ping = function () {
+            return;
+        };
+        return PipeMessageTransport;
+    }());
+    ThorIO.PipeMessageTransport = PipeMessageTransport;
+    var WebSocketMessageTransport = (function () {
+        function WebSocketMessageTransport(socket) {
             var _this = this;
             this.id = ThorIO.Utils.newGuid();
             this.socket = socket;
             this.socket.addEventListener("message", function (event) {
-                _this.onMessage(new TransportMessage(event.data, event.binary));
+                _this.onMessage(new WebSocketMessage(event.data, event.binary));
             });
         }
         ;
-        WebSocketTransport.prototype.send = function (data) {
+        WebSocketMessageTransport.prototype.send = function (data) {
             this.socket.send(data);
         };
-        WebSocketTransport.prototype.close = function (reason, message) {
+        WebSocketMessageTransport.prototype.close = function (reason, message) {
             this.socket.close(reason, message);
         };
-        WebSocketTransport.prototype.addEventListener = function (event, fn) {
-            this.socket.addEventListener(event, fn);
+        WebSocketMessageTransport.prototype.addEventListener = function (name, fn) {
+            this.socket.addEventListener(name, fn);
         };
-        Object.defineProperty(WebSocketTransport.prototype, "readyState", {
+        Object.defineProperty(WebSocketMessageTransport.prototype, "readyState", {
             get: function () {
                 return this.socket.readyState;
             },
             enumerable: true,
             configurable: true
         });
-        WebSocketTransport.prototype.ping = function () {
-            this.socket.ping();
+        WebSocketMessageTransport.prototype.ping = function () {
+            this.socket["ping"]();
         };
-        return WebSocketTransport;
+        return WebSocketMessageTransport;
     }());
-    ThorIO.WebSocketTransport = WebSocketTransport;
+    ThorIO.WebSocketMessageTransport = WebSocketMessageTransport;
     var Connection = (function () {
         function Connection(transport, connections, controllers) {
             var _this = this;
@@ -399,7 +499,7 @@ var ThorIO;
                 }
             }
             catch (error) {
-                this.transport.close(1011, "Cannot locate the specified controller, unknown i seald.'" + alias + "'. Connection closed");
+                this.transport.close(1011, "Cannot locate the specified controller,it may be seald or the the alias in unknown '" + alias + "'. connection closed");
                 return null;
             }
         };

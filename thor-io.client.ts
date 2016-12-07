@@ -241,6 +241,11 @@ namespace ThorIO.Client {
         }
     }
 
+    export class BandwidthConstraints {
+        constructor(public videobandwidth: number, public audiobandwidth: number) {
+        }
+    }
+
     export class WebRTC {
 
         public Peers: Array<WebRTCConnection>;
@@ -250,6 +255,7 @@ namespace ThorIO.Client {
         public Context: string;
         public LocalSteams: Array<any>;
         public Errors: Array<any>;
+        public bandwidthConstraints: BandwidthConstraints
 
         constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
             this.Errors = new Array<any>();
@@ -271,6 +277,47 @@ namespace ThorIO.Client {
             brokerProxy.On("connectTo", (peers: Array<PeerConnection>) => {
                 this.OnConnectTo(peers);
             });
+        }
+
+        setBandwithConstraints(videobandwidth: number, audiobandwidth: number) {
+            this.bandwidthConstraints = new BandwidthConstraints(videobandwidth, audiobandwidth);
+        }
+
+        private setMediaBitrates(sdp: string): string {
+            return this.setMediaBitrate(this.setMediaBitrate(sdp, "video", this.bandwidthConstraints.videobandwidth),
+                "audio", this.bandwidthConstraints.audiobandwidth);
+        }
+
+        private setMediaBitrate(sdp: string, media: string, bitrate: number): string {
+
+            let lines = sdp.split("\n");
+            let line = -1;
+            for (var i = 0; i < lines.length; i++) {
+                if (lines[i].indexOf("m=" + media) === 0) {
+                    line = i;
+                    break;
+                }
+            }
+            if (line === -1) {
+
+                return sdp;
+            }
+            line++;
+
+
+            while (lines[line].indexOf("i=") === 0 || lines[line].indexOf("c=") === 0) {
+                line++;
+            }
+
+
+            if (lines[line].indexOf("b") === 0) {
+                lines[line] = "b=AS:" + bitrate;
+                return lines.join("\n");
+            }
+            var newLines = lines.slice(0, line)
+            newLines.push("b=AS:" + bitrate)
+            newLines = newLines.concat(lines.slice(line, lines.length))
+            return newLines.join("\n")
         }
 
 
@@ -364,6 +411,9 @@ namespace ThorIO.Client {
             pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
             pc.createAnswer((description) => {
                 pc.setLocalDescription(description);
+                if (this.bandwidthConstraints) description.sdp = this.setMediaBitrates(description.sdp);
+
+
                 let answer = {
                     sender: this.LocalPeerId,
                     recipient: event.sender,
@@ -471,13 +521,19 @@ namespace ThorIO.Client {
                 peerConnection.addStream(stream);
                 this.OnLocalSteam(stream);
             });
-            peerConnection.createOffer((localDescription: RTCSessionDescription) => {
-                peerConnection.setLocalDescription(localDescription, () => {
+            peerConnection.createOffer((description: RTCSessionDescription) => {
+                peerConnection.setLocalDescription(description, () => {
+
+                    // check if we need to modify SDP payload
+
+                    if (this.bandwidthConstraints) description.sdp = this.setMediaBitrates(description.sdp);
+
                     let offer = {
                         sender: this.LocalPeerId,
                         recipient: peer.peerId,
-                        message: JSON.stringify(localDescription)
+                        message: JSON.stringify(description)
                     };
+
                     this.brokerProxy.Invoke("contextSignal", offer);
                 }, (err) => {
                     this.addError(err);
@@ -617,7 +673,7 @@ namespace ThorIO.Client {
         static longToArray(long: number): Uint8Array {
             var byteArray = new Uint8Array(8)
             let byteLength = byteArray.length;
-            for (let index = 0; index <byteLength; index++) {
+            for (let index = 0; index < byteLength; index++) {
                 let byte = long & 0xff;
                 byteArray[index] = byte;
                 long = (long - byte) / 256;
@@ -626,22 +682,12 @@ namespace ThorIO.Client {
         }
 
         static newGuid() {
-            function s4(){
+            function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             };
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
 
-    }
-
-    export class PromisedMessage {
-        resolve: Function;
-        messageId: string;
-        constructor(id: string, resolve: Function) {
-            this.messageId = id;
-            this.resolve = resolve;
-
-        }
     }
 
     export class PropertyMessage {
@@ -655,22 +701,12 @@ namespace ThorIO.Client {
 
     export class Proxy {
         IsConnected: boolean;
-        private promisedMessages: Array<PromisedMessage>;
+       
         private listeners: Array<ThorIO.Client.Listener>;
 
         constructor(public alias: string, private ws: WebSocket) {
-            this.promisedMessages = new Array<PromisedMessage>();
             this.listeners = new Array<ThorIO.Client.Listener>();
             this.IsConnected = false;
-            this.On("___getProperty", (data: PropertyMessage) => {
-                let prom = this.promisedMessages.filter((pre: PromisedMessage) => {
-                    return pre.messageId === data.messageId;
-                })[0];
-                prom.resolve(data.value);
-
-                let index = this.promisedMessages.indexOf(prom);
-                this.promisedMessages.splice(index, 1);
-            });
             this.On("___error", (err: any) => {
                 this.OnError(err)
             });
@@ -691,7 +727,6 @@ namespace ThorIO.Client {
         };
 
         Subscribe(topic: string, callback: any): Listener {
-
             this.ws.send(new ThorIO.Client.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
@@ -756,20 +791,10 @@ namespace ThorIO.Client {
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };
-        GetProperty(propName: string, controller?: string): Promise<any> {
-            let propInfo = new PropertyMessage();
-            propInfo.name = propName;
-            let wrapper = new PromisedMessage(propInfo.messageId, () => { });;
-            this.promisedMessages.push(wrapper);
-            let promise = new Promise((resolve, reject) => {
-                wrapper.resolve = resolve;
-            });
-            this.Invoke("___getProperty", propInfo, controller || this.alias);
-            return promise;
-        }
+      
         public Dispatch(topic: string, data: any, buffer?: ArrayBuffer) {
             if (topic === "___open") {
-                this.IsConnected = true;  
+                this.IsConnected = true;
                 this.OnOpen(JSON.parse(data));
 
                 return;

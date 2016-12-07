@@ -4,7 +4,6 @@ import 'reflect-metadata';
 export function CanInvoke(state: boolean) {
     return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
         Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
-
     }
 }
 export function CanSet(state: boolean) {
@@ -20,7 +19,6 @@ export function ControllerProperties(alias: string, seald?: boolean, heartbeatIn
     }
 }
 
-
 export namespace ThorIO {
 
     export class Utils {
@@ -32,15 +30,13 @@ export namespace ThorIO {
             }
             return new Uint8Array(arr);
         }
-
         static arrayToLong(byteArray: Uint8Array): number {
             var value = 0;
             for (var i = byteArray.byteLength - 1; i >= 0; i--) {
                 value = (value * 256) + byteArray[i];
             }
             return value;
-        }
-
+        }   
         static longToArray(long: number): Array<number> {
             var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
             for (var index = 0; index < byteArray.length; index++) {
@@ -50,8 +46,6 @@ export namespace ThorIO {
             }
             return byteArray;
         }
-
-
         static newGuid() {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -74,7 +68,7 @@ export namespace ThorIO {
         public instance: T;
         constructor(controller: T) {
             this.alias = Reflect.getMetadata("alias", controller);
-            this.instance = controller;
+           this.instance = controller;
         }
     }
 
@@ -88,12 +82,17 @@ export namespace ThorIO {
             this.endpoints = [];
             this.connections = [];
             this.controllers = [];
+
             controllers.forEach((ctrl: Controller) => {
-                let plugin = new Plugin<Controller>(ctrl);
+                if(!Reflect.hasOwnMetadata("alias",ctrl)){
+                    throw "Faild to register on of the specified ThorIO.Controller's" 
+                }
+                var plugin = new Plugin<Controller>(ctrl);
                 this.controllers.push(plugin);
+              
             });
 
-            this.createSealdControllers();
+        //    this.createSealdControllers();
 
         }
         private createSealdControllers() {
@@ -117,18 +116,21 @@ export namespace ThorIO {
             }
         }
         addEndpoint(typeOfTransport: { new (...args: any[]): ITransport; }, host: string, port: number): net.Server {
+         
             let endpoint = net.createServer((socket: net.Socket) => {
+             
                 let transport = new typeOfTransport(socket);
                 this.addConnection(transport);
             });
             endpoint.listen(port, host, ((listener: any) => {
+                // do op
             }));
             this.endpoints.push(endpoint);
             return endpoint;
         }
 
         addWebSocket(ws: any, req: any) {
-            let transport = new WebSocketTransport(ws);
+            let transport = new WebSocketMessageTransport(ws);
             this.addConnection(transport)
         }
 
@@ -225,32 +227,162 @@ export namespace ThorIO {
         socket: any;
         readyState: number;
         ping()
-        onMessage: (message: TransportMessage) => void
+        onMessage: (message: ITransportMessage) => void
     }
 
-    export class TransportMessage {
 
+    export interface ITransportMessage{
+        toMessage(): ThorIO.Message
+        toBuffer(message?:ThorIO.Message): Buffer
+        binary:boolean
+        data: any
+    }
+
+    export class PipeMessage implements ITransportMessage {
+       
+        private message: Message;
+        private arr: Array<string>;
         constructor(public data: any, public binary: boolean) {
+        
+            this.message = JSON.parse(this.data) as Message;
+
+            this.arr = new Array<string>();
+            this.arr.push(this.message.C);
+            this.arr.push(this.message.T);
+            this.arr.push(this.message.D);
+
 
         }
-
+      
+        toBuffer(){
+            return new Buffer(this.arr.join("|"));
+        }
         public toMessage(): Message {
+            return this.message;
+        }
+    }
+
+    export class BufferMessage implements ITransportMessage{
+
+    constructor(public data:Buffer,public binary:boolean){
+
+    }   
+
+     toMessage() : Message{
+
+        const headerLen = 3;
+
+        const tLen = this.data.readUInt8(0);
+        const cLen = this.data.readUInt8(1);
+        const dLen = this.data.readUInt8(2);
+        
+        let offset = headerLen;
+        const topic = this.data.toString("utf-8",offset,tLen + offset);
+        
+        offset += tLen;
+        const controller = this.data.toString("utf-8",offset,offset + cLen);
+        
+        offset += cLen;
+        const data = this.data.toString("utf-8",offset,offset + dLen)        
+        
+        let message = new ThorIO.Message(topic,data,controller);
+
+        return message;
+
+    }
+
+    // topic:string,data:string,controller:string
+    toBuffer():Buffer{
+
+        let message = JSON.parse(this.data.toString());
+        
+        const header = 3;
+        let offset = 0;
+
+        const tLen = message.T.length;
+        const dLen = message.D.length;
+        const cLen = message.C.length;
+        let bufferSize = header + tLen + dLen + cLen;
+        
+        let buffer = new Buffer(bufferSize);
+
+        buffer.writeUInt8(tLen,0);
+        buffer.writeUInt8(cLen,1)
+        buffer.writeInt8(dLen,2);
+
+        offset = header;
+        buffer.write(message.T,offset);
+        offset += tLen;
+        buffer.write(message.C,offset);
+        offset += cLen;
+        buffer.write(message.D,offset);
+
+        return buffer;
+    
+    }
+
+
+    }
+
+    export class WebSocketMessage implements ITransportMessage {
+        constructor(public data: any, public binary) {
+     
+        }
+        toBuffer(): Buffer {
+            throw "not yet implemented";
+        }
+        toMessage(): Message {
             return JSON.parse(this.data) as Message;
         }
-
     }
 
-    export class SimpleTransport implements ITransport {
+    export class BufferMessageTransport implements ITransport{
+            id:string;
+            onMessage:(messsage:ITransportMessage) => void;
+            constructor(public socket:net.Socket){
+                this.id = ThorIO.Utils.newGuid();
+                
+                this.socket.addListener("data", (buffer: Buffer) => {
+                
+                let bm = new BufferMessage(buffer,false);
+               
+                this.onMessage(bm);
+
+                });
+            }
+            get readyState(){
+                return 1;
+            }
+            send(data:string){
+                let bm = new BufferMessage(new Buffer(data),false);
+                this.socket.write(bm.toBuffer())
+            }
+            addEventListener(name:string,fn:Function){
+                this.socket.addListener(name,fn);
+                
+            }
+            ping(){
+              return;
+            }
+            close(){
+                this.socket.destroy();
+            }
+    }
+
+    export class PipeMessageTransport implements ITransport {
         id: string;
-        onMessage: (message: TransportMessage) => void;
+        onMessage: (message: PipeMessage) => void;
         send(data: any) {
-            this.socket.write(new Buffer(data));
+            
+            let message  = new PipeMessage(data,false);
+           
+            this.socket.write(message.toBuffer());
         }
         close(reason: number, message: any) {
             this.socket.destroy();
         }
-        addEventListener(topic: string, fn: Function) {
-            this.socket.addListener(topic, fn);
+        addEventListener(name: string, fn: Function) {
+            this.socket.addListener(name, fn);
         }
         get readyState(): number {
             return 1;
@@ -263,37 +395,38 @@ export namespace ThorIO {
             socket.addListener("data", (buffer: Buffer) => {
                 let args = buffer.toString().split("|");
                 let message = new Message(args[1], args[2], args[0]);
-                this.onMessage(new TransportMessage(message.toString(), false))
+                this.onMessage(new PipeMessage(message.toString(), false))
             });
         }
     }
 
-    export class WebSocketTransport implements ITransport {
-        socket: any; // WebSocket
-        onMessage: (message: TransportMessage) => void;;
+    export class WebSocketMessageTransport implements ITransport {
+        socket: WebSocket ;
+        onMessage: (message: ITransportMessage) => void;;
         id: string;
         send(data: any) {
+            
             this.socket.send(data)
         }
         close(reason: number, message: string) {
             this.socket.close(reason, message)
         }
-        addEventListener(event: string, fn: any) {
-            this.socket.addEventListener(event, fn)
+        addEventListener(name: string, fn: any) {
+            this.socket.addEventListener(name, fn)
         }
         constructor(socket: any) {
             this.id = ThorIO.Utils.newGuid();
             this.socket = socket;
             this.socket.addEventListener("message", (event: any) => {
-
-                this.onMessage(new TransportMessage(event.data, event.binary));
+              
+                this.onMessage(new WebSocketMessage(event.data, event.binary));
             });
         }
         get readyState() {
             return this.socket.readyState;
         }
         ping() {
-            this.socket.ping();
+            this.socket["ping"]();
         }
     }
 
@@ -329,10 +462,12 @@ export namespace ThorIO {
             this.controllerInstances = [];
             this.errors = [];
             if (transport) {
-                this.transport.onMessage = (event: TransportMessage) => {
+                this.transport.onMessage = (event: ITransportMessage) => {
                     try {
                         if (!event.binary) {
+
                             let message = event.toMessage();
+                           
                             let controller = this.locateController(message.C);
                             if (controller)
                                 this.methodInvoker(controller, message.T, message.D);
@@ -385,7 +520,8 @@ export namespace ThorIO {
         }
         locateController(alias: string): Controller {
             try {
-                let match = this.controllerInstances.find((pre: Controller) => {
+               
+               let match = this.controllerInstances.find((pre: Controller) => {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
                 if (match) {
@@ -394,17 +530,17 @@ export namespace ThorIO {
                     let resolved = this.controllers.filter((resolve: Plugin<Controller>) => {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
-                    var controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
-
+                    let controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
                     this.addControllerInstance(controllerInstance);
-
+                  
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
+            
                     controllerInstance.onopen();
 
                     return controllerInstance as Controller;
                 }
             } catch (error) {
-                this.transport.close(1011, "Cannot locate the specified controller, unknown i seald.'" + alias + "'. Connection closed");
+                this.transport.close(1011, "Cannot locate the specified controller,it may be seald or the the alias in unknown '" + alias + "'. connection closed");
                 return null;
             }
         }
@@ -438,6 +574,7 @@ export namespace ThorIO {
             this.connection = connection;
             this.subscriptions = [];
             this.alias = Reflect.getMetadata("alias", this.constructor);
+           
             this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
             if (this.heartbeatInterval >= 1000) this.enableHeartbeat();
         }
@@ -628,7 +765,7 @@ export namespace ThorIO {
             public Connections: Array<PeerConnection>;
             public Peer: PeerConnection;
             public localPeerId: string;
-
+            
             constructor(connection: ThorIO.Connection) {
                 super(connection);
                 this.Connections = [];
@@ -672,5 +809,9 @@ export namespace ThorIO {
                 return match;
             }
         }
+
+
     }
+
+
 }

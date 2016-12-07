@@ -197,6 +197,14 @@ var ThorIO;
             return DataChannel;
         }());
         Client.DataChannel = DataChannel;
+        var BandwidthConstraints = (function () {
+            function BandwidthConstraints(videobandwidth, audiobandwidth) {
+                this.videobandwidth = videobandwidth;
+                this.audiobandwidth = audiobandwidth;
+            }
+            return BandwidthConstraints;
+        }());
+        Client.BandwidthConstraints = BandwidthConstraints;
         var WebRTC = (function () {
             function WebRTC(brokerProxy, rtcConfig) {
                 var _this = this;
@@ -220,6 +228,37 @@ var ThorIO;
                     _this.OnConnectTo(peers);
                 });
             }
+            WebRTC.prototype.setBandwithConstraints = function (videobandwidth, audiobandwidth) {
+                this.bandwidthConstraints = new BandwidthConstraints(videobandwidth, audiobandwidth);
+            };
+            WebRTC.prototype.setMediaBitrates = function (sdp) {
+                return this.setMediaBitrate(this.setMediaBitrate(sdp, "video", this.bandwidthConstraints.videobandwidth), "audio", this.bandwidthConstraints.audiobandwidth);
+            };
+            WebRTC.prototype.setMediaBitrate = function (sdp, media, bitrate) {
+                var lines = sdp.split("\n");
+                var line = -1;
+                for (var i = 0; i < lines.length; i++) {
+                    if (lines[i].indexOf("m=" + media) === 0) {
+                        line = i;
+                        break;
+                    }
+                }
+                if (line === -1) {
+                    return sdp;
+                }
+                line++;
+                while (lines[line].indexOf("i=") === 0 || lines[line].indexOf("c=") === 0) {
+                    line++;
+                }
+                if (lines[line].indexOf("b") === 0) {
+                    lines[line] = "b=AS:" + bitrate;
+                    return lines.join("\n");
+                }
+                var newLines = lines.slice(0, line);
+                newLines.push("b=AS:" + bitrate);
+                newLines = newLines.concat(lines.slice(line, lines.length));
+                return newLines.join("\n");
+            };
             WebRTC.prototype.CreateDataChannel = function (name) {
                 var channel = new DataChannel(name);
                 this.DataChannels.push(channel);
@@ -303,6 +342,8 @@ var ThorIO;
                 pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(event.message)));
                 pc.createAnswer(function (description) {
                     pc.setLocalDescription(description);
+                    if (_this.bandwidthConstraints)
+                        description.sdp = _this.setMediaBitrates(description.sdp);
                     var answer = {
                         sender: _this.LocalPeerId,
                         recipient: event.sender,
@@ -412,12 +453,14 @@ var ThorIO;
                     peerConnection.addStream(stream);
                     _this.OnLocalSteam(stream);
                 });
-                peerConnection.createOffer(function (localDescription) {
-                    peerConnection.setLocalDescription(localDescription, function () {
+                peerConnection.createOffer(function (description) {
+                    peerConnection.setLocalDescription(description, function () {
+                        if (_this.bandwidthConstraints)
+                            description.sdp = _this.setMediaBitrates(description.sdp);
                         var offer = {
                             sender: _this.LocalPeerId,
                             recipient: peer.peerId,
-                            message: JSON.stringify(localDescription)
+                            message: JSON.stringify(description)
                         };
                         _this.brokerProxy.Invoke("contextSignal", offer);
                     }, function (err) {
@@ -564,14 +607,6 @@ var ThorIO;
             return Utils;
         }());
         Client.Utils = Utils;
-        var PromisedMessage = (function () {
-            function PromisedMessage(id, resolve) {
-                this.messageId = id;
-                this.resolve = resolve;
-            }
-            return PromisedMessage;
-        }());
-        Client.PromisedMessage = PromisedMessage;
         var PropertyMessage = (function () {
             function PropertyMessage() {
                 this.messageId = ThorIO.Client.Utils.newGuid();
@@ -584,17 +619,8 @@ var ThorIO;
                 var _this = this;
                 this.alias = alias;
                 this.ws = ws;
-                this.promisedMessages = new Array();
                 this.listeners = new Array();
                 this.IsConnected = false;
-                this.On("___getProperty", function (data) {
-                    var prom = _this.promisedMessages.filter(function (pre) {
-                        return pre.messageId === data.messageId;
-                    })[0];
-                    prom.resolve(data.value);
-                    var index = _this.promisedMessages.indexOf(prom);
-                    _this.promisedMessages.splice(index, 1);
-                });
                 this.On("___error", function (err) {
                     _this.OnError(err);
                 });
@@ -678,18 +704,6 @@ var ThorIO;
                 return this;
             };
             ;
-            Proxy.prototype.GetProperty = function (propName, controller) {
-                var propInfo = new PropertyMessage();
-                propInfo.name = propName;
-                var wrapper = new PromisedMessage(propInfo.messageId, function () { });
-                ;
-                this.promisedMessages.push(wrapper);
-                var promise = new Promise(function (resolve, reject) {
-                    wrapper.resolve = resolve;
-                });
-                this.Invoke("___getProperty", propInfo, controller || this.alias);
-                return promise;
-            };
             Proxy.prototype.Dispatch = function (topic, data, buffer) {
                 if (topic === "___open") {
                     this.IsConnected = true;

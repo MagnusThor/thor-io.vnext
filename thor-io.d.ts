@@ -61,34 +61,68 @@ export declare namespace ThorIO {
         socket: any;
         readyState: number;
         ping(): any;
-        onMessage: (message: TransportMessage) => void;
+        onMessage: (message: ITransportMessage) => void;
     }
-    class TransportMessage {
+    interface ITransportMessage {
+        toMessage(): ThorIO.Message;
+        toBuffer(message?: ThorIO.Message): Buffer;
+        binary: boolean;
+        data: any;
+    }
+    class PipeMessage implements ITransportMessage {
         data: any;
         binary: boolean;
+        private message;
+        private arr;
         constructor(data: any, binary: boolean);
+        toBuffer(): Buffer;
         toMessage(): Message;
     }
-    class SimpleTransport implements ITransport {
+    class BufferMessage implements ITransportMessage {
+        data: Buffer;
+        binary: boolean;
+        constructor(data: Buffer, binary: boolean);
+        toMessage(): Message;
+        toBuffer(): Buffer;
+    }
+    class WebSocketMessage implements ITransportMessage {
+        data: any;
+        binary: any;
+        constructor(data: any, binary: any);
+        toBuffer(): Buffer;
+        toMessage(): Message;
+    }
+    class BufferMessageTransport implements ITransport {
         socket: net.Socket;
         id: string;
-        onMessage: (message: TransportMessage) => void;
+        onMessage: (messsage: ITransportMessage) => void;
+        constructor(socket: net.Socket);
+        readonly readyState: number;
+        send(data: string): void;
+        addEventListener(name: string, fn: Function): void;
+        ping(): void;
+        close(): void;
+    }
+    class PipeMessageTransport implements ITransport {
+        socket: net.Socket;
+        id: string;
+        onMessage: (message: PipeMessage) => void;
         send(data: any): void;
         close(reason: number, message: any): void;
-        addEventListener(topic: string, fn: Function): void;
+        addEventListener(name: string, fn: Function): void;
         readonly readyState: number;
         ping(): void;
         constructor(socket: net.Socket);
     }
-    class WebSocketTransport implements ITransport {
-        socket: any;
-        onMessage: (message: TransportMessage) => void;
+    class WebSocketMessageTransport implements ITransport {
+        socket: WebSocket;
+        onMessage: (message: ITransportMessage) => void;
         id: string;
         send(data: any): void;
         close(reason: number, message: string): void;
-        addEventListener(event: string, fn: any): void;
+        addEventListener(name: string, fn: any): void;
         constructor(socket: any);
-        readonly readyState: any;
+        readonly readyState: number;
         ping(): void;
     }
     class Connection {
