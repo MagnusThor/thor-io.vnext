@@ -153,8 +153,8 @@ var ThorIO;
     }());
     ThorIO.Engine = Engine;
     var Message = (function () {
-        function Message(topic, object, controller, arrayBuffer) {
-            this.D = object;
+        function Message(topic, data, controller, arrayBuffer) {
+            this.D = data;
             this.T = topic;
             this.C = controller;
             this.B = arrayBuffer;
@@ -184,7 +184,7 @@ var ThorIO;
             var blobOffset = headerLen + payloadLength;
             var blob = buffer.slice(blobOffset, buffer.byteLength);
             var data = JSON.parse(message.toString());
-            return new Message(data.T, JSON.parse(data.D), data.C, blob);
+            return new Message(data.T, data.D, data.C, blob);
         };
         Message.prototype.toArrayBuffer = function () {
             var messagePayload = this.toString();

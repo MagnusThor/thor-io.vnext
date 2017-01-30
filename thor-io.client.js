@@ -6,7 +6,7 @@ var ThorIO;
             function BinaryMessage(message, arrayBuffer) {
                 this.arrayBuffer = arrayBuffer;
                 this.header = new Uint8Array(ThorIO.Client.Utils.longToArray(message.length));
-                this.Buffer = this.joinBuffers(this.joinBuffers(this.header, ThorIO.Client.Utils.stingToBuffer(message)), arrayBuffer);
+                this.Buffer = this.joinBuffers(this.joinBuffers(this.header.buffer, ThorIO.Client.Utils.stingToBuffer(message).buffer), arrayBuffer);
             }
             BinaryMessage.fromArrayBuffer = function (buffer) {
                 var headerLen = 8;
@@ -16,7 +16,7 @@ var ThorIO;
                 var blobOffset = headerLen + payloadLength;
                 var messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
                 var json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
-                return new Message(json.T, json.D, json.C, messageBuffer);
+                return new Message(json.T, json.D, json.C, messageBuffer.buffer);
             };
             BinaryMessage.prototype.joinBuffers = function (a, b) {
                 var newBuffer = new Uint8Array(a.byteLength + b.byteLength);
@@ -57,7 +57,7 @@ var ThorIO;
                 var blobOffset = headerLen + payloadLength;
                 var messageBuffer = new Uint8Array(buffer, blobOffset, buffer.byteLength - blobOffset);
                 var json = JSON.parse(String.fromCharCode.apply(null, new Uint16Array(message)));
-                return new Message(json.T, json.D, json.C, messageBuffer);
+                return new Message(json.T, json.D, json.C, messageBuffer.buffer);
             };
             return Message;
         }());
@@ -290,16 +290,6 @@ var ThorIO;
             WebRTC.prototype.addError = function (err) {
                 this.OnError(err);
             };
-            WebRTC.prototype.OnError = function (err) { };
-            WebRTC.prototype.OnContextCreated = function (peerConnection) { };
-            WebRTC.prototype.OnContextChanged = function (context) { };
-            WebRTC.prototype.OnRemoteStream = function (stream, connection) { };
-            ;
-            WebRTC.prototype.OnRemoteStreamlost = function (streamId, peerId) { };
-            WebRTC.prototype.OnLocalSteam = function (stream) { };
-            ;
-            WebRTC.prototype.OnContextConnected = function (rtcPeerConnection) { };
-            WebRTC.prototype.OnContextDisconnected = function (rtcPeerConnection) { };
             WebRTC.prototype.OnConnectTo = function (peerConnections) {
                 this.Connect(peerConnections);
             };
@@ -307,9 +297,9 @@ var ThorIO;
                 this.OnContextConnected(this.getPeerConnection(peerId));
             };
             WebRTC.prototype.OnDisconnected = function (peerId) {
-                var pc = this.getPeerConnection(peerId);
-                pc.close();
-                this.OnContextDisconnected(pc);
+                var peerConnection = this.getPeerConnection(peerId);
+                peerConnection.close();
+                this.OnContextDisconnected(peerConnection);
                 this.removePeerConnection(peerId);
             };
             WebRTC.prototype.onCandidate = function (event) {
@@ -416,24 +406,27 @@ var ThorIO;
                     connection.streams.push(event.stream);
                     _this.OnRemoteStream(event.stream, connection);
                 };
-                this.DataChannels.forEach(function (dc) {
-                    var pc = new PeerChannel(id, rtcPeerConnection.createDataChannel(dc.Name), dc.Name);
-                    dc.AddPeerChannel(pc);
+                this.DataChannels.forEach(function (dataChannel) {
+                    var pc = new PeerChannel(id, rtcPeerConnection.createDataChannel(dataChannel.Name), dataChannel.Name);
+                    dataChannel.AddPeerChannel(pc);
                     rtcPeerConnection.ondatachannel = function (event) {
                         var channel = event.channel;
                         channel.onopen = function (event) {
-                            dc.OnOpen(event, id);
+                            dataChannel.OnOpen(event, id);
                         };
                         channel.onclose = function (event) {
-                            dc.RemovePeerChannel(id, event.target);
-                            dc.OnClose(event, id);
+                            dataChannel.RemovePeerChannel(id, event.target);
+                            dataChannel.OnClose(event, id);
                         };
                         channel.onmessage = function (message) {
-                            dc.OnMessage(message);
+                            dataChannel.OnMessage(message);
                         };
                     };
                 });
                 return rtcPeerConnection;
+            };
+            WebRTC.prototype.findPeerConnection = function (pre) {
+                throw "Not implemented";
             };
             WebRTC.prototype.getPeerConnection = function (id) {
                 var match = this.Peers.filter(function (connection) {
@@ -477,15 +470,15 @@ var ThorIO;
                 return peerConnection;
             };
             WebRTC.prototype.Disconnect = function () {
-                this.Peers.forEach(function (p) {
-                    p.rtcPeerConnection.close();
+                this.Peers.forEach(function (connection) {
+                    connection.rtcPeerConnection.close();
                 });
                 this.ChangeContext(Math.random().toString(36).substring(2));
             };
             WebRTC.prototype.Connect = function (peerConnections) {
                 var _this = this;
-                peerConnections.forEach(function (peer) {
-                    var pc = new WebRTCConnection(peer.peerId, _this.createOffer(peer));
+                peerConnections.forEach(function (peerConnection) {
+                    var pc = new WebRTCConnection(peerConnection.peerId, _this.createOffer(peerConnection));
                     _this.Peers.push(pc);
                 });
                 return this;

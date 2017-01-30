@@ -31,16 +31,16 @@ export declare namespace ThorIO {
         private addConnection(transport);
     }
     class Message {
-        B: ArrayBuffer;
+        B: Buffer;
         T: string;
         D: any;
         C: string;
         isBinary: Boolean;
         readonly JSON: any;
-        constructor(topic: string, object: any, controller: string, arrayBuffer?: ArrayBuffer);
+        constructor(topic: string, data: string, controller: string, arrayBuffer?: Buffer);
         toString(): string;
         static fromArrayBuffer(buffer: Buffer): Message;
-        toArrayBuffer(): ArrayBuffer;
+        toArrayBuffer(): Buffer;
     }
     class Listener {
         fn: Function;
@@ -86,9 +86,9 @@ export declare namespace ThorIO {
         toBuffer(): Buffer;
     }
     class WebSocketMessage implements ITransportMessage {
-        data: any;
+        data: string;
         binary: any;
-        constructor(data: any, binary: any);
+        constructor(data: string, binary: any);
         toBuffer(): Buffer;
         toMessage(): Message;
     }

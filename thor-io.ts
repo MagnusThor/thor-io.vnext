@@ -21,10 +21,11 @@ export function ControllerProperties(alias: string, seald?: boolean, heartbeatIn
 
 export namespace ThorIO {
 
+
     export class Utils {
-        static stingToBuffer(str: string) {
+        static stingToBuffer(str: string): Uint8Array {
             let len = str.length;
-            var arr = new Array(len);
+            let arr = new Array(len);
             for (let i = 0; i < len; i++) {
                 arr[i] = str.charCodeAt(i) & 0xFF;
             }
@@ -36,7 +37,7 @@ export namespace ThorIO {
                 value = (value * 256) + byteArray[i];
             }
             return value;
-        }   
+        }
         static longToArray(long: number): Array<number> {
             var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
             for (var index = 0; index < byteArray.length; index++) {
@@ -46,13 +47,13 @@ export namespace ThorIO {
             }
             return byteArray;
         }
-        static newGuid() {
+        static newGuid(): string {
             function s4() {
                 return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
             }
             return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
         }
-        static randomString() {
+        static randomString(): string {
             return Math.random().toString(36).substring(2);
         }
         static getInstance<T>(obj: any, ...args: any[]): T {
@@ -68,7 +69,7 @@ export namespace ThorIO {
         public instance: T;
         constructor(controller: T) {
             this.alias = Reflect.getMetadata("alias", controller);
-           this.instance = controller;
+            this.instance = controller;
         }
     }
 
@@ -84,17 +85,15 @@ export namespace ThorIO {
             this.controllers = [];
 
             controllers.forEach((ctrl: Controller) => {
-                if(!Reflect.hasOwnMetadata("alias",ctrl)){
-                    throw "Faild to register on of the specified ThorIO.Controller's" 
+                if (!Reflect.hasOwnMetadata("alias", ctrl)) {
+                    throw "Faild to register on of the specified ThorIO.Controller's"
                 }
                 var plugin = new Plugin<Controller>(ctrl);
                 this.controllers.push(plugin);
-              
+
             });
-
-        //    this.createSealdControllers();
-
         }
+
         private createSealdControllers() {
             this.controllers.forEach((controller: Plugin<Controller>) => {
                 if (Reflect.getMetadata("seald", controller.instance)) {
@@ -103,7 +102,7 @@ export namespace ThorIO {
                 }
             });
         }
-        removeConnection(id: string, reason: number) {
+        removeConnection(id: string, reason: number): void {
             try {
                 let connection = this.connections.find((pre: Connection) => {
                     return pre.id === id;
@@ -116,9 +115,7 @@ export namespace ThorIO {
             }
         }
         addEndpoint(typeOfTransport: { new (...args: any[]): ITransport; }, host: string, port: number): net.Server {
-         
             let endpoint = net.createServer((socket: net.Socket) => {
-             
                 let transport = new typeOfTransport(socket);
                 this.addConnection(transport);
             });
@@ -129,12 +126,12 @@ export namespace ThorIO {
             return endpoint;
         }
 
-        addWebSocket(ws: any, req: any) {
+        addWebSocket(ws: any, req: any): void {
             let transport = new WebSocketMessageTransport(ws);
             this.addConnection(transport)
         }
 
-        private addConnection(transport: ITransport) {
+        private addConnection(transport: ITransport): void {
 
             transport.addEventListener("close", (reason) => {
                 this.removeConnection(transport.id, reason);
@@ -147,7 +144,7 @@ export namespace ThorIO {
 
     export class Message {
 
-        B: ArrayBuffer;
+        B: Buffer;
         T: string;
         D: any;
         C: string;
@@ -161,8 +158,8 @@ export namespace ThorIO {
                 C: this.C
             }
         };
-        constructor(topic: string, object: any, controller: string, arrayBuffer?: ArrayBuffer) {
-            this.D = object;
+        constructor(topic: string, data: string, controller: string, arrayBuffer?: Buffer) {
+            this.D = data;
             this.T = topic;
             this.C = controller;
             this.B = arrayBuffer;
@@ -171,10 +168,7 @@ export namespace ThorIO {
         toString() {
             return JSON.stringify(this.JSON);
         }
-
-
-
-        static fromArrayBuffer(buffer: Buffer) {
+        static fromArrayBuffer(buffer: Buffer): Message {
             let headerLen = 8;
             let header = buffer.slice(0, 8);
             let payloadLength = ThorIO.Utils.arrayToLong(header);
@@ -182,9 +176,9 @@ export namespace ThorIO {
             let blobOffset = headerLen + payloadLength;
             let blob = buffer.slice(blobOffset, buffer.byteLength);
             let data = JSON.parse(message.toString());
-            return new Message(data.T, JSON.parse(data.D), data.C, blob);
+            return new Message(data.T, data.D, data.C, blob);
         }
-        toArrayBuffer(): ArrayBuffer {
+        toArrayBuffer(): Buffer {
             let messagePayload = this.toString();
             let payloadLength = messagePayload.length;
             let header = new Buffer(ThorIO.Utils.longToArray(payloadLength));
@@ -192,9 +186,7 @@ export namespace ThorIO {
             message.write(messagePayload, 0, payloadLength, "utf-8");
             var blob = new Buffer(this.B);
             var buffer = Buffer.concat([header, message, blob]);
-            return buffer
-
-
+            return buffer;
         }
 
     }
@@ -230,20 +222,19 @@ export namespace ThorIO {
         onMessage: (message: ITransportMessage) => void
     }
 
-
-    export interface ITransportMessage{
+    export interface ITransportMessage {
         toMessage(): ThorIO.Message
-        toBuffer(message?:ThorIO.Message): Buffer
-        binary:boolean
+        toBuffer(message?: ThorIO.Message): Buffer
+        binary: boolean
         data: any
     }
 
     export class PipeMessage implements ITransportMessage {
-       
+
         private message: Message;
         private arr: Array<string>;
         constructor(public data: any, public binary: boolean) {
-        
+
             this.message = JSON.parse(this.data) as Message;
 
             this.arr = new Array<string>();
@@ -251,10 +242,9 @@ export namespace ThorIO {
             this.arr.push(this.message.T);
             this.arr.push(this.message.D);
 
-
         }
-      
-        toBuffer(){
+
+        toBuffer() {
             return new Buffer(this.arr.join("|"));
         }
         public toMessage(): Message {
@@ -262,71 +252,73 @@ export namespace ThorIO {
         }
     }
 
-    export class BufferMessage implements ITransportMessage{
+    export class BufferMessage implements ITransportMessage {
 
-    constructor(public data:Buffer,public binary:boolean){
+        constructor(public data: Buffer, public binary: boolean) {
 
-    }   
+        }
 
-     toMessage() : Message{
+        toMessage(): Message {
 
-        const headerLen = 3;
+            const headerLen = 3;
 
-        const tLen = this.data.readUInt8(0);
-        const cLen = this.data.readUInt8(1);
-        const dLen = this.data.readUInt8(2);
-        
-        let offset = headerLen;
-        const topic = this.data.toString("utf-8",offset,tLen + offset);
-        
-        offset += tLen;
-        const controller = this.data.toString("utf-8",offset,offset + cLen);
-        
-        offset += cLen;
-        const data = this.data.toString("utf-8",offset,offset + dLen)        
-        
-        let message = new ThorIO.Message(topic,data,controller);
+            const tLen = this.data.readUInt8(0);
+            const cLen = this.data.readUInt8(1);
+            const dLen = this.data.readUInt8(2);
 
-        return message;
+            let offset = headerLen;
+            const topic = this.data.toString("utf-8", offset, tLen + offset);
 
-    }
+            offset += tLen;
+            const controller = this.data.toString("utf-8", offset, offset + cLen);
 
-    // topic:string,data:string,controller:string
-    toBuffer():Buffer{
+            offset += cLen;
+            const data = this.data.toString("utf-8", offset, offset + dLen)
 
-        let message = JSON.parse(this.data.toString());
-        
-        const header = 3;
-        let offset = 0;
+            let message = new ThorIO.Message(topic, data, controller);
 
-        const tLen = message.T.length;
-        const dLen = message.D.length;
-        const cLen = message.C.length;
-        let bufferSize = header + tLen + dLen + cLen;
-        
-        let buffer = new Buffer(bufferSize);
+            return message;
 
-        buffer.writeUInt8(tLen,0);
-        buffer.writeUInt8(cLen,1)
-        buffer.writeInt8(dLen,2);
+        }
 
-        offset = header;
-        buffer.write(message.T,offset);
-        offset += tLen;
-        buffer.write(message.C,offset);
-        offset += cLen;
-        buffer.write(message.D,offset);
+        toBuffer(): Buffer {
 
-        return buffer;
-    
-    }
+            let message = JSON.parse(this.data.toString()) as Message;
+
+            const header = 3;
+            let offset = 0;
+
+            const tLen = message.T.length;
+            const dLen = message.D.length;
+            const cLen = message.C.length;
+
+            let bufferSize = header + tLen + dLen + cLen;
+
+            let buffer = new Buffer(bufferSize);
+
+            buffer.writeUInt8(tLen, 0);
+
+            buffer.writeUInt8(cLen, 1)
+
+            buffer.writeInt8(dLen, 2);
+
+            offset = header;
+            buffer.write(message.T, offset);
+            offset += tLen;
+            buffer.write(message.C, offset);
+            offset += cLen;
+            buffer.write(message.D, offset);
+
+            return buffer;
+
+        }
 
 
     }
 
     export class WebSocketMessage implements ITransportMessage {
-        constructor(public data: any, public binary) {
-     
+        constructor(public data: string, public binary) {
+
         }
         toBuffer(): Buffer {
             throw "not yet implemented";
@@ -336,46 +328,46 @@ export namespace ThorIO {
         }
     }
 
-    export class BufferMessageTransport implements ITransport{
-            id:string;
-            onMessage:(messsage:ITransportMessage) => void;
-            constructor(public socket:net.Socket){
-                this.id = ThorIO.Utils.newGuid();
-                
-                this.socket.addListener("data", (buffer: Buffer) => {
-                
-                let bm = new BufferMessage(buffer,false);
-               
+    export class BufferMessageTransport implements ITransport {
+        id: string;
+        onMessage: (messsage: ITransportMessage) => void;
+        constructor(public socket: net.Socket) {
+            this.id = ThorIO.Utils.newGuid();
+
+            this.socket.addListener("data", (buffer: Buffer) => {
+
+                let bm = new BufferMessage(buffer, false);
+
                 this.onMessage(bm);
 
-                });
-            }
-            get readyState(){
-                return 1;
-            }
-            send(data:string){
-                let bm = new BufferMessage(new Buffer(data),false);
-                this.socket.write(bm.toBuffer())
-            }
-            addEventListener(name:string,fn:Function){
-                this.socket.addListener(name,fn);
-                
-            }
-            ping(){
-              return;
-            }
-            close(){
-                this.socket.destroy();
-            }
+            });
+        }
+        get readyState() {
+            return 1;
+        }
+        send(data: string) {
+            let bm = new BufferMessage(new Buffer(data), false);
+            this.socket.write(bm.toBuffer())
+        }
+        addEventListener(name: string, fn: Function) {
+            this.socket.addListener(name, fn);
+
+        }
+        ping() {
+            return;
+        }
+        close() {
+            this.socket.destroy();
+        }
     }
 
     export class PipeMessageTransport implements ITransport {
         id: string;
         onMessage: (message: PipeMessage) => void;
         send(data: any) {
-            
-            let message  = new PipeMessage(data,false);
-           
+
+            let message = new PipeMessage(data, false);
+
             this.socket.write(message.toBuffer());
         }
         close(reason: number, message: any) {
@@ -401,11 +393,11 @@ export namespace ThorIO {
     }
 
     export class WebSocketMessageTransport implements ITransport {
-        socket: WebSocket ;
+        socket: WebSocket;
         onMessage: (message: ITransportMessage) => void;;
         id: string;
         send(data: any) {
-            
+
             this.socket.send(data)
         }
         close(reason: number, message: string) {
@@ -418,7 +410,6 @@ export namespace ThorIO {
             this.id = ThorIO.Utils.newGuid();
             this.socket = socket;
             this.socket.addEventListener("message", (event: any) => {
-              
                 this.onMessage(new WebSocketMessage(event.data, event.binary));
             });
         }
@@ -467,7 +458,7 @@ export namespace ThorIO {
                         if (!event.binary) {
 
                             let message = event.toMessage();
-                           
+
                             let controller = this.locateController(message.C);
                             if (controller)
                                 this.methodInvoker(controller, message.T, message.D);
@@ -520,8 +511,8 @@ export namespace ThorIO {
         }
         locateController(alias: string): Controller {
             try {
-               
-               let match = this.controllerInstances.find((pre: Controller) => {
+
+                let match = this.controllerInstances.find((pre: Controller) => {
                     return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
                 });
                 if (match) {
@@ -530,11 +521,14 @@ export namespace ThorIO {
                     let resolved = this.controllers.filter((resolve: Plugin<Controller>) => {
                         return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
                     })[0].instance;
+
+
                     let controllerInstance = ThorIO.Utils.getInstance<Controller>(resolved, this);
+
                     this.addControllerInstance(controllerInstance);
-                  
+
                     controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
-            
+
                     controllerInstance.onopen();
 
                     return controllerInstance as Controller;
@@ -574,7 +568,7 @@ export namespace ThorIO {
             this.connection = connection;
             this.subscriptions = [];
             this.alias = Reflect.getMetadata("alias", this.constructor);
-           
+
             this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
             if (this.heartbeatInterval >= 1000) this.enableHeartbeat();
         }
@@ -765,7 +759,7 @@ export namespace ThorIO {
             public Connections: Array<PeerConnection>;
             public Peer: PeerConnection;
             public localPeerId: string;
-            
+
             constructor(connection: ThorIO.Connection) {
                 super(connection);
                 this.Connections = [];
