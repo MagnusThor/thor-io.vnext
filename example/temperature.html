@@ -1,0 +1,45 @@
+<html>
+
+<body>
+<h1>Temerature</h1>
+<p>
+    This examples how to use the thor-io.vnext nodeJS client and the <code>ThorIO.Client.BufferMessage</code>
+    transport. 
+    </p>
+    <script src="/src/client/thor-io.client.js">
+    </script>
+    <script>
+        var bm, factory, _;
+
+       
+
+        document.addEventListener("DOMContentLoaded", function() {
+
+
+            factory = new ThorIO.Client.Factory(location.origin.replace(/^http/, 'ws'), ["microservice"]);
+
+            factory.OnOpen = function(proxy) {
+                _ = proxy;
+                console.log("microservice ->", proxy)
+
+
+                proxy.On("temperatureChange",function(change){
+                        console.log("temperatureChange ->",change);
+                });
+
+                proxy.Connect();
+
+                proxy.OnError = function(err) {
+                    console.log(err);
+                }
+
+            };
+
+
+
+         
+        });
+    </script>
+</body>
+
+</html>
