@@ -1,7 +1,7 @@
 
 declare var MediaRecorder: any;
 
-namespace ThorIO.Client {
+namespace ThorIOClient {
 
     export class BinaryMessage {
 
@@ -12,7 +12,7 @@ namespace ThorIO.Client {
             const headerLen = 8;
             let header = new Uint8Array(buffer, 0, headerLen);
 
-            let payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+            let payloadLength = ThorIOClient.Utils.arrayToLong(header);
 
             let message = new Uint8Array(buffer, headerLen, payloadLength);
 
@@ -28,10 +28,10 @@ namespace ThorIO.Client {
 
 
         constructor(message: string, public arrayBuffer: ArrayBuffer) {
-            this.header = new Uint8Array(ThorIO.Client.Utils.longToArray(message.length));
+            this.header = new Uint8Array(ThorIOClient.Utils.longToArray(message.length));
             this.Buffer = this.joinBuffers(this.joinBuffers(
                 this.header.buffer,
-                ThorIO.Client.Utils.stingToBuffer(message).buffer),
+                ThorIOClient.Utils.stingToBuffer(message).buffer),
                 arrayBuffer);
         }
 
@@ -75,7 +75,7 @@ namespace ThorIO.Client {
             let headerLen = 8;
             let header = new Uint8Array(buffer, 0, headerLen);
 
-            let payloadLength = ThorIO.Client.Utils.arrayToLong(header);
+            let payloadLength = ThorIOClient.Utils.arrayToLong(header);
 
 
             let message = new Uint8Array(buffer, headerLen, payloadLength);
@@ -191,7 +191,7 @@ namespace ThorIO.Client {
             this.Name = name;
         }
         On(topic: string, fn: any): Listener {
-            var listener = new ThorIO.Client.Listener(topic, fn);
+            var listener = new ThorIOClient.Listener(topic, fn);
             this.listeners.push(listener);
             return listener;
         };
@@ -221,10 +221,10 @@ namespace ThorIO.Client {
                 this.listeners.indexOf(this.findListener(topic));
             if (index >= 0) this.listeners.splice(index, 1);
         };
-        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.DataChannel {
+        Invoke(topic: string, data: any, controller?: string): ThorIOClient.DataChannel {
             this.PeerChannels.forEach((channel: PeerChannel) => {
                 if (channel.dataChannel.readyState === "open") {
-                    channel.dataChannel.send(new ThorIO.Client.Message(topic, data, this.Name).toString())
+                    channel.dataChannel.send(new ThorIOClient.Message(topic, data, this.Name).toString())
                 }
             });
             return this;
@@ -258,7 +258,7 @@ namespace ThorIO.Client {
         public Errors: Array<any>;
         public bandwidthConstraints: BandwidthConstraints
 
-        constructor(private brokerProxy: ThorIO.Client.Proxy, private rtcConfig: RTCConfiguration) {
+        constructor(private brokerProxy: ThorIOClient.Proxy, private rtcConfig: RTCConfiguration) {
             this.Errors = new Array<any>();
             this.DataChannels = new Array<DataChannel>();
             this.Peers = new Array<any>();
@@ -322,7 +322,7 @@ namespace ThorIO.Client {
         }
 
 
-        CreateDataChannel(name: string): ThorIO.Client.DataChannel {
+        CreateDataChannel(name: string): ThorIOClient.DataChannel {
             let channel = new DataChannel(name);
 
             this.DataChannels.push(channel);
@@ -586,11 +586,11 @@ namespace ThorIO.Client {
             return `?${Object.keys(obj).map(key => (encodeURIComponent(key) + "=" +
                 encodeURIComponent(obj[key]))).join("&")}`;
         }
-        private proxys: Array<ThorIO.Client.Proxy>;
+        private proxys: Array<ThorIOClient.Proxy>;
         public IsConnected: boolean;
         constructor(private url: string, controllers: Array<string>, params?: any) {
 
-            this.proxys = new Array<ThorIO.Client.Proxy>();
+            this.proxys = new Array<ThorIOClient.Proxy>();
             this.ws = new WebSocket(url + this.toQuery(params || {}));
             this.ws.binaryType = "arraybuffer";
             controllers.forEach(alias => {
@@ -605,7 +605,7 @@ namespace ThorIO.Client {
 
                 } else {
 
-                    let message = ThorIO.Client.Message.fromArrayBuffer(event.data);
+                    let message = ThorIOClient.Message.fromArrayBuffer(event.data);
                     this.GetProxy(message.C).Dispatch(message.T, message.D, message.B)
                 }
 
@@ -627,7 +627,7 @@ namespace ThorIO.Client {
             this.ws.close();
         };
 
-        GetProxy(alias: string): ThorIO.Client.Proxy {
+        GetProxy(alias: string): ThorIOClient.Proxy {
             let channel = this.proxys.filter(pre => (pre.alias === alias));
             return channel[0];
         };
@@ -699,16 +699,16 @@ namespace ThorIO.Client {
         value: any;
         messageId: string
         constructor() {
-            this.messageId = ThorIO.Client.Utils.newGuid();
+            this.messageId = ThorIOClient.Utils.newGuid();
         }
     }
 
     export class Proxy {
         IsConnected: boolean;
-        private listeners: Array<ThorIO.Client.Listener>;
+        private listeners: Array<ThorIOClient.Listener>;
 
         constructor(public alias: string, private ws: WebSocket) {
-            this.listeners = new Array<ThorIO.Client.Listener>();
+            this.listeners = new Array<ThorIOClient.Listener>();
             this.IsConnected = false;
             this.On("___error", (err: any) => {
                 this.OnError(err)
@@ -720,18 +720,18 @@ namespace ThorIO.Client {
         OnClose(event: any) { }
 
         Connect() {
-            this.ws.send(new ThorIO.Client.Message("___connect", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___connect", {}, this.alias));
             return this;
         };
 
         Close() {
-            this.ws.send(new ThorIO.Client.Message("___close", {}, this.alias));
+            this.ws.send(new ThorIOClient.Message("___close", {}, this.alias));
             return this;
         };
 
         Subscribe(topic: string, callback: any): Listener {
 
-            this.ws.send(new ThorIO.Client.Message("___subscribe", {
+            this.ws.send(new ThorIOClient.Message("___subscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -739,7 +739,7 @@ namespace ThorIO.Client {
         };
 
         Unsubscribe(topic: string) {
-            this.ws.send(new ThorIO.Client.Message("___unsubscribe", {
+            this.ws.send(new ThorIOClient.Message("___unsubscribe", {
                 topic: topic,
                 controller: this.alias
             }, this.alias));
@@ -747,7 +747,7 @@ namespace ThorIO.Client {
         };
 
         On(topic: string, fn: any): Listener {
-            var listener = new ThorIO.Client.Listener(topic, fn);
+            var listener = new ThorIOClient.Listener(topic, fn);
             this.listeners.push(listener);
             return listener;
         };
@@ -767,31 +767,31 @@ namespace ThorIO.Client {
 
         };
 
-        InvokeBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy {
+        InvokeBinary(buffer: ArrayBuffer): ThorIOClient.Proxy {
             if (buffer instanceof ArrayBuffer) {
                 this.ws.send(buffer)
                 return this;
             } else {
-                throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage")
+                throw ("parameter provided must be an ArrayBuffer constructed by Client.BinaryMessage")
             }
         }
-        PublishBinary(buffer: ArrayBuffer): ThorIO.Client.Proxy {
+        PublishBinary(buffer: ArrayBuffer): ThorIOClient.Proxy {
             if (buffer instanceof ArrayBuffer) {
                 this.ws.send(buffer)
                 return this;
             } else {
-                throw ("parameter provided must be an ArrayBuffer constructed by ThorIO.Client.BinaryMessage")
+                throw ("parameter provided must be an ArrayBuffer constructed by Client.BinaryMessage")
             }
         }
-        Invoke(topic: string, data: any, controller?: string): ThorIO.Client.Proxy {
-            this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
+        Invoke(topic: string, data: any, controller?: string): ThorIOClient.Proxy {
+            this.ws.send(new ThorIOClient.Message(topic, data, controller || this.alias));
             return this;
         };
-        Publish(topic: string, data: any, controller?: string): ThorIO.Client.Proxy {
-            this.ws.send(new ThorIO.Client.Message(topic, data, controller || this.alias));
+        Publish(topic: string, data: any, controller?: string): ThorIOClient.Proxy {
+            this.ws.send(new ThorIOClient.Message(topic, data, controller || this.alias));
             return this;
         };
-        SetProperty(propName: string, propValue: any, controller?: string): ThorIO.Client.Proxy {
+        SetProperty(propName: string, propValue: any, controller?: string): ThorIOClient.Proxy {
             this.Invoke(propName, propValue, controller || this.alias);
             return this;
         };

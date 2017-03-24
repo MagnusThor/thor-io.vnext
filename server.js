@@ -1,20 +1,20 @@
 "use strict";
-var thor_io_1 = require("./src/thor-io");
-var Todo_Controller_1 = require("./example/todo-app/controllers/Todo.Controller");
-var testControllers = require("./exampleControllers/Example.Controllers.js");
-var express = require("express");
-var app = express();
-var expressWs = require("express-ws")(app);
+const thor_io_1 = require("./src/thor-io");
+const Todo_Controller_1 = require("./example/todo-app/controllers/Todo.Controller");
+const testControllers = require("./exampleControllers/Example.Controllers.js");
+const express = require("express");
+const app = express();
+const expressWs = require("express-ws")(app);
 // Set up fake storage, just a static 'class' ...
 new Todo_Controller_1.TodoApp.Realtime.Todos();
-var controllers = [
+const controllers = [
     testControllers.ChatController,
     testControllers.FooController,
     thor_io_1.ThorIO.Controllers.BrokerController,
     testControllers.MicroServiceController,
     Todo_Controller_1.TodoApp.Realtime.TodoController
 ];
-var thorIO = new thor_io_1.ThorIO.Engine(controllers);
+const thorIO = new thor_io_1.ThorIO.Engine(controllers);
 //thorIO.addEndpoint(ThorIO.PipeMessageTransport,"127.0.0.1",4502) 
 thorIO.addEndpoint(thor_io_1.ThorIO.BufferMessageTransport, "127.0.0.1", 4503);
 app.use("/test", express.static("example"));
