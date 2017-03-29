@@ -1,4 +1,5 @@
 import * as net from 'net';
+
 import 'reflect-metadata';
 
 export function CanInvoke(state: boolean) {
@@ -56,12 +57,21 @@ export namespace ThorIO {
         static randomString(): string {
             return Math.random().toString(36).substring(2);
         }
-        static getInstance<T>(obj: any, ...args: any[]): T {
-            var instance = Object.create(obj.prototype);
-            instance.constructor.apply(instance, args);
-            return <T>instance;
-        }
+        // static getInstance<T>(obj: any, ...args: any[]): T {
+        //     var instance = Object.create(obj.prototype);
+        //     instance.constructor.apply(instance, args);
+        //     return <T>instance;
+        // }
 
+        getInstance<T extends ThorIO.Controller>(controller: { new (Connection: ThorIO.Connection): T}, connection: ThorIO.Controller): T {
+           return new controller(connection);
+        }
+        // static getNew<T extends ThorIO.Controller>(obj:ThorIO.Controller, ...args:any[]):T{
+        //     return new obj();
+        // }
+        static getNew<T>(ctor: { new(...args: any[]): T }): T {
+            console.log(ctor);
+            return new ctor()
     }
 
     export class Plugin<T> {
@@ -548,6 +558,7 @@ export namespace ThorIO {
             this.controller = controller;
         }
     }
+   
 
     export class Controller {
 
@@ -563,6 +574,10 @@ export namespace ThorIO {
         private lastPing: Date;
         @CanSet(false)
         private heartbeatInterval: number;
+
+        new(connection: Connection){
+                console.log("called new on Controller" , this.alias);  
+        }
 
         constructor(connection: Connection) {
             this.connection = connection;

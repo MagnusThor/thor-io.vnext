@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
@@ -15,12 +15,13 @@
   },
   "exclude": [
     "node_modules",
-    ".vscode"
-  ],
-  "files": [
-   "./thor-io.ts",
-   "./thor-io.client.ts",
-   "./index.ts",
-   "./typings/index.d.ts"
-  ]
+    "typings"
+ ]
+  
+  //, "files": [
+  //  "./thor-io.ts",
+  //  "./thor-io.client.ts",
+  //  "./index.ts",
+  //  "./typings/index.d.ts"
+  // ]
 }
