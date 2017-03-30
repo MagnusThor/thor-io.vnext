@@ -10,7 +10,6 @@ export declare namespace ThorIO {
         static longToArray(long: number): Array<number>;
         static newGuid(): string;
         static randomString(): string;
-        static getInstance<T>(obj: any, ...args: any[]): T;
     }
     class Plugin<T> {
         alias: string;
@@ -22,7 +21,7 @@ export declare namespace ThorIO {
         private connections;
         private endpoints;
         constructor(controllers: Array<any>);
-        private createSealdControllers();
+        createSealdControllers(): void;
         removeConnection(id: string, reason: number): void;
         addEndpoint(typeOfTransport: {
             new (...args: any[]): ITransport;
@@ -149,7 +148,10 @@ export declare namespace ThorIO {
         controller: string;
         constructor(topic: string, controller: string);
     }
-    class Controller {
+    interface Controller {
+        new (connection: ThorIO.Connection): ThorIO.Controller;
+    }
+    class Controller implements Controller {
         alias: string;
         subscriptions: Array<Subscription>;
         connection: Connection;
