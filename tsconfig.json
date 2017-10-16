@@ -15,8 +15,5 @@
     "typings"
  ]
   
-  , "files": [
-   "./thor-io.ts",
-   "./index.ts"
-  ]
+ 
 }

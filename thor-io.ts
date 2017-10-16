@@ -9,7 +9,7 @@ import 'reflect-metadata';
  * @param {boolean} state
  * @returns
  */
-export function CanInvoke(state: boolean) {
+export function CanInvoke(state: boolean,alias?:string) {
     return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
         Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     }
@@ -42,10 +42,7 @@ export function ControllerProperties(alias: string, seald?: boolean, heartbeatIn
         Reflect.defineMetadata("heartbeatInterval", heartbeatInterval || -1, target)
     }
 }
-
 export namespace ThorIO {
-
-
     /**
      * 
      * 
@@ -135,7 +132,6 @@ export namespace ThorIO {
             return Math.random().toString(36).substring(2);
         }
     }
-
     /**
      * 
      * 
@@ -170,7 +166,6 @@ export namespace ThorIO {
             this.instance = controller;
         }
     }
-
     /**
      * 
      * 
@@ -178,7 +173,6 @@ export namespace ThorIO {
      * @class Engine
      */
     export class Engine {
-
         /**
          * 
          * 
@@ -222,7 +216,6 @@ export namespace ThorIO {
                 }
                 var plugin = new Plugin<Controller>(ctrl);
                 this.controllers.push(plugin);
-
             });
         }
 
@@ -263,7 +256,7 @@ export namespace ThorIO {
                 if (index >= 0)
                     this.connections.splice(index, 1);
             } catch (error) {
-                // todo: do op's
+            
             }
         }
         /**
@@ -323,6 +316,16 @@ export namespace ThorIO {
                 new Connection(transport, this.connections, this.controllers)
             );
         }
+    }
+
+
+    export class ErrorMessage{
+        // stack: string;
+        message: string;
+        constructor(message: string) {
+                this.message = message;
+                // this.stack = stack ;
+            }
     }
 
     /**
@@ -394,7 +397,7 @@ export namespace ThorIO {
          * 
          * @memberOf Message
          */
-        constructor(topic: string, data: string, controller: string, arrayBuffer?: Buffer) {
+        constructor(topic: string, data: any, controller: string, arrayBuffer?: Buffer) {
             this.D = data;
             this.T = topic;
             this.C = controller;
@@ -1600,7 +1603,6 @@ export namespace ThorIO {
          */
         @CanInvoke(false)
         onclose() { }
-
         /**
          * 
          * 
@@ -1614,7 +1616,7 @@ export namespace ThorIO {
          * @memberOf Controller
          */
         @CanInvoke(false)
-        find<T, U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x: T) => <U><any>x): U[] {
+        find<T,U>(array: T[], predicate: (item: any) => boolean, selector: (item: T) => U = (x: T) => <U><any>x): U[] {
             return array.filter(predicate).map(selector);
         }
         /**
@@ -1625,9 +1627,9 @@ export namespace ThorIO {
          * @memberOf Controller
          */
         @CanInvoke(false)
-        invokeError(error: any) {
-            let msg = new Message("___error", error, this.alias).toString();
-            this.invoke(error, "___error", this.alias);
+        invokeError(ex: any) {
+            let errorMessage = new ThorIO.ErrorMessage(ex.message);
+            this.invoke(errorMessage, "___error", this.alias);
         }
         /**
          * 

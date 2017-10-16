@@ -5,7 +5,7 @@
         "email": "magnus.thor74@gmail.com"
     },
     "description": "thor-io.vnext represents the next generation of thor-io. Written i TypeScript. thor-io.vnext is a fundament for stateful real-time communication.TCP/IP,WebSockets & WebRTC or whatever you need and desire.",
-    "version": "1.4.4",
+    "version": "1.4.6",
     "license": "MIT",
     "main": "index.js",
     "typings": " typings/index",
@@ -14,23 +14,27 @@
         "url": "https://github.com/MagnusThor/thor-io.vnext.git"
     },
     "keywords": [
-        "realtime",
-        "websockets",
-        "webrtc",
-        "pubsub",
+        "Realtime",
+        "WebSockets",
+        "Webrtc",
+        "PubSub",
         "rpc",
         "smart-rpc",
-        "iot",
-        "nodeJS",
-        "rtc",
-        "typescript"
+        "IoT",
+        "NodeJS",
+        "RTC",
+        "Yypescript"
     ],
     "dependencies": {
         "core-js": "^2.4.0",
         "reflect-metadata": "^0.1.3"
     },
     "devDependencies": {
+        "express": "^4.15.4",
+        "express-ws": "^3.0.0",
+        "thor-io.client-vnext": "^1.0.6",
         "typescript": "^1.8.10",
-        "typings": "^1.0.4"
+        "typings": "^1.0.4",
+        "webpack": "^3.6.0"
     }
 }

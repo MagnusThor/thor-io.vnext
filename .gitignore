@@ -86,4 +86,10 @@ $RECYCLE.BIN/
 
 # Visual Studio Code
 
-.vcode/
+.vscode
+
+# Exclude local DocumentRevisions
+
+dev
+webpack.config.js
+package-lock.json

@@ -1,9 +1,14 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -13,9 +18,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var net = require('net');
-require('reflect-metadata');
-function CanInvoke(state) {
+Object.defineProperty(exports, "__esModule", { value: true });
+var net = require("net");
+require("reflect-metadata");
+function CanInvoke(state, alias) {
     return function (target, propertyKey, descriptor) {
         Reflect.defineMetadata("canInvokeOrSet", state, target, propertyKey);
     };
@@ -143,6 +149,13 @@ var ThorIO;
         return Engine;
     }());
     ThorIO.Engine = Engine;
+    var ErrorMessage = (function () {
+        function ErrorMessage(message) {
+            this.message = message;
+        }
+        return ErrorMessage;
+    }());
+    ThorIO.ErrorMessage = ErrorMessage;
     var Message = (function () {
         function Message(topic, data, controller, arrayBuffer) {
             this.D = data;
@@ -552,9 +565,9 @@ var ThorIO;
             if (selector === void 0) { selector = function (x) { return x; }; }
             return array.filter(predicate).map(selector);
         };
-        Controller.prototype.invokeError = function (error) {
-            var msg = new Message("___error", error, this.alias).toString();
-            this.invoke(error, "___error", this.alias);
+        Controller.prototype.invokeError = function (ex) {
+            var errorMessage = new ThorIO.ErrorMessage(ex.message);
+            this.invoke(errorMessage, "___error", this.alias);
         };
         Controller.prototype.invokeToOthers = function (data, topic, controller, buffer) {
             var _this = this;
@@ -647,160 +660,160 @@ var ThorIO;
         };
         ;
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', String)
+            CanSet(false),
+            __metadata("design:type", String)
         ], Controller.prototype, "alias", void 0);
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', Array)
+            CanSet(false),
+            __metadata("design:type", Array)
         ], Controller.prototype, "subscriptions", void 0);
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', Connection)
+            CanSet(false),
+            __metadata("design:type", Connection)
         ], Controller.prototype, "connection", void 0);
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', Date)
+            CanSet(false),
+            __metadata("design:type", Date)
         ], Controller.prototype, "lastPong", void 0);
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', Date)
+            CanSet(false),
+            __metadata("design:type", Date)
         ], Controller.prototype, "lastPing", void 0);
         __decorate([
-            CanSet(false), 
-            __metadata('design:type', Number)
+            CanSet(false),
+            __metadata("design:type", Number)
         ], Controller.prototype, "heartbeatInterval", void 0);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', []), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "enableHeartbeat", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', Boolean)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Boolean)
         ], Controller.prototype, "canInvokeMethod", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String, Function]), 
-            __metadata('design:returntype', Array)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String, Function]),
+            __metadata("design:returntype", Array)
         ], Controller.prototype, "findOn", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', Array)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Array)
         ], Controller.prototype, "getConnections", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', []), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "onopen", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', []), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "onclose", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Array, Function, Function]), 
-            __metadata('design:returntype', Array)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Array, Function, Function]),
+            __metadata("design:returntype", Array)
         ], Controller.prototype, "find", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object]), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object]),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "invokeError", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String, Object]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object, String, String, Object]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "invokeToOthers", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String, Object]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object, String, String, Object]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "invokeToAll", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Function, Object, String, String, Object]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Function, Object, String, String, Object]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "invokeTo", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String, Object]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object, String, String, Object]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "invoke", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object, String, String]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "publish", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Object, String, String]), 
-            __metadata('design:returntype', Controller)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Object, String, String]),
+            __metadata("design:returntype", Controller)
         ], Controller.prototype, "publishToAll", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', Boolean)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Boolean)
         ], Controller.prototype, "hasSubscription", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', Subscription)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Subscription)
         ], Controller.prototype, "addSubscription", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "removeSubscription", null);
         __decorate([
-            CanInvoke(false), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [String]), 
-            __metadata('design:returntype', Subscription)
+            CanInvoke(false),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [String]),
+            __metadata("design:returntype", Subscription)
         ], Controller.prototype, "getSubscription", null);
         __decorate([
-            CanInvoke(true), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', []), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(true),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "___connect", null);
         __decorate([
-            CanInvoke(true), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', []), 
-            __metadata('design:returntype', void 0)
+            CanInvoke(true),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", []),
+            __metadata("design:returntype", void 0)
         ], Controller.prototype, "___close", null);
         __decorate([
-            CanInvoke(true), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Subscription, String, String]), 
-            __metadata('design:returntype', Subscription)
+            CanInvoke(true),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Subscription, String, String]),
+            __metadata("design:returntype", Subscription)
         ], Controller.prototype, "___subscribe", null);
         __decorate([
-            CanInvoke(true), 
-            __metadata('design:type', Function), 
-            __metadata('design:paramtypes', [Subscription]), 
-            __metadata('design:returntype', Boolean)
+            CanInvoke(true),
+            __metadata("design:type", Function),
+            __metadata("design:paramtypes", [Subscription]),
+            __metadata("design:returntype", Boolean)
         ], Controller.prototype, "___unsubscribe", null);
         return Controller;
     }());
@@ -833,8 +846,9 @@ var ThorIO;
         var BrokerController = (function (_super) {
             __extends(BrokerController, _super);
             function BrokerController(connection) {
-                _super.call(this, connection);
-                this.Connections = [];
+                var _this = _super.call(this, connection) || this;
+                _this.Connections = [];
+                return _this;
             }
             BrokerController.prototype.onopen = function () {
                 this.Peer = new PeerConnection(ThorIO.Utils.newGuid(), this.connection.id);
@@ -871,32 +885,32 @@ var ThorIO;
                 return match;
             };
             __decorate([
-                CanInvoke(true), 
-                __metadata('design:type', Function), 
-                __metadata('design:paramtypes', [Object, String, String]), 
-                __metadata('design:returntype', void 0)
+                CanInvoke(true),
+                __metadata("design:type", Function),
+                __metadata("design:paramtypes", [Object, String, String]),
+                __metadata("design:returntype", void 0)
             ], BrokerController.prototype, "instantMessage", null);
             __decorate([
-                CanInvoke(true), 
-                __metadata('design:type', Function), 
-                __metadata('design:paramtypes', [PeerConnection]), 
-                __metadata('design:returntype', void 0)
+                CanInvoke(true),
+                __metadata("design:type", Function),
+                __metadata("design:paramtypes", [PeerConnection]),
+                __metadata("design:returntype", void 0)
             ], BrokerController.prototype, "changeContext", null);
             __decorate([
-                CanInvoke(true), 
-                __metadata('design:type', Function), 
-                __metadata('design:paramtypes', [Signal]), 
-                __metadata('design:returntype', void 0)
+                CanInvoke(true),
+                __metadata("design:type", Function),
+                __metadata("design:paramtypes", [Signal]),
+                __metadata("design:returntype", void 0)
             ], BrokerController.prototype, "contextSignal", null);
             __decorate([
-                CanInvoke(true), 
-                __metadata('design:type', Function), 
-                __metadata('design:paramtypes', []), 
-                __metadata('design:returntype', void 0)
+                CanInvoke(true),
+                __metadata("design:type", Function),
+                __metadata("design:paramtypes", []),
+                __metadata("design:returntype", void 0)
             ], BrokerController.prototype, "connectContext", null);
             BrokerController = __decorate([
-                ControllerProperties("contextBroker", false, 7500), 
-                __metadata('design:paramtypes', [ThorIO.Connection])
+                ControllerProperties("contextBroker", false, 7500),
+                __metadata("design:paramtypes", [ThorIO.Connection])
             ], BrokerController);
             return BrokerController;
         }(ThorIO.Controller));
