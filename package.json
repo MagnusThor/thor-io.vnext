@@ -14,16 +14,18 @@
         "url": "https://github.com/MagnusThor/thor-io.vnext.git"
     },
     "keywords": [
+        "Unity",
+        ".NET",
         "Realtime",
         "WebSockets",
         "Webrtc",
         "PubSub",
-        "rpc",
-        "smart-rpc",
+        "RPS",
+        "Smart-RPC",
         "IoT",
         "NodeJS",
         "RTC",
-        "Yypescript"
+        "Typescript"
     ],
     "dependencies": {
         "core-js": "^2.4.0",

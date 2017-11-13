@@ -1555,7 +1555,7 @@ export namespace ThorIO {
          * @memberOf Controller
          */
         @CanInvoke(false)
-        findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any> {
+        findOn<T>(alias: string, predicate: (item: any) => boolean): Array<Controller> {
             /**
              * 
              * 
@@ -1685,7 +1685,7 @@ export namespace ThorIO {
          */
         @CanInvoke(false)
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string, buffer?: any): Controller {
-            let connections = this.findOn(controller || this.alias, predicate);
+            let connections = this.findOn<this>(controller || this.alias, predicate); 
             connections.forEach((ctrl: Controller) => {
                 ctrl.invoke(data, topic, controller || this.alias, buffer);
             });
