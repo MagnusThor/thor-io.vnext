@@ -755,7 +755,7 @@ var ThorIO;
         __metadata("design:returntype", Boolean)
     ], Controller.prototype, "___unsubscribe", null);
     ThorIO.Controller = Controller;
-    var Controllers;
+    let Controllers;
     (function (Controllers) {
         class InstantMessage {
         }
