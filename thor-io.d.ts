@@ -1,6 +1,7 @@
+/// <reference types="node" />
 import * as net from 'net';
 import 'reflect-metadata';
-export declare function CanInvoke(state: boolean): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export declare function CanInvoke(state: boolean, alias?: string): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
 export declare function CanSet(state: boolean): (target: Object, propertyKey: string) => void;
 export declare function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number): (target: Function) => void;
 export declare namespace ThorIO {
@@ -29,6 +30,10 @@ export declare namespace ThorIO {
         addWebSocket(ws: any, req: any): void;
         private addConnection(transport);
     }
+    class ErrorMessage {
+        message: string;
+        constructor(message: string);
+    }
     class Message {
         B: Buffer;
         T: string;
@@ -36,7 +41,7 @@ export declare namespace ThorIO {
         C: string;
         isBinary: Boolean;
         readonly JSON: any;
-        constructor(topic: string, data: string, controller: string, arrayBuffer?: Buffer);
+        constructor(topic: string, data: any, controller: string, arrayBuffer?: Buffer);
         toString(): string;
         static fromArrayBuffer(buffer: Buffer): Message;
         toArrayBuffer(): Buffer;
@@ -98,7 +103,7 @@ export declare namespace ThorIO {
         constructor(socket: net.Socket);
         readonly readyState: number;
         send(data: string): void;
-        addEventListener(name: string, fn: Function): void;
+        addEventListener(name: string, fn: any): void;
         ping(): void;
         close(): void;
     }
@@ -108,7 +113,7 @@ export declare namespace ThorIO {
         onMessage: (message: PipeMessage) => void;
         send(data: any): void;
         close(reason: number, message: any): void;
-        addEventListener(name: string, fn: Function): void;
+        addEventListener(name: string, fn: any): void;
         readonly readyState: number;
         ping(): void;
         constructor(socket: net.Socket);
@@ -161,12 +166,12 @@ export declare namespace ThorIO {
         constructor(connection: Connection);
         private enableHeartbeat();
         canInvokeMethod(method: string): boolean;
-        findOn<T>(alias: string, predicate: (item: any) => boolean): Array<any>;
+        findOn<T>(alias: string, predicate: (item: any) => boolean): Array<Controller>;
         getConnections(alias?: string): Array<Connection>;
         onopen(): void;
         onclose(): void;
         find<T, U>(array: T[], predicate: (item: any) => boolean, selector?: (item: T) => U): U[];
-        invokeError(error: any): void;
+        invokeError(ex: any): void;
         invokeToOthers(data: any, topic: string, controller?: string, buffer?: any): Controller;
         invokeToAll(data: any, topic: string, controller?: string, buffer?: any): Controller;
         invokeTo(predicate: (item: Controller) => boolean, data: any, topic: string, controller?: string, buffer?: any): Controller;
@@ -207,7 +212,7 @@ export declare namespace ThorIO {
             changeContext(change: PeerConnection): void;
             contextSignal(signal: Signal): void;
             connectContext(): void;
-            getPeerConnections(peerConnetion: PeerConnection): Array<BrokerController>;
+            getPeerConnections(peerConnetion: PeerConnection): Array<ThorIO.Controller>;
         }
     }
 }

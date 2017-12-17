@@ -910,7 +910,7 @@ export namespace ThorIO {
          * 
          * @memberOf BufferMessageTransport
          */
-        addEventListener(name: string, fn: Function) {
+        addEventListener(name: string, fn: any) {
             this.socket.addListener(name, fn);
 
         }
@@ -989,7 +989,7 @@ export namespace ThorIO {
          * 
          * @memberOf PipeMessageTransport
          */
-        addEventListener(name: string, fn: Function) {
+        addEventListener(name: string, fn: any) {
             this.socket.addListener(name, fn);
         }
         /**
@@ -2110,7 +2110,7 @@ export namespace ThorIO {
              * 
              * @memberOf BrokerController
              */
-            getPeerConnections(peerConnetion: PeerConnection): Array<BrokerController> {
+            getPeerConnections(peerConnetion: PeerConnection): Array<ThorIO.Controller> {
                 /**
                  * 
                  * 
