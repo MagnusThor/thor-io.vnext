@@ -11,7 +11,7 @@
         }
     ],
     "description": "thor-io.vnext represents the next generation of thor-io.Thor-IO is a fundament for stateful real-time communication.TCP/IP,WebSockets & WebRTC or whatever you need and desire.",
-    "version": "1.4.9",
+    "version": "1.5.0",
     "license": "MIT",
     "main": "index.js",
     "typings": " typings/index",
@@ -40,7 +40,7 @@
         "reflect-metadata": "^0.1.10"
     },
     "devDependencies": {
-        "express": "^4.15.4",
+        "express": "^4.16.2",
         "express-ws": "^3.0.0",
         "typescript": "^2.6.2",
         "typings": "^1.0.4",
