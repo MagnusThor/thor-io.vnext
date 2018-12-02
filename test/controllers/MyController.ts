@@ -1,7 +1,5 @@
 import { CanInvoke,CanSet,ThorIO,ControllerProperties } from "../../index";
 
-
-
 @ControllerProperties("mycontroller")
 export class MyController extends ThorIO.Controller {
     
@@ -17,9 +15,6 @@ export class MyController extends ThorIO.Controller {
         // will back what sent to callee
         this.invoke(data, "invokeAndReturn");
     }
-
-   
-
 
     @CanInvoke(true)
     invokeAndSendToAll(data: any) {
@@ -41,7 +36,6 @@ export class MyController extends ThorIO.Controller {
 
     @CanInvoke(true)
     invokeToExpr(data: any) {
-
         // create an expression, send just to clients 
         // what has an age >= 10;
         let expr = function (pre: MyController) {

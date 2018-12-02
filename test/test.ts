@@ -11,7 +11,6 @@ import {MyController} from '../test/controllers/MyController'
 var thorIO = new thorio.Engine(
     [
         MyController,
-  
     ]
 ); 
 

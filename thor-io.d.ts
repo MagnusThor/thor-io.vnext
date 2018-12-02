@@ -28,7 +28,7 @@ export declare namespace ThorIO {
             new (...args: any[]): ITransport;
         }, host: string, port: number): net.Server;
         addWebSocket(ws: any, req: any): void;
-        private addConnection(transport);
+        private addConnection;
     }
     class ErrorMessage {
         message: string;
@@ -137,15 +137,15 @@ export declare namespace ThorIO {
         pingPongInterval: number;
         controllerInstances: Array<ThorIO.Controller>;
         clientInfo: ThorIO.ClientInfo;
-        private methodInvoker(controller, method, data, buffer?);
+        private methodInvoker;
         readonly id: string;
         constructor(transport: ITransport, connections: Array<Connection>, controllers: Array<Plugin<Controller>>);
-        private addError(error);
+        private addError;
         hasController(alias: string): boolean;
         removeController(alias: string): void;
         getController(alias: string): Controller;
-        private addControllerInstance(controller);
-        private registerSealdController();
+        private addControllerInstance;
+        private registerSealdController;
         locateController(alias: string): Controller;
     }
     class Subscription {
@@ -164,7 +164,7 @@ export declare namespace ThorIO {
         private lastPing;
         private heartbeatInterval;
         constructor(connection: Connection);
-        private enableHeartbeat();
+        private enableHeartbeat;
         canInvokeMethod(method: string): boolean;
         findOn<T>(alias: string, predicate: (item: any) => boolean): Array<Controller>;
         getConnections(alias?: string): Array<Connection>;
