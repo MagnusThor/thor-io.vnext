@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var _a;
 const index_1 = require("../../index");
 let MyController = class MyController extends index_1.ThorIO.Controller {
     constructor(connection) {
@@ -70,7 +71,6 @@ __decorate([
 ], MyController.prototype, "invokeToExpr", null);
 MyController = __decorate([
     index_1.ControllerProperties("mycontroller"),
-    __metadata("design:paramtypes", [index_1.ThorIO.Connection])
+    __metadata("design:paramtypes", [typeof (_a = typeof index_1.ThorIO !== "undefined" && index_1.ThorIO.Connection) === "function" ? _a : Object])
 ], MyController);
 exports.MyController = MyController;
-//# sourceMappingURL=MyController.js.map

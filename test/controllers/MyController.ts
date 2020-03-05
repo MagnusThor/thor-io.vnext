@@ -1,11 +1,16 @@
-import { CanInvoke,CanSet,ThorIO,ControllerProperties } from "../../index";
+
+import { ControllerBase } from '../../src/Controller/ControllerBase';
+import { ControllerProperties } from '../../src/Controller/ControllerProperties';
+import { CanSet } from '../../src/Decorators/CanSet';
+import { CanInvoke } from '../../src/Decorators/CanInvoke';
+import { Connection } from '../../src/Connection';
 
 @ControllerProperties("mycontroller")
-export class MyController extends ThorIO.Controller {
+export class MyController extends ControllerBase {
     
     @CanSet(true)
     size: number;
-    constructor(connection: ThorIO.Connection) {
+    constructor(connection: Connection) {
         super(connection);
         this.size = 0; 
     }
