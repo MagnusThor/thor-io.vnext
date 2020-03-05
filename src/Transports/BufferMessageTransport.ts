@@ -1,8 +1,8 @@
 import * as net from 'net';
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
-import { BufferMessage } from './BufferMessage';
-import { Utils } from '../Utils/Utils';
+import { BufferMessage } from '../Messages/BufferMessage';
+import { BufferUtils } from '../Utils/BufferUtils';
 /**
  *
  *
@@ -11,6 +11,18 @@ import { Utils } from '../Utils/Utils';
  * @implements {ITransport}
  */
 export class BufferMessageTransport implements ITransport {
+
+    newGuid(): string {
+        /**
+         *
+         *
+         * @returns
+         */
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        }
+        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+    }
     /**
      *
      *
@@ -33,7 +45,7 @@ export class BufferMessageTransport implements ITransport {
      * @memberOf BufferMessageTransport
      */
     constructor(public socket: net.Socket) {
-        this.id = Utils.newGuid();
+        this.id = this.newGuid();
         this.socket.addListener("data", (buffer: Buffer) => {
             let bm = new BufferMessage(buffer, false);
             this.onMessage(bm);

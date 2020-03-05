@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-class Utils {
+class BufferUtils {
     static stingToBuffer(str) {
         let len = str.length;
         let arr = new Array(len);
@@ -25,14 +25,5 @@ class Utils {
         }
         return byteArray;
     }
-    static newGuid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-        }
-        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
-    }
-    static randomString() {
-        return Math.random().toString(36).substring(2);
-    }
 }
-exports.Utils = Utils;
+exports.BufferUtils = BufferUtils;

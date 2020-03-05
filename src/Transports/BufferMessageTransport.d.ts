@@ -4,6 +4,7 @@ import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 export declare class BufferMessageTransport implements ITransport {
     socket: net.Socket;
+    newGuid(): string;
     id: string;
     onMessage: (messsage: ITransportMessage) => void;
     constructor(socket: net.Socket);

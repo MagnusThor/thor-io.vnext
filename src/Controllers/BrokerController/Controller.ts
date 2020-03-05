@@ -1,10 +1,11 @@
 import { CanInvoke } from '../../Decorators/CanInvoke';
-import { ControllerProperties } from '../../Controller/ControllerProperties';
-import { PeerConnection } from './PeerConnection';
-import { Signal } from './Signal';
-import { Utils } from '../../Utils/Utils';
+
+
 import { ControllerBase } from '../../Controller/ControllerBase';
 import { Connection } from '../../Connection';
+import { ControllerProperties } from '../../Decorators/ControllerProperties';
+import { PeerConnection } from './Models/PeerConnection';
+import { Signal } from './Models/Signal';
 /**
  *
  *
@@ -34,7 +35,7 @@ export class BrokerController extends ControllerBase {
      * @type {string}
      * @memberOf BrokerController
      */
-    public localPeerId: string;
+    public localPeerId: string;Signal
     /**
      * Creates an instance of BrokerController.
      *
@@ -53,7 +54,7 @@ export class BrokerController extends ControllerBase {
      * @memberOf BrokerController
      */
     onopen() {
-        this.Peer = new PeerConnection(Utils.newGuid(), this.connection.id);
+        this.Peer = new PeerConnection(ControllerBase.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
     /**
@@ -83,7 +84,7 @@ export class BrokerController extends ControllerBase {
      *
      * @param {PeerConnection} change
      *
-     * @memberOf BrokerController
+     * @memberOf BrokerCControllerPropertiesontroller
      */
     @CanInvoke(true)
     changeContext(change: PeerConnection) {

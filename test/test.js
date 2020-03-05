@@ -4,16 +4,17 @@ let express = require("express");
 let app = express();
 var thorio = require("../index").ThorIO;
 const MyController_1 = require("../test/controllers/MyController");
-const thor_io_1 = require("../thor-io");
-var thorIO = new thorio.Engine([
+const ThorIO_1 = require("../src/ThorIO");
+const Controller_1 = require("../src/Controllers/BrokerController/Controller");
+let Server = new ThorIO_1.ThorIO([
     MyController_1.MyController,
-    thor_io_1.ThorIO.Controllers.BrokerController
+    Controller_1.BrokerController
 ]);
 require("express-ws")(app);
 app.use("/", express.static("debug"));
 app.use("/lib", express.static("node_modules"));
 app.ws("/", function (ws, req) {
-    thorIO.addWebSocket(ws, req);
+    Server.addWebSocket(ws, req);
 });
 var port = process.env.PORT || 1337;
 app.listen(port);

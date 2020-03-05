@@ -1,7 +1,7 @@
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { WebSocketMessage } from '../Messages/WebSocketMessage';
-import { Utils } from '../Utils/Utils';
+
 /**
  *
  *
@@ -10,6 +10,15 @@ import { Utils } from '../Utils/Utils';
  * @implements {ITransport}
  */
 export class WebSocketMessageTransport implements ITransport {
+
+    static newGuid(): string {
+      
+      
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        }
+        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+    }
     /**
      *
      *
@@ -64,6 +73,8 @@ export class WebSocketMessageTransport implements ITransport {
     addEventListener(name: string, fn: any) {
         this.socket.addEventListener(name, fn);
     }
+
+    
     /**
      * Creates an instance of WebSocketMessageTransport.
      *
@@ -72,7 +83,7 @@ export class WebSocketMessageTransport implements ITransport {
      * @memberOf WebSocketMessageTransport
      */
     constructor(socket: any) {
-        this.id = Utils.newGuid();
+        this.id = WebSocketMessageTransport.newGuid();
         this.socket = socket;
         this.socket.addEventListener("message", (event: any) => {
             this.onMessage(new WebSocketMessage(event.data, event.binary));

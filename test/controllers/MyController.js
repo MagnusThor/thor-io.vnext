@@ -9,9 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var _a;
-const index_1 = require("../../index");
-let MyController = class MyController extends index_1.ThorIO.Controller {
+const ControllerBase_1 = require("../../src/Controller/ControllerBase");
+const CanSet_1 = require("../../src/Decorators/CanSet");
+const CanInvoke_1 = require("../../src/Decorators/CanInvoke");
+const Connection_1 = require("../../src/Connection");
+const ControllerProperties_1 = require("../../src/Decorators/ControllerProperties");
+let MyController = class MyController extends ControllerBase_1.ControllerBase {
     constructor(connection) {
         super(connection);
         this.size = 0;
@@ -36,41 +39,41 @@ let MyController = class MyController extends index_1.ThorIO.Controller {
     }
 };
 __decorate([
-    index_1.CanSet(true),
+    CanSet_1.CanSet(true),
     __metadata("design:type", Number)
 ], MyController.prototype, "size", void 0);
 __decorate([
-    index_1.CanInvoke(true),
+    CanInvoke_1.CanInvoke(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MyController.prototype, "invokeAndReturn", null);
 __decorate([
-    index_1.CanInvoke(true),
+    CanInvoke_1.CanInvoke(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MyController.prototype, "invokeAndSendToAll", null);
 __decorate([
-    index_1.CanInvoke(true),
+    CanInvoke_1.CanInvoke(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MyController.prototype, "publishTemperature", null);
 __decorate([
-    index_1.CanInvoke(true),
+    CanInvoke_1.CanInvoke(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MyController.prototype, "invokeAndSendOthers", null);
 __decorate([
-    index_1.CanInvoke(true),
+    CanInvoke_1.CanInvoke(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MyController.prototype, "invokeToExpr", null);
 MyController = __decorate([
-    index_1.ControllerProperties("mycontroller"),
-    __metadata("design:paramtypes", [typeof (_a = typeof index_1.ThorIO !== "undefined" && index_1.ThorIO.Connection) === "function" ? _a : Object])
+    ControllerProperties_1.ControllerProperties("mycontroller"),
+    __metadata("design:paramtypes", [Connection_1.Connection])
 ], MyController);
 exports.MyController = MyController;

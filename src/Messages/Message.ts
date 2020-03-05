@@ -1,4 +1,4 @@
-import { Utils } from "../Utils/Utils";
+import { BufferUtils } from '../Utils/BufferUtils';
 
 /**
  *
@@ -97,7 +97,7 @@ export class Message {
     static fromArrayBuffer(buffer: Buffer): Message {
         let headerLen = 8;
         let header = buffer.slice(0, 8);
-        let payloadLength = Utils.arrayToLong(header);
+        let payloadLength = BufferUtils.arrayToLong(header);
         let message = buffer.slice(headerLen, payloadLength + headerLen);
         let blobOffset = headerLen + payloadLength;
         let blob = buffer.slice(blobOffset, buffer.byteLength);
@@ -114,7 +114,7 @@ export class Message {
     toArrayBuffer(): Buffer {
         let messagePayload = this.toString();
         let payloadLength = messagePayload.length;
-        let header = new Buffer(Utils.longToArray(payloadLength));
+        let header = new Buffer(BufferUtils.longToArray(payloadLength));
         let message = new Buffer(payloadLength);
         message.write(messagePayload, 0, payloadLength, "utf-8");
         var blob = new Buffer(this.B);

@@ -9,15 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var _a;
 const CanInvoke_1 = require("../Decorators/CanInvoke");
 const CanSet_1 = require("../Decorators/CanSet");
 const Message_1 = require("../Messages/Message");
 const Connection_1 = require("../Connection");
 const Subscription_1 = require("../Subscription");
-const IController_1 = require("../Interfaces/IController");
 const ErrorMessage_1 = require("../Messages/ErrorMessage");
-;
 class ControllerBase {
     constructor(connection) {
         this.connection = connection;
@@ -26,6 +23,12 @@ class ControllerBase {
         this.heartbeatInterval = Reflect.getMetadata("heartbeatInterval", this.constructor);
         if (this.heartbeatInterval >= 1000)
             this.enableHeartbeat();
+    }
+    static newGuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        }
+        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
     }
     enableHeartbeat() {
         this.connection.transport.addEventListener("pong", () => {
@@ -89,6 +92,7 @@ class ControllerBase {
         let msg = new Message_1.Message(topic, data, controller || this.alias, buffer);
         if (this.connection.transport)
             this.connection.transport.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
+        return this;
     }
     publish(data, topic, controller) {
         if (!this.hasSubscription(topic))
@@ -242,13 +246,13 @@ __decorate([
     CanInvoke_1.CanInvoke(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", ControllerBase)
 ], ControllerBase.prototype, "invoke", null);
 __decorate([
     CanInvoke_1.CanInvoke(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String]),
-    __metadata("design:returntype", typeof (_a = typeof IController_1.IController !== "undefined" && IController_1.IController) === "function" ? _a : Object)
+    __metadata("design:returntype", ControllerBase)
 ], ControllerBase.prototype, "publish", null);
 __decorate([
     CanInvoke_1.CanInvoke(false),

@@ -1,8 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const WebSocketMessage_1 = require("../Messages/WebSocketMessage");
-const Utils_1 = require("../Utils/Utils");
 class WebSocketMessageTransport {
+    static newGuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        }
+        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
+    }
     ;
     send(data) {
         this.socket.send(data);
@@ -14,7 +19,7 @@ class WebSocketMessageTransport {
         this.socket.addEventListener(name, fn);
     }
     constructor(socket) {
-        this.id = Utils_1.Utils.newGuid();
+        this.id = WebSocketMessageTransport.newGuid();
         this.socket = socket;
         this.socket.addEventListener("message", (event) => {
             this.onMessage(new WebSocketMessage_1.WebSocketMessage(event.data, event.binary));

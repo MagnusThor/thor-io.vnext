@@ -4,6 +4,7 @@ import { PipeMessage } from '../Messages/PipeMessage';
 import * as net from 'net';
 export declare class PipeMessageTransport implements ITransport {
     socket: net.Socket;
+    static newGuid(): string;
     id: string;
     onMessage: (message: PipeMessage) => void;
     send(data: any): void;

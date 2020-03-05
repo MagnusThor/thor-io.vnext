@@ -1,9 +1,10 @@
 
 import { ControllerBase } from '../../src/Controller/ControllerBase';
-import { ControllerProperties } from '../../src/Controller/ControllerProperties';
+
 import { CanSet } from '../../src/Decorators/CanSet';
 import { CanInvoke } from '../../src/Decorators/CanInvoke';
 import { Connection } from '../../src/Connection';
+import { ControllerProperties } from '../../src/Decorators/ControllerProperties';
 
 @ControllerProperties("mycontroller")
 export class MyController extends ControllerBase {

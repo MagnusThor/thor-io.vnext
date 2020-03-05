@@ -10,19 +10,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const CanInvoke_1 = require("../../Decorators/CanInvoke");
-const ControllerProperties_1 = require("../../Controller/ControllerProperties");
-const PeerConnection_1 = require("./PeerConnection");
-const Signal_1 = require("./Signal");
-const Utils_1 = require("../../Utils/Utils");
 const ControllerBase_1 = require("../../Controller/ControllerBase");
 const Connection_1 = require("../../Connection");
+const ControllerProperties_1 = require("../../Decorators/ControllerProperties");
+const PeerConnection_1 = require("./Models/PeerConnection");
+const Signal_1 = require("./Models/Signal");
 let BrokerController = class BrokerController extends ControllerBase_1.ControllerBase {
     constructor(connection) {
         super(connection);
         this.Connections = [];
     }
     onopen() {
-        this.Peer = new PeerConnection_1.PeerConnection(Utils_1.Utils.newGuid(), this.connection.id);
+        this.Peer = new PeerConnection_1.PeerConnection(ControllerBase_1.ControllerBase.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
     instantMessage(data, topic, controller) {

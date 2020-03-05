@@ -4,7 +4,7 @@
  * @export
  * @class Utils
  */
-export class Utils {
+export class BufferUtils {
     /**
      *
      *
@@ -55,35 +55,5 @@ export class Utils {
             long = (long - byte) / 256;
         }
         return byteArray;
-    }
-    /**
-     *
-     *
-     * @static
-     * @returns {string}
-     *
-     * @memberOf Utils
-     */
-    static newGuid(): string {
-        /**
-         *
-         *
-         * @returns
-         */
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-        }
-        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
-    }
-    /**
-     *
-     *
-     * @static
-     * @returns {string}
-     *
-     * @memberOf Utils
-     */
-    static randomString(): string {
-        return Math.random().toString(36).substring(2);
-    }
+    }   
 }

@@ -8,7 +8,7 @@ class Connection {
         this.connections = connections;
         this.controllers = controllers;
         this.connections = connections;
-        this.controllerInstances = [];
+        this.controllerInstances = new Array();
         this.errors = [];
         if (transport) {
             this.transport.onMessage = (event) => {

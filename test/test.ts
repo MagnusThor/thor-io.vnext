@@ -7,7 +7,8 @@ var thorio = require("../index").ThorIO;
 // import your controllers here...
 import {MyController} from '../test/controllers/MyController'
 import { ThorIO } from '../src/ThorIO';
-import { BrokerController } from '../src/Controllers/Broker/BrokerController';
+import { BrokerController } from '../src/Controllers/BrokerController/Controller';
+
 
 let Server = new ThorIO(
     [
