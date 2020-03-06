@@ -22,7 +22,7 @@ class WebSocketMessageTransport {
         this.id = WebSocketMessageTransport.newGuid();
         this.socket = socket;
         this.socket.addEventListener("message", (event) => {
-            this.onMessage(new WebSocketMessage_1.WebSocketMessage(event.data, event.binary));
+            this.onMessage(new WebSocketMessage_1.WebSocketMessage(event.data, typeof (event.data) != "string"));
         });
     }
     get readyState() {

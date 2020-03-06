@@ -86,7 +86,7 @@ export class WebSocketMessageTransport implements ITransport {
         this.id = WebSocketMessageTransport.newGuid();
         this.socket = socket;
         this.socket.addEventListener("message", (event: any) => {
-            this.onMessage(new WebSocketMessage(event.data, event.binary));
+            this.onMessage(new WebSocketMessage(event.data, typeof(event.data) != "string" ));
         });
     }
     /**
