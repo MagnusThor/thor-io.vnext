@@ -10,7 +10,7 @@ import { ControllerBase } from './Controller/ControllerBase';
  * @export
  * @class Connection
  */
-export class Connection{
+export class Connection {
     /**
      *
      *
@@ -31,7 +31,8 @@ export class Connection{
      * @type {Array<Controller>}
      * @memberOf Connection
      */
-    public controllerInstances: Array<ControllerBase>;
+    //public controllerInstances: Array<ControllerBase>;
+    public controllerInstances: Map<string, ControllerBase>;
     /**
      *
      *
@@ -90,7 +91,9 @@ export class Connection{
      */
     constructor(public transport: ITransport, public connections: Array<Connection>, private controllers: Array<Plugin<ControllerBase>>) {
         this.connections = connections;
-        this.controllerInstances = new Array<ControllerBase>();
+        //this.controllerInstances = new Array<ControllerBase>();
+        this.controllerInstances = new Map<string, ControllerBase>();
+
         this.errors = [];
         if (transport) {
             /**
@@ -145,10 +148,11 @@ export class Connection{
          * @param {ControllerBase} pre
          * @returns
          */
-        let match = this.controllerInstances.filter((pre: ControllerBase) => {
-            return pre.alias == alias;
-        });
-        return match.length >= 0;
+        // let match = this.controllerInstances.filter((pre: ControllerBase) => {
+        //     return pre.alias == alias;
+        // });
+        // return match.length >= 0;
+        return this.controllerInstances.has(alias);
     }
     /**
      *
@@ -157,10 +161,11 @@ export class Connection{
      *
      * @memberOf Connection
      */
-    removeController(alias: string) {
-        let index = this.controllerInstances.indexOf(this.getController(alias));
-        if (index > -1)
-            this.controllerInstances.splice(index, 1);
+    removeController(alias: string): boolean {
+        // let index = this.controllerInstances.indexOf(this.getController(alias));
+        // if (index > -1)
+        //     this.controllerInstances.splice(index, 1);
+        return this.controllerInstances.delete(alias);
     }
     /**
      *
@@ -172,16 +177,9 @@ export class Connection{
      */
     getController(alias: string): ControllerBase {
         try {
-            /**
-             *
-             *
-             * @param {ControllerBase} pre
-             * @returns
-             */
-            let match = this.controllerInstances.filter((pre: ControllerBase) => {
-                return pre.alias == alias;
-            });
-            return match[0];
+            let match = this.controllerInstances.get(alias);
+            if (!match) throw `cannot locate the requested controller ${alias}`
+            return match;
         }
         catch (error) {
             return null;
@@ -197,7 +195,7 @@ export class Connection{
      * @memberOf Connection
      */
     private addControllerInstance(controller: ControllerBase): ControllerBase {
-        this.controllerInstances.push(controller);
+        this.controllerInstances.set(controller.alias, controller);
         return controller;
     }
     /**
@@ -210,6 +208,18 @@ export class Connection{
     private registerSealdController() {
         throw "not yet implemented";
     }
+
+    public resolveController(alias: string): Plugin<ControllerBase> {
+        try {
+
+            let resolvedController = this.controllers.find((resolve: Plugin<ControllerBase>) => {
+                return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
+            });
+            return resolvedController;
+        } catch{
+            throw `Cannot resolve ${alias},controller unknown.`
+        }
+    }
     /**
      *
      *
@@ -220,30 +230,17 @@ export class Connection{
      */
     locateController(alias: string): ControllerBase {
         try {
-            /**
-             *
-             *
-             * @param {ControllerBase} pre
-             * @returns
-             */
-            let match = this.controllerInstances.find((pre: ControllerBase) => {
-                return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
-            });
+
+            let match = this.getController(alias);
             if (match) {
                 return match;
             }
             else {
-                /**
-                 *
-                 *
-                 * @param {Plugin<ControllerBase>} resolve
-                 * @returns
-                 */
-                let resolvedController = this.controllers.find((resolve: Plugin<ControllerBase>) => {
-                    return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
-                }).instance;
-
-                let controllerInstance = new resolvedController(this);
+                // let resolvedController = this.controllers.find((resolve: Plugin<ControllerBase>) => {
+                //     return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
+                // }).instance;
+                let resolved = this.resolveController(alias);
+                let controllerInstance = new resolved.instance(this)
                 this.addControllerInstance(controllerInstance);
                 controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
                 controllerInstance.onopen();

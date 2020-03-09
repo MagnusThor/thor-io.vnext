@@ -8,7 +8,7 @@ class Connection {
         this.connections = connections;
         this.controllers = controllers;
         this.connections = connections;
-        this.controllerInstances = new Array();
+        this.controllerInstances = new Map();
         this.errors = [];
         if (transport) {
             this.transport.onMessage = (event) => {
@@ -58,47 +58,49 @@ class Connection {
         this.errors.push(error);
     }
     hasController(alias) {
-        let match = this.controllerInstances.filter((pre) => {
-            return pre.alias == alias;
-        });
-        return match.length >= 0;
+        return this.controllerInstances.has(alias);
     }
     removeController(alias) {
-        let index = this.controllerInstances.indexOf(this.getController(alias));
-        if (index > -1)
-            this.controllerInstances.splice(index, 1);
+        return this.controllerInstances.delete(alias);
     }
     getController(alias) {
         try {
-            let match = this.controllerInstances.filter((pre) => {
-                return pre.alias == alias;
-            });
-            return match[0];
+            let match = this.controllerInstances.get(alias);
+            if (!match)
+                throw `cannot locate the requested controller ${alias}`;
+            return match;
         }
         catch (error) {
             return null;
         }
     }
     addControllerInstance(controller) {
-        this.controllerInstances.push(controller);
+        this.controllerInstances.set(controller.alias, controller);
         return controller;
     }
     registerSealdController() {
         throw "not yet implemented";
     }
+    resolveController(alias) {
+        try {
+            let resolvedController = this.controllers.find((resolve) => {
+                return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
+            });
+            return resolvedController;
+        }
+        catch (_a) {
+            throw `Cannot resolve ${alias},controller unknown.`;
+        }
+    }
     locateController(alias) {
         try {
-            let match = this.controllerInstances.find((pre) => {
-                return pre.alias === alias && Reflect.getMetadata("seald", pre.constructor) === false;
-            });
+            let match = this.getController(alias);
             if (match) {
                 return match;
             }
             else {
-                let resolvedController = this.controllers.find((resolve) => {
-                    return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
-                }).instance;
-                let controllerInstance = new resolvedController(this);
+                let resolved = this.resolveController(alias);
+                let controllerInstance = new resolved.instance(this);
                 this.addControllerInstance(controllerInstance);
                 controllerInstance.invoke(new ClientInfo_1.ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
                 controllerInstance.onopen();

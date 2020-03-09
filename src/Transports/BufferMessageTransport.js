@@ -1,20 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const BufferMessage_1 = require("../Messages/BufferMessage");
+const StringUtils_1 = require("../Utils/StringUtils");
 class BufferMessageTransport {
     constructor(socket) {
         this.socket = socket;
-        this.id = this.newGuid();
+        this.id = StringUtils_1.StringUtils.newGuid();
         this.socket.addListener("data", (buffer) => {
             let bm = new BufferMessage_1.BufferMessage(buffer, false);
             this.onMessage(bm);
         });
-    }
-    newGuid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-        }
-        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
     }
     get readyState() {
         return 1;

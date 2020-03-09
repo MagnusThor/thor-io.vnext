@@ -1,3 +1,4 @@
+import { StringUtils } from './Utils/StringUtils';
 /**
  *
  *
@@ -20,6 +21,7 @@ export class Plugin<T> {
      * @memberOf Plugin
      */
     public instance: T;
+    id: string;
     /**
      * Creates an instance of Plugin.
      *
@@ -28,6 +30,7 @@ export class Plugin<T> {
      * @memberOf Plugin
      */
     constructor(controller: T) {
+        this.id = StringUtils.newGuid()
         this.alias = Reflect.getMetadata("alias", controller);
         this.instance = controller;
     }

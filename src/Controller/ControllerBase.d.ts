@@ -4,7 +4,6 @@ export interface ControllerBase {
     new (connection: Connection): ControllerBase;
 }
 export declare class ControllerBase {
-    static newGuid(): string;
     alias: string;
     subscriptions: Array<Subscription>;
     connection: Connection;

@@ -1,7 +1,6 @@
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 export declare class WebSocketMessageTransport implements ITransport {
-    static newGuid(): string;
     socket: WebSocket;
     onMessage: (message: ITransportMessage) => void;
     id: string;

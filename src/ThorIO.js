@@ -6,14 +6,14 @@ const WebSocketMessageTransport_1 = require("./Transports/WebSocketMessageTransp
 const net = require("net");
 class ThorIO {
     constructor(controllers) {
-        this.endpoints = [];
-        this.connections = [];
-        this.controllers = [];
+        this.endpoints = new Array();
+        this.connections = new Array();
+        this.controllers = new Array();
         controllers.forEach((ctrl) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";
             }
-            var plugin = new Plugin_1.Plugin(ctrl);
+            let plugin = new Plugin_1.Plugin(ctrl);
             this.controllers.push(plugin);
         });
     }

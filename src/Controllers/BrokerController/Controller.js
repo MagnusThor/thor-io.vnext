@@ -15,13 +15,14 @@ const Connection_1 = require("../../Connection");
 const ControllerProperties_1 = require("../../Decorators/ControllerProperties");
 const PeerConnection_1 = require("./Models/PeerConnection");
 const Signal_1 = require("./Models/Signal");
+const StringUtils_1 = require("../../Utils/StringUtils");
 let BrokerController = class BrokerController extends ControllerBase_1.ControllerBase {
     constructor(connection) {
         super(connection);
         this.Connections = [];
     }
     onopen() {
-        this.Peer = new PeerConnection_1.PeerConnection(ControllerBase_1.ControllerBase.newGuid(), this.connection.id);
+        this.Peer = new PeerConnection_1.PeerConnection(StringUtils_1.StringUtils.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
     instantMessage(data, topic, controller) {

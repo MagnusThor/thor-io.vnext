@@ -1,12 +1,11 @@
 let express = require("express");
 
 let app = express();
- 
-var thorio = require("../index").ThorIO;
+
+import { ThorIO } from '../src/ThorIO';
 
 // import your controllers here...
-import {MyController} from '../test/controllers/MyController'
-import { ThorIO } from '../src/ThorIO';
+import {MyController} from '../example/controllers/MyController'
 import { BrokerController } from '../src/Controllers/BrokerController/Controller';
 
 
@@ -19,8 +18,7 @@ let Server = new ThorIO(
 
 require("express-ws")(app);
 
-app.use("/", express.static("debug"));
-app.use("/lib", express.static("node_modules")); 
+app.use("/", express.static("example"));
 
 app.ws("/", function (ws, req) {    
        Server.addWebSocket(ws,req);

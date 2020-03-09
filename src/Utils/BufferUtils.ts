@@ -55,5 +55,7 @@ export class BufferUtils {
             long = (long - byte) / 256;
         }
         return byteArray;
-    }   
+    }
 }
+
+

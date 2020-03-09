@@ -1,14 +1,14 @@
 import { Plugin } from './Plugin';
-import { Connection } from "./Connection";
+import { Connection } from './Connection';
 import { WebSocketMessageTransport } from "./Transports/WebSocketMessageTransport";
 import { ITransport } from "./Interfaces/ITransport";
 import * as net from 'net';
 import { ControllerBase } from './Controller/ControllerBase';
 /**
- *
+ * Creates an hosting container / hug
  *
  * @export
- * @class Engine
+ * @class ThorIO
  */
 export class ThorIO {
     /**
@@ -16,7 +16,7 @@ export class ThorIO {
      *
      * @private
      * @type {Array<Plugin<IController>>}
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     private controllers: Array<Plugin<ControllerBase>>;
     /**
@@ -24,7 +24,7 @@ export class ThorIO {
      *
      * @private
      * @type {Array<Connection>}
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     private connections: Array<Connection>;
     /**
@@ -32,25 +32,25 @@ export class ThorIO {
      *
      * @private
      * @type {Array<any>}
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     private endpoints: Array<any>;
     /**
-     * Creates an instance of Engine.
+     * Creates an instance of ThorIO.
      *
      * @param {Array<any>} controllers
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     constructor(controllers: Array<any>) {
-        this.endpoints = [];
-        this.connections = [];
-        this.controllers = [];
+        this.endpoints = new Array<any>();
+        this.connections = new Array<Connection>();
+        this.controllers = new Array<Plugin<ControllerBase>>();
         controllers.forEach((ctrl: ControllerBase) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";
             }
-            var plugin = new Plugin<ControllerBase>(ctrl);
+            let plugin = new Plugin<ControllerBase>(ctrl);
             this.controllers.push(plugin);
         });
     }
@@ -59,7 +59,7 @@ export class ThorIO {
      *
      * @public
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     public createSealdControllers() {
         this.controllers.forEach((controller: Plugin<ControllerBase>) => {
@@ -74,7 +74,7 @@ export class ThorIO {
      * @param {string} id
      * @param {number} reason
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     removeConnection(id: string, reason: number): void {
         try {
@@ -102,7 +102,7 @@ export class ThorIO {
      * @param {number} port
      * @returns {net.Server}
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     addEndpoint(typeOfTransport: {
         new(...args: any[]): ITransport;
@@ -128,7 +128,7 @@ export class ThorIO {
      * @param {*} ws
      * @param {*} req
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     addWebSocket(ws: any, req: any): void {
         let transport = new WebSocketMessageTransport(ws);
@@ -140,7 +140,7 @@ export class ThorIO {
      * @private
      * @param {ITransport} transport
      *
-     * @memberOf Engine
+     * @memberOf ThorIO
      */
     private addConnection(transport: ITransport): void {
         transport.addEventListener("close", (reason) => {

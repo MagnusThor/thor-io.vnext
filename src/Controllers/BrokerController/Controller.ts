@@ -6,6 +6,7 @@ import { Connection } from '../../Connection';
 import { ControllerProperties } from '../../Decorators/ControllerProperties';
 import { PeerConnection } from './Models/PeerConnection';
 import { Signal } from './Models/Signal';
+import { StringUtils } from '../../Utils/StringUtils';
 /**
  *
  *
@@ -54,7 +55,7 @@ export class BrokerController extends ControllerBase {
      * @memberOf BrokerController
      */
     onopen() {
-        this.Peer = new PeerConnection(ControllerBase.newGuid(), this.connection.id);
+        this.Peer = new PeerConnection(StringUtils.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
     /**

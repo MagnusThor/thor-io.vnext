@@ -1,6 +1,7 @@
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { WebSocketMessage } from '../Messages/WebSocketMessage';
+import { StringUtils } from '../Utils/StringUtils';
 
 /**
  *
@@ -10,15 +11,7 @@ import { WebSocketMessage } from '../Messages/WebSocketMessage';
  * @implements {ITransport}
  */
 export class WebSocketMessageTransport implements ITransport {
-
-    static newGuid(): string {
-      
-      
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-        }
-        return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
-    }
+ 
     /**
      *
      *
@@ -83,7 +76,7 @@ export class WebSocketMessageTransport implements ITransport {
      * @memberOf WebSocketMessageTransport
      */
     constructor(socket: any) {
-        this.id = WebSocketMessageTransport.newGuid();
+        this.id = StringUtils.newGuid();
         this.socket = socket;
         this.socket.addEventListener("message", (event: any) => {
             this.onMessage(new WebSocketMessage(event.data, typeof(event.data) != "string" ));

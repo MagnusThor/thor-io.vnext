@@ -6,7 +6,7 @@
     },
     "contributors": [
         {
-            "name": "Nicklas Bylund"            
+            "name": "Nicklas Bylund"
         },
         {
             "name": "Ricky Davies",
@@ -14,7 +14,7 @@
         }
     ],
     "description": "thor-io.vnext represents the next generation of thor-io.Thor-IO is a fundament for stateful real-time communication.TCP/IP,WebSockets & WebRTC or whatever you need and desire.",
-    "version": "2.0.3-beta.4",
+    "version": "2.0.4-beta.1",
     "license": "MIT",
     "main": "index.js",
     "typings": " typings/index",
@@ -23,13 +23,13 @@
         "url": "https://github.com/MagnusThor/thor-io.vnext.git"
     },
     "keywords": [
-        "Unity",
-        ".NET",
-        "Realtime",
-        "WebSockets",
+        "unity",
+        ".net",
+        "realtime",
+        "websockets",
         "WebRTC",
         "PubSub",
-        "RPS",
+        "RPC",
         "Smart-RPC",
         "IoT",
         "NodeJS",
@@ -38,13 +38,12 @@
     ],
     "dependencies": {
         "@types/node": "^10.12.11",
-        "@types/reflect-metadata": "0.1.0",
-        "core-js": "^2.4.0",
-        "reflect-metadata": "^0.1.10"
+        "@types/reflect-metadata": "0.1.0"
     },
     "devDependencies": {
         "express": "^4.16.2",
         "express-ws": "^4.0.0",
+        "thor-io.client-vnext": "^2.0.2-beta.2",
         "typescript": "^3.2.1",
         "typings": "^2.1.1",
         "webpack": "^4.26.1"
