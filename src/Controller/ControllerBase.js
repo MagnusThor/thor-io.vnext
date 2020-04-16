@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const CanInvoke_1 = require("../Decorators/CanInvoke");
 const CanSet_1 = require("../Decorators/CanSet");
-const Message_1 = require("../Messages/Message");
+const TextMessage_1 = require("../Messages/TextMessage");
 const Connection_1 = require("../Connection");
 const Subscription_1 = require("../Subscription");
 const ErrorMessage_1 = require("../Messages/ErrorMessage");
@@ -28,11 +28,14 @@ class ControllerBase {
         this.connection.transport.addEventListener("pong", () => {
             this.lastPong = new Date();
         });
-        let interval = setInterval(() => {
+        this.interval = setInterval(() => {
             this.lastPing = new Date();
             if (this.connection.transport.readyState === 1)
                 this.connection.transport.ping();
         }, this.heartbeatInterval);
+    }
+    disbaleHeartbeat() {
+        clearInterval(this.interval);
     }
     canInvokeMethod(method) {
         return Reflect.getMetadata("canInvokeOrSet", this, method);
@@ -45,10 +48,10 @@ class ControllerBase {
     }
     getConnections(alias) {
         if (!alias) {
-            return this.connection.connections;
+            return Array.from(this.connection.connections.values());
         }
         else {
-            return this.connection.connections.map((conn) => {
+            return Array.from(this.connection.connections.values()).map((conn) => {
                 if (conn.hasController(this.alias))
                     return conn;
             });
@@ -83,7 +86,7 @@ class ControllerBase {
         });
     }
     invoke(data, topic, controller, buffer) {
-        let msg = new Message_1.Message(topic, data, controller || this.alias, buffer);
+        let msg = new TextMessage_1.TextMessage(topic, data, controller || this.alias, buffer);
         if (this.connection.transport)
             this.connection.transport.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
         return this;
@@ -94,7 +97,7 @@ class ControllerBase {
         return this.invoke(data, topic, controller || this.alias);
     }
     publishToAll(data, topic, controller) {
-        let msg = new Message_1.Message(topic, data, this.alias);
+        let msg = new TextMessage_1.TextMessage(topic, data, this.alias);
         this.getConnections().forEach((connection) => {
             let ctrl = connection.getController(controller || this.alias);
             if (ctrl.getSubscription(topic)) {
@@ -176,6 +179,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "enableHeartbeat", null);
+__decorate([
+    CanInvoke_1.CanInvoke(false),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ControllerBase.prototype, "disbaleHeartbeat", null);
 __decorate([
     CanInvoke_1.CanInvoke(false),
     __metadata("design:type", Function),

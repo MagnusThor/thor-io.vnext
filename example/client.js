@@ -6,6 +6,8 @@ class TestClient {
         this.factory = new thor_io_client_vnext_1.Factory("ws://localhost:1337", ["mycontroller"]);
         this.factory.OnOpen = (controller) => {
             this.controllers = controller;
+            console.log(controller);
+            controller.Connect();
         };
     }
 }

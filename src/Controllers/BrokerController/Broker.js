@@ -10,12 +10,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const CanInvoke_1 = require("../../Decorators/CanInvoke");
-const ControllerBase_1 = require("../../Controller/ControllerBase");
 const Connection_1 = require("../../Connection");
 const ControllerProperties_1 = require("../../Decorators/ControllerProperties");
 const PeerConnection_1 = require("./Models/PeerConnection");
 const Signal_1 = require("./Models/Signal");
 const StringUtils_1 = require("../../Utils/StringUtils");
+const ControllerBase_1 = require("../../Controller/ControllerBase");
 let BrokerController = class BrokerController extends ControllerBase_1.ControllerBase {
     constructor(connection) {
         super(connection);

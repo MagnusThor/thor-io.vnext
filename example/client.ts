@@ -10,10 +10,13 @@ export class TestClient{
          
             this.factory = new Factory("ws://localhost:1337",["mycontroller"]);
             
-            this.factory.OnOpen = (controller: Controller) => {
-    
-                this.controllers = controller;
-                
+
+            this.factory.OnOpen = (controller: Controller) => {    
+                this.controllers = controller;               
+
+                console.log(controller);
+
+                controller.Connect();
 
             };                
         

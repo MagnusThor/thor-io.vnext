@@ -1,8 +1,12 @@
-import { ControllerBase } from '../../Controller/ControllerBase';
 import { Connection } from '../../Connection';
 import { PeerConnection } from './Models/PeerConnection';
 import { Signal } from './Models/Signal';
-export declare class BrokerController extends ControllerBase {
+import { ControllerBase } from '../../Controller/ControllerBase';
+export interface IControllerBase {
+    onopen(e: any): void;
+    onclose(e: any): void;
+}
+export declare class BrokerController extends ControllerBase implements IControllerBase {
     Connections: Array<PeerConnection>;
     Peer: PeerConnection;
     localPeerId: string;

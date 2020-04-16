@@ -7,6 +7,8 @@ export declare class BufferMessageTransport implements ITransport {
     id: string;
     onMessage: (messsage: ITransportMessage) => void;
     constructor(socket: net.Socket);
+    onClose: () => void;
+    onOpen: () => void;
     readonly readyState: number;
     send(data: string): void;
     addEventListener(name: string, fn: any): void;

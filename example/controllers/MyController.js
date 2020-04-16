@@ -9,15 +9,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ControllerBase_1 = require("../../src/Controller/ControllerBase");
 const CanSet_1 = require("../../src/Decorators/CanSet");
 const CanInvoke_1 = require("../../src/Decorators/CanInvoke");
 const Connection_1 = require("../../src/Connection");
 const ControllerProperties_1 = require("../../src/Decorators/ControllerProperties");
+const ControllerBase_1 = require("../../src/Controller/ControllerBase");
 let MyController = class MyController extends ControllerBase_1.ControllerBase {
     constructor(connection) {
         super(connection);
         this.size = 0;
+    }
+    onclose() {
+        console.log(`Closed an instance of MyController for ${this.connection.id}`);
+    }
+    onopen() {
+        console.log(`Created an instance of MyController for ${this.connection.id}`);
     }
     invokeAndReturn(data) {
         this.invoke(data, "invokeAndReturn");

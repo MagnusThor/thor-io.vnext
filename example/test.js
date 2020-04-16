@@ -4,10 +4,10 @@ let express = require("express");
 let app = express();
 const ThorIO_1 = require("../src/ThorIO");
 const MyController_1 = require("../example/controllers/MyController");
-const Controller_1 = require("../src/Controllers/BrokerController/Controller");
+const Broker_1 = require("../src/Controllers/BrokerController/Broker");
 let Server = new ThorIO_1.ThorIO([
     MyController_1.MyController,
-    Controller_1.BrokerController
+    Broker_1.BrokerController
 ]);
 require("express-ws")(app);
 app.use("/", express.static("example"));

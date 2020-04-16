@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Message_1 = require("./Messages/Message");
+const TextMessage_1 = require("./Messages/TextMessage");
 const ClientInfo_1 = require("./Client/ClientInfo");
 class Connection {
     constructor(transport, connections, controllers) {
@@ -20,7 +20,7 @@ class Connection {
                             this.methodInvoker(controller, message.T, message.D);
                     }
                     else {
-                        let message = Message_1.Message.fromArrayBuffer(event.data);
+                        let message = TextMessage_1.TextMessage.fromArrayBuffer(event.data);
                         let controller = this.locateController(message.C);
                         if (controller)
                             this.methodInvoker(controller, message.T, message.D, message.B);
@@ -103,7 +103,12 @@ class Connection {
                 let controllerInstance = new resolved.instance(this);
                 this.addControllerInstance(controllerInstance);
                 controllerInstance.invoke(new ClientInfo_1.ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
-                controllerInstance.onopen();
+                if (controllerInstance.onopen)
+                    controllerInstance.onopen();
+                this.transport.onClose = (e) => {
+                    if (controllerInstance.onclose)
+                        controllerInstance.onclose();
+                };
                 return controllerInstance;
             }
         }

@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import { Message } from "../Messages/Message";
+import { TextMessage } from "../Messages/TextMessage";
 export interface ITransportMessage {
-    toMessage(): Message;
-    toBuffer(message?: Message): Buffer;
+    toMessage(): TextMessage;
+    toBuffer(message?: TextMessage): Buffer;
     binary: boolean;
     data: any;
 }

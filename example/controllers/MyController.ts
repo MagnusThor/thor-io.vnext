@@ -1,10 +1,9 @@
 
-import { ControllerBase } from '../../src/Controller/ControllerBase';
-
 import { CanSet } from '../../src/Decorators/CanSet';
 import { CanInvoke } from '../../src/Decorators/CanInvoke';
 import { Connection } from '../../src/Connection';
 import { ControllerProperties } from '../../src/Decorators/ControllerProperties';
+import { ControllerBase } from "../../src/Controller/ControllerBase";
 
 @ControllerProperties("mycontroller")
 export class MyController extends ControllerBase {
@@ -14,6 +13,13 @@ export class MyController extends ControllerBase {
     constructor(connection: Connection) {
         super(connection);
         this.size = 0; 
+    }
+    onclose(){
+        console.log(`Closed an instance of MyController for ${this.connection.id}`);
+    }
+
+    onopen(){
+        console.log(`Created an instance of MyController for ${this.connection.id}`);
     }
 
     @CanInvoke(true)

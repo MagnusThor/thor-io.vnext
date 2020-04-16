@@ -1,59 +1,26 @@
 import { BufferUtils } from '../Utils/BufferUtils';
-
+import { Utils } from 'thor-io.client-vnext';
 /**
  *
  *
  * @export
  * @class Message
  */
-export class Message {
-    /**
-     *
-     *
-     * @type {Buffer}
-     * @memberOf Message
-     */
+export class TextMessage {
     B: Buffer;
-    /**
-     *
-     *
-     * @type {string}
-     * @memberOf Message
-     */
     T: string;
-    /**
-     *
-     *
-     * @type {*}
-     * @memberOf Message
-     */
     D: any;
-    /**
-     *
-     *
-     * @type {string}
-     * @memberOf Message
-     */
     C: string;
-    /**
-     *
-     *
-     * @type {Boolean}
-     * @memberOf Message
-     */
     isBinary: Boolean;
-    /**
-     *
-     *
-     * @readonly
-     * @type {*}
-     * @memberOf Message
-     */
+    I:string;
+    F: boolean
     get JSON(): any {
         return {
             T: this.T,
             D: JSON.stringify(this.D),
-            C: this.C
+            C: this.C,
+            I: this.I,
+            F: this.F
         };
     }
     ;
@@ -67,11 +34,13 @@ export class Message {
      *
      * @memberOf Message
      */
-    constructor(topic: string, data: any, controller: string, arrayBuffer?: Buffer) {
+    constructor(topic: string, data: any, controller: string, arrayBuffer?: Buffer,uuid?:string,isFinal?:boolean) {
         this.D = data;
         this.T = topic;
         this.C = controller;
         this.B = arrayBuffer;
+        this.I = uuid || Utils.newGuid();
+        this.F = true;
         if (arrayBuffer)
             this.isBinary = true;
     }
@@ -90,19 +59,19 @@ export class Message {
      *
      * @static
      * @param {Buffer} buffer
-     * @returns {Message}
+     * @returns {TextMessage}
      *
      * @memberOf Message
      */
-    static fromArrayBuffer(buffer: Buffer): Message {
+    static fromArrayBuffer(buffer: Buffer): TextMessage {
         let headerLen = 8;
         let header = buffer.slice(0, 8);
         let payloadLength = BufferUtils.arrayToLong(header);
         let message = buffer.slice(headerLen, payloadLength + headerLen);
         let blobOffset = headerLen + payloadLength;
         let blob = buffer.slice(blobOffset, buffer.byteLength);
-        let data = JSON.parse(message.toString());
-        return new Message(data.T, data.D, data.C, blob);
+        let data = JSON.parse(message.toString()) as TextMessage
+        return new TextMessage(data.T, data.D, data.C, blob,data.I,data.F);
     }
     /**
      *

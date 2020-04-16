@@ -2,8 +2,8 @@ import * as net from 'net';
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { BufferMessage } from '../Messages/BufferMessage';
-import { BufferUtils } from '../Utils/BufferUtils';
 import { StringUtils } from '../Utils/StringUtils';
+import { IInterceptor } from '../Interfaces/IInterceptor';
 /**
  *
  *
@@ -41,6 +41,9 @@ export class BufferMessageTransport implements ITransport {
             this.onMessage(bm);
         });
     }
+    interceptors: Map<string, IInterceptor>;
+    onClose: () => void;
+    onOpen: () => void;
     /**
      *
      *

@@ -4,7 +4,7 @@ import { ITransport } from './Interfaces/ITransport';
 import { ControllerBase } from './Controller/ControllerBase';
 export declare class Connection {
     transport: ITransport;
-    connections: Array<Connection>;
+    connections: Map<string, Connection>;
     private controllers;
     errors: Array<any>;
     pingPongInterval: number;
@@ -12,7 +12,7 @@ export declare class Connection {
     clientInfo: ClientInfo;
     private methodInvoker;
     readonly id: string;
-    constructor(transport: ITransport, connections: Array<Connection>, controllers: Array<Plugin<ControllerBase>>);
+    constructor(transport: ITransport, connections: Map<string, Connection>, controllers: Array<Plugin<ControllerBase>>);
     private addError;
     hasController(alias: string): boolean;
     removeController(alias: string): boolean;

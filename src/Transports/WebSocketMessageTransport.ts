@@ -2,6 +2,7 @@ import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { WebSocketMessage } from '../Messages/WebSocketMessage';
 import { StringUtils } from '../Utils/StringUtils';
+import { IInterceptor } from '../Interfaces/IInterceptor';
 
 /**
  *
@@ -78,10 +79,16 @@ export class WebSocketMessageTransport implements ITransport {
     constructor(socket: any) {
         this.id = StringUtils.newGuid();
         this.socket = socket;
-        this.socket.addEventListener("message", (event: any) => {
+        this.socket.addEventListener("message", (event: any) => {            
             this.onMessage(new WebSocketMessage(event.data, typeof(event.data) != "string" ));
-        });
+        });       
+    
+
+
     }
+    interceptors: Map<string, IInterceptor>;
+    onClose: (ev:any) => void;
+    onOpen: (ev:any) => void;
     /**
      *
      *

@@ -5,10 +5,11 @@ const Connection_1 = require("./Connection");
 const WebSocketMessageTransport_1 = require("./Transports/WebSocketMessageTransport");
 const net = require("net");
 class ThorIO {
-    constructor(controllers) {
+    constructor(controllers, interceptors) {
         this.endpoints = new Array();
-        this.connections = new Array();
+        this.connections = new Map();
         this.controllers = new Array();
+        this.interceptors = interceptors;
         controllers.forEach((ctrl) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";
@@ -26,12 +27,7 @@ class ThorIO {
     }
     removeConnection(id, reason) {
         try {
-            let connection = this.connections.find((pre) => {
-                return pre.id === id;
-            });
-            let index = this.connections.indexOf(connection);
-            if (index >= 0)
-                this.connections.splice(index, 1);
+            this.connections.delete(id);
         }
         catch (error) {
         }
@@ -52,9 +48,11 @@ class ThorIO {
     }
     addConnection(transport) {
         transport.addEventListener("close", (reason) => {
+            if (transport.onClose)
+                transport.onClose(reason);
             this.removeConnection(transport.id, reason);
         });
-        this.connections.push(new Connection_1.Connection(transport, this.connections, this.controllers));
+        this.connections.set(transport.id, new Connection_1.Connection(transport, this.connections, this.controllers));
     }
 }
 exports.ThorIO = ThorIO;

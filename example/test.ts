@@ -6,7 +6,7 @@ import { ThorIO } from '../src/ThorIO';
 
 // import your controllers here...
 import {MyController} from '../example/controllers/MyController'
-import { BrokerController } from '../src/Controllers/BrokerController/Controller';
+import { BrokerController } from '../src/Controllers/BrokerController/Broker';
 
 
 let Server = new ThorIO(

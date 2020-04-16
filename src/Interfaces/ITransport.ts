@@ -1,4 +1,6 @@
 import { ITransportMessage } from "./ITransportMessage";
+import { IInterceptor } from "./IInterceptor";
+
 /**
  *
  *
@@ -6,65 +8,15 @@ import { ITransportMessage } from "./ITransportMessage";
  * @interface ITransport
  */
 export interface ITransport {
-    /**
-     *
-     *
-     * @type {string}
-     * @memberOf ITransport
-     */
     id: string;
-    /**
-     *
-     *
-     * @param {*} data
-     *
-     * @memberOf ITransport
-     */
-    send(data: any);
-    /**
-     *
-     *
-     * @param {number} reason
-     * @param {*} message
-     *
-     * @memberOf ITransport
-     */
-    close(reason: number, message: any);
-    /**
-     *
-     *
-     * @param {string} topic
-     * @param {Function} fn
-     *
-     * @memberOf ITransport
-     */
-    addEventListener(topic: string, fn: Function);
-    /**
-     *
-     *
-     * @type {*}
-     * @memberOf ITransport
-     */
     socket: any;
-    /**
-     *
-     *
-     * @type {number}
-     * @memberOf ITransport
-     */
     readyState: number;
-    /**
-     *
-     *
-     *
-     * @memberOf ITransport
-     */
+    send(data: any);
+    close(reason: number, message: any);
+    addEventListener(topic: string, fn: Function);
     ping();
-    /**
-     *
-     *
-     *
-     * @memberOf ITransport
-     */
     onMessage: (message: ITransportMessage) => void;
+    onClose: (e: any) => void;
+    onOpen: (e: any) => void;
+    interceptors: Map<string,IInterceptor>;
 }

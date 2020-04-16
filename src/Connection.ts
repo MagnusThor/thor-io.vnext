@@ -1,5 +1,5 @@
 import { Plugin } from './Plugin';
-import { Message } from './Messages/Message';
+import { TextMessage } from './Messages/TextMessage';
 import { ClientInfo } from './Client/ClientInfo';
 import { ITransport } from './Interfaces/ITransport';
 import { ITransportMessage } from './Interfaces/ITransportMessage';
@@ -89,7 +89,8 @@ export class Connection {
      *
      * @memberOf Connection
      */
-    constructor(public transport: ITransport, public connections: Array<Connection>, private controllers: Array<Plugin<ControllerBase>>) {
+    constructor(public transport: ITransport, public connections: Map<string,Connection>, 
+        private controllers: Array<Plugin<ControllerBase>>) {
         this.connections = connections;
         //this.controllerInstances = new Array<ControllerBase>();
         this.controllerInstances = new Map<string, ControllerBase>();
@@ -110,7 +111,7 @@ export class Connection {
                             this.methodInvoker(controller, message.T, message.D);
                     }
                     else {
-                        let message = Message.fromArrayBuffer(event.data);
+                        let message = TextMessage.fromArrayBuffer(event.data);
                         let controller = this.locateController(message.C);
                         if (controller)
                             this.methodInvoker(controller, message.T, message.D, message.B);
@@ -243,7 +244,14 @@ export class Connection {
                 let controllerInstance = new resolved.instance(this)
                 this.addControllerInstance(controllerInstance);
                 controllerInstance.invoke(new ClientInfo(this.id, controllerInstance.alias), "___open", controllerInstance.alias);
-                controllerInstance.onopen();
+                if(controllerInstance.onopen)
+                    controllerInstance.onopen();
+                this.transport.onClose = (e:any) => {
+                    if(controllerInstance.onclose)
+                            controllerInstance.onclose();  
+                };
+                
+
                 return controllerInstance;
             }
         }

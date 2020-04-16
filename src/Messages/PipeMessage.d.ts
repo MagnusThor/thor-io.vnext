@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { Message } from './Message';
+import { TextMessage } from './TextMessage';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 export declare class PipeMessage implements ITransportMessage {
     data: any;
@@ -8,5 +8,5 @@ export declare class PipeMessage implements ITransportMessage {
     private arr;
     constructor(data: any, binary: boolean);
     toBuffer(): Buffer;
-    toMessage(): Message;
+    toMessage(): TextMessage;
 }

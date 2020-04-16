@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Message_1 = require("./Message");
+const TextMessage_1 = require("./TextMessage");
 class BufferMessage {
     constructor(data, binary) {
         this.data = data;
@@ -17,7 +17,7 @@ class BufferMessage {
         const controller = this.data.toString("utf-8", offset, offset + cLen);
         offset += cLen;
         const data = this.data.toString("utf-8", offset, offset + dLen);
-        let message = new Message_1.Message(topic, data, controller);
+        let message = new TextMessage_1.TextMessage(topic, data, controller);
         return message;
     }
     toBuffer() {

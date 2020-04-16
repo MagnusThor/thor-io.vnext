@@ -2,6 +2,7 @@
 import { ITransport } from '../Interfaces/ITransport';
 import { PipeMessage } from '../Messages/PipeMessage';
 import * as net from 'net';
+import { IInterceptor } from '../Interfaces/IInterceptor';
 export declare class PipeMessageTransport implements ITransport {
     socket: net.Socket;
     id: string;
@@ -12,4 +13,7 @@ export declare class PipeMessageTransport implements ITransport {
     readonly readyState: number;
     ping(): void;
     constructor(socket: net.Socket);
+    interceptors: Map<string, IInterceptor>;
+    onClose: () => void;
+    onOpen: () => void;
 }

@@ -1,4 +1,4 @@
-import { Message } from './Message';
+import { TextMessage } from './TextMessage';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 /**
  *
@@ -21,11 +21,11 @@ export class BufferMessage implements ITransportMessage {
     /**
      *
      *
-     * @returns {Message}
+     * @returns {TextMessage}
      *
      * @memberOf BufferMessage
      */
-    toMessage(): Message {
+    toMessage(): TextMessage {
         const headerLen = 3;
         const tLen = this.data.readUInt8(0);
         const cLen = this.data.readUInt8(1);
@@ -36,7 +36,7 @@ export class BufferMessage implements ITransportMessage {
         const controller = this.data.toString("utf-8", offset, offset + cLen);
         offset += cLen;
         const data = this.data.toString("utf-8", offset, offset + dLen);
-        let message = new Message(topic, data, controller);
+        let message = new TextMessage(topic, data, controller);
         return message;
     }
     /**
@@ -47,7 +47,7 @@ export class BufferMessage implements ITransportMessage {
      * @memberOf BufferMessage
      */
     toBuffer(): Buffer {
-        let message = JSON.parse(this.data.toString()) as Message;
+        let message = JSON.parse(this.data.toString()) as TextMessage;
         const header = 3;
         let offset = 0;
         const tLen = message.T.length;

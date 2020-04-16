@@ -1,20 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const BufferUtils_1 = require("../Utils/BufferUtils");
-class Message {
+const thor_io_client_vnext_1 = require("thor-io.client-vnext");
+class TextMessage {
     get JSON() {
         return {
             T: this.T,
             D: JSON.stringify(this.D),
-            C: this.C
+            C: this.C,
+            I: this.I,
+            F: this.F
         };
     }
     ;
-    constructor(topic, data, controller, arrayBuffer) {
+    constructor(topic, data, controller, arrayBuffer, uuid, isFinal) {
         this.D = data;
         this.T = topic;
         this.C = controller;
         this.B = arrayBuffer;
+        this.I = uuid || thor_io_client_vnext_1.Utils.newGuid();
+        this.F = true;
         if (arrayBuffer)
             this.isBinary = true;
     }
@@ -29,7 +34,7 @@ class Message {
         let blobOffset = headerLen + payloadLength;
         let blob = buffer.slice(blobOffset, buffer.byteLength);
         let data = JSON.parse(message.toString());
-        return new Message(data.T, data.D, data.C, blob);
+        return new TextMessage(data.T, data.D, data.C, blob, data.I, data.F);
     }
     toArrayBuffer() {
         let messagePayload = this.toString();
@@ -42,4 +47,4 @@ class Message {
         return buffer;
     }
 }
-exports.Message = Message;
+exports.TextMessage = TextMessage;

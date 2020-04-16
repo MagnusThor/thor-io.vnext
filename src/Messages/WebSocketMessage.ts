@@ -1,4 +1,4 @@
-import { Message } from './Message';
+import { TextMessage } from './TextMessage';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 /**
  *
@@ -31,11 +31,11 @@ export class WebSocketMessage implements ITransportMessage {
     /**
      *
      *
-     * @returns {Message}
+     * @returns {TextMessage}
      *
      * @memberOf WebSocketMessage
      */
-    toMessage(): Message {
-        return JSON.parse(this.data) as Message;
+    toMessage(): TextMessage {
+        return JSON.parse(this.data) as TextMessage;
     }
 }

@@ -1,20 +1,15 @@
 import { CanInvoke } from '../Decorators/CanInvoke';
 import { CanSet } from '../Decorators/CanSet';
-import { Message } from '../Messages/Message';
+import { TextMessage } from '../Messages/TextMessage';
 import { Connection } from '../Connection';
 import { Subscription } from '../Subscription';
 import { ErrorMessage } from '../Messages/ErrorMessage';
-/**
- *
- *
- * @export
- * @class Controller
- * @implements {Controller}
- */
- export interface ControllerBase {
-            new(connection:Connection): ControllerBase
-  }
- export class ControllerBase  {
+
+export interface ControllerBase {
+    new(connection: Connection): ControllerBase;
+}
+
+export class ControllerBase  {
     /**
      *
      *
@@ -66,6 +61,7 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
      */
     @CanSet(false)
     private heartbeatInterval: number;
+    private interval: NodeJS.Timeout;
     /**
      * Creates an instance of Controller.
      *
@@ -93,15 +89,16 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
         this.connection.transport.addEventListener("pong", () => {
             this.lastPong = new Date();
         });
-        /**
-         *
-         */
-        let interval = setInterval(() => {
+        this.interval = setInterval(() => {
             this.lastPing = new Date();
             if (this.connection.transport.readyState === 1)
                 this.connection.transport.ping();
         }, this.heartbeatInterval);
     }
+    @CanInvoke(false)
+    public disbaleHeartbeat():void {
+        clearInterval(this.interval);
+    } 
     /**
      *
      *
@@ -148,10 +145,10 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
     @CanInvoke(false)
     getConnections(alias?: string): Array<Connection> {
         if (!alias) {
-            return this.connection.connections;
+            return Array.from(this.connection.connections.values());
         }
         else {
-            return this.connection.connections.map((conn: Connection) => {
+            return Array.from(this.connection.connections.values()).map((conn: Connection) => {
                 if (conn.hasController(this.alias))
                     return conn;
             });
@@ -257,8 +254,7 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
         let connections = this.findOn<this>(controller || this.alias, predicate);
         connections.forEach((ctrl: ControllerBase) => {
             ctrl.invoke(data, topic, controller || this.alias, buffer);
-        });
-       
+        });       
     }
     /**
      *
@@ -273,7 +269,7 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
      */
     @CanInvoke(false)
     invoke(data: any, topic: string, controller?: string, buffer?: any):ControllerBase {
-        let msg = new Message(topic, data, controller || this.alias, buffer);
+        let msg = new TextMessage(topic, data, controller || this.alias, buffer);
         if (this.connection.transport)
             this.connection.transport.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
         return this;
@@ -306,7 +302,7 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
      */
     @CanInvoke(false)
     publishToAll(data: any, topic: string, controller?: string) {
-        let msg = new Message(topic, data, this.alias);
+        let msg = new TextMessage(topic, data, this.alias);
         this.getConnections().forEach((connection: Connection) => {
             let ctrl = connection.getController(controller || this.alias);
             if (ctrl.getSubscription(topic)) {

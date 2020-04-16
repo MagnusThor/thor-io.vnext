@@ -1,12 +1,16 @@
 import { CanInvoke } from '../../Decorators/CanInvoke';
-
-
-import { ControllerBase } from '../../Controller/ControllerBase';
 import { Connection } from '../../Connection';
 import { ControllerProperties } from '../../Decorators/ControllerProperties';
 import { PeerConnection } from './Models/PeerConnection';
 import { Signal } from './Models/Signal';
 import { StringUtils } from '../../Utils/StringUtils';
+import { ControllerBase } from '../../Controller/ControllerBase';
+
+export interface IControllerBase{
+        onopen(e:any):void;
+        onclose(e:any):void;
+}
+
 /**
  *
  *
@@ -15,7 +19,7 @@ import { StringUtils } from '../../Utils/StringUtils';
  * @extends {ControllerBase}
  */
 @ControllerProperties("contextBroker", false, 7500)
-export class BrokerController extends ControllerBase {
+export class BrokerController extends ControllerBase implements IControllerBase {
     /**
      *
      *
@@ -58,6 +62,7 @@ export class BrokerController extends ControllerBase {
         this.Peer = new PeerConnection(StringUtils.newGuid(), this.connection.id);
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
+   
     /**
      *
      *
@@ -140,13 +145,7 @@ export class BrokerController extends ControllerBase {
      * @memberOf BrokerController
      */
     getPeerConnections(peerConnetion: PeerConnection): Array<ControllerBase> {
-        /**
-         *
-         *
-         * @param {BrokerController} pre
-         * @returns
-         */
-        let match = this.findOn(this.alias, (pre: BrokerController) => {
+           let match = this.findOn<BrokerController>(this.alias, (pre: BrokerController) => {
             return pre.Peer.context === this.Peer.context && pre.Peer.peerId !== peerConnetion.peerId;
         });
         return match;

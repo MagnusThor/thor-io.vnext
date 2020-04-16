@@ -10,8 +10,10 @@ export declare class ControllerBase {
     private lastPong;
     private lastPing;
     private heartbeatInterval;
+    private interval;
     constructor(connection: Connection);
     private enableHeartbeat;
+    disbaleHeartbeat(): void;
     canInvokeMethod(method: string): boolean;
     findOn<T>(alias: string, predicate: (item: any) => boolean): Array<ControllerBase>;
     getConnections(alias?: string): Array<Connection>;

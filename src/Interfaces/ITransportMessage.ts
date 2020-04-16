@@ -1,4 +1,4 @@
-import { Message } from "../Messages/Message";
+import { TextMessage } from "../Messages/TextMessage";
 
 /**
  *
@@ -10,20 +10,20 @@ export interface ITransportMessage {
     /**
      *
      *
-     * @returns {Message}
+     * @returns {TextMessage}
      *
      * @memberOf ITransportMessage
      */
-    toMessage(): Message;
+    toMessage(): TextMessage;
     /**
      *
      *
-     * @param {Message} [message]
+     * @param {TextMessage} [message]
      * @returns {Buffer}
      *
      * @memberOf ITransportMessage
      */
-    toBuffer(message?: Message): Buffer;
+    toBuffer(message?: TextMessage): Buffer;
     /**
      *
      *

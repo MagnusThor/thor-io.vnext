@@ -11,7 +11,7 @@ export {Subscription } from './src/Subscription';
 export {BufferUtils } from './src/Utils/BufferUtils';
 export {Plugin } from './src/Plugin';
 
-export {Message} from'./src/Messages/Message';
+export {TextMessage } from'./src/Messages/TextMessage';
 export {PipeMessage } from './src/Messages/PipeMessage';
 export {WebSocketMessage} from'./src/Messages/WebSocketMessage';
 export {BufferMessage} from'./src/Messages/BufferMessage';
@@ -24,7 +24,7 @@ export {CanSet} from './src/Decorators/CanSet';
 export {CanInvoke} from './src/Decorators/CanInvoke';
 export {ControllerProperties} from './src/Decorators/ControllerProperties'
 
-export {BrokerController} from './src/Controllers/BrokerController/Controller';
+export {BrokerController} from './src/Controllers/BrokerController/Broker';
 export {Signal} from './src/Controllers/BrokerController/Models/Signal'
 export {PeerConnection} from './src/Controllers/BrokerController/Models/PeerConnection'
 export {InstantMessage} from './src/Controllers/BrokerController/Models/InstantMessage'

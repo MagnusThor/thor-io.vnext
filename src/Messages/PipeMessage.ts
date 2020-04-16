@@ -1,4 +1,4 @@
-import { Message } from './Message';
+import { TextMessage } from './TextMessage';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 /**
  *
@@ -12,10 +12,10 @@ export class PipeMessage implements ITransportMessage {
      *
      *
      * @private
-     * @type {Message}
+     * @type {TextMessage}
      * @memberOf PipeMessage
      */
-    private message: Message;
+    private message: TextMessage;
     /**
      *
      *
@@ -33,7 +33,7 @@ export class PipeMessage implements ITransportMessage {
      * @memberOf PipeMessage
      */
     constructor(public data: any, public binary: boolean) {
-        this.message = JSON.parse(this.data) as Message;
+        this.message = JSON.parse(this.data) as TextMessage;
         this.arr = new Array<string>();
         this.arr.push(this.message.C);
         this.arr.push(this.message.T);
@@ -52,11 +52,11 @@ export class PipeMessage implements ITransportMessage {
     /**
      *
      *
-     * @returns {Message}
+     * @returns {TextMessage}
      *
      * @memberOf PipeMessage
      */
-    public toMessage(): Message {
+    public toMessage(): TextMessage {
         return this.message;
     }
 }

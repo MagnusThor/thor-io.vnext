@@ -3,7 +3,8 @@ import { Connection } from './Connection';
 import { WebSocketMessageTransport } from "./Transports/WebSocketMessageTransport";
 import { ITransport } from "./Interfaces/ITransport";
 import * as net from 'net';
-import { ControllerBase } from './Controller/ControllerBase';
+import { ControllerBase } from "./Controller/ControllerBase";
+import { IInterceptor } from './Interfaces/IInterceptor';
 /**
  * Creates an hosting container / hug
  *
@@ -26,7 +27,7 @@ export class ThorIO {
      * @type {Array<Connection>}
      * @memberOf ThorIO
      */
-    private connections: Array<Connection>;
+    private connections: Map<string,Connection>;
     /**
      *
      *
@@ -35,6 +36,7 @@ export class ThorIO {
      * @memberOf ThorIO
      */
     private endpoints: Array<any>;
+    interceptors: any;
     /**
      * Creates an instance of ThorIO.
      *
@@ -42,10 +44,13 @@ export class ThorIO {
      *
      * @memberOf ThorIO
      */
-    constructor(controllers: Array<any>) {
+    constructor(controllers: Array<any>,interceptors?:Array<IInterceptor>) {
         this.endpoints = new Array<any>();
-        this.connections = new Array<Connection>();
+        this.connections = new  Map<string,Connection>();
         this.controllers = new Array<Plugin<ControllerBase>>();
+
+        this.interceptors = interceptors; 
+
         controllers.forEach((ctrl: ControllerBase) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";
@@ -64,7 +69,8 @@ export class ThorIO {
     public createSealdControllers() {
         this.controllers.forEach((controller: Plugin<ControllerBase>) => {
             if (Reflect.getMetadata("seald", controller.instance)) {
-                new controller.instance(new Connection(null, this.connections, this.controllers));
+                new controller.instance(new Connection(null, 
+                   this.connections, this.controllers));
             }
         });
     }
@@ -77,19 +83,8 @@ export class ThorIO {
      * @memberOf ThorIO
      */
     removeConnection(id: string, reason: number): void {
-        try {
-            /**
-             *
-             *
-             * @param {Connection} pre
-             * @returns
-             */
-            let connection = this.connections.find((pre: Connection) => {
-                return pre.id === id;
-            });
-            let index = this.connections.indexOf(connection);
-            if (index >= 0)
-                this.connections.splice(index, 1);
+        try {          
+            this.connections.delete(id);                            
         }
         catch (error) {
         }
@@ -143,9 +138,11 @@ export class ThorIO {
      * @memberOf ThorIO
      */
     private addConnection(transport: ITransport): void {
-        transport.addEventListener("close", (reason) => {
+        transport.addEventListener("close", (reason) => {   
+            if(transport.onClose)
+                    transport.onClose(reason);
             this.removeConnection(transport.id, reason);
         });
-        this.connections.push(new Connection(transport, this.connections, this.controllers));
+        this.connections.set(transport.id,new Connection(transport, this.connections, this.controllers));
     }
 }

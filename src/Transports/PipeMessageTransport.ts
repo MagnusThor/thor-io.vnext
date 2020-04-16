@@ -1,8 +1,9 @@
-import { Message } from '../Messages/Message';
 import { ITransport } from '../Interfaces/ITransport';
 import { PipeMessage } from '../Messages/PipeMessage';
 import * as net from 'net';
 import { StringUtils } from '../Utils/StringUtils';
+import { TextMessage } from '../Messages/TextMessage';
+import { IInterceptor } from '../Interfaces/IInterceptor';
 /**
  *
  *
@@ -81,7 +82,7 @@ export class PipeMessageTransport implements ITransport {
     }
     /**
      * Creates an instance of PipeMessageTransport.
-     *
+     *s
      * @param {net.Socket} socket
      *
      * @memberOf PipeMessageTransport
@@ -90,8 +91,12 @@ export class PipeMessageTransport implements ITransport {
         this.id = StringUtils.newGuid();
         socket.addListener("data", (buffer: Buffer) => {
             let args = buffer.toString().split("|");
-            let message = new Message(args[1], args[2], args[0]);
+            let message = new TextMessage(args[1], args[2], args[0]);
             this.onMessage(new PipeMessage(message.toString(), false));
         });
+        
     }
+    interceptors: Map<string, IInterceptor>;
+    onClose: () => void;
+    onOpen: () => void;
 }
