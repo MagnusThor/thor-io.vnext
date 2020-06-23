@@ -137,7 +137,6 @@ class ControllerBase {
         this.subscriptions.push(subscription);
         return subscription;
     }
-    ;
     ___unsubscribe(subscription) {
         let index = this.subscriptions.indexOf(this.getSubscription(subscription.topic));
         if (index >= 0) {
@@ -147,7 +146,23 @@ class ControllerBase {
         else
             return false;
     }
-    ;
+    get queryParameters() {
+        let result = new Map();
+        Object.keys(this.connection.transport.request["query"]).forEach(k => {
+            result.set(k, this.connection.transport.request["query"][k]);
+        });
+        return result;
+    }
+    get headers() {
+        let headers = new Map();
+        Object.keys(this.connection.transport.request["headers"]).forEach(k => {
+            headers.set(k, this.connection.transport.request["headers"][k]);
+        });
+        return headers;
+    }
+    get request() {
+        return this.connection.transport.request;
+    }
 }
 __decorate([
     CanSet_1.CanSet(false),

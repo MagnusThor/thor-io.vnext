@@ -8,8 +8,7 @@ import { ErrorMessage } from '../Messages/ErrorMessage';
 export interface ControllerBase {
     new(connection: Connection): ControllerBase;
 }
-
-export class ControllerBase  {
+export class ControllerBase {
     /**
      *
      *
@@ -96,9 +95,9 @@ export class ControllerBase  {
         }, this.heartbeatInterval);
     }
     @CanInvoke(false)
-    public disbaleHeartbeat():void {
+    public disbaleHeartbeat(): void {
         clearInterval(this.interval);
-    } 
+    }
     /**
      *
      *
@@ -217,7 +216,7 @@ export class ControllerBase  {
             .forEach((connection: Connection) => {
                 connection.getController(controller || this.alias).invoke(data, topic, controller || this.alias, buffer);
             });
-        
+
     }
     /*
      *
@@ -235,7 +234,7 @@ export class ControllerBase  {
         this.getConnections().forEach((connection: Connection) => {
             connection.getController(controller || this.alias).invoke(data, topic, controller || this.alias, buffer);
         });
-       
+
     }
     /**
      *
@@ -254,7 +253,7 @@ export class ControllerBase  {
         let connections = this.findOn<this>(controller || this.alias, predicate);
         connections.forEach((ctrl: ControllerBase) => {
             ctrl.invoke(data, topic, controller || this.alias, buffer);
-        });       
+        });
     }
     /**
      *
@@ -268,7 +267,7 @@ export class ControllerBase  {
      * @memberOf Controller
      */
     @CanInvoke(false)
-    invoke(data: any, topic: string, controller?: string, buffer?: any):ControllerBase {
+    invoke(data: any, topic: string, controller?: string, buffer?: any): ControllerBase {
         let msg = new TextMessage(topic, data, controller || this.alias, buffer);
         if (this.connection.transport)
             this.connection.transport.send(!msg.isBinary ? msg.toString() : msg.toArrayBuffer());
@@ -285,7 +284,7 @@ export class ControllerBase  {
      * @memberOf Controller
      */
     @CanInvoke(false)
-    publish(data: any, topic: string, controller?: string):ControllerBase {
+    publish(data: any, topic: string, controller?: string): ControllerBase {
         if (!this.hasSubscription(topic))
             return;
         return this.invoke(data, topic, controller || this.alias);
@@ -309,7 +308,7 @@ export class ControllerBase  {
                 connection.transport.send(msg.toString());
             }
         });
-      
+
     }
     /**
      *
@@ -417,7 +416,7 @@ export class ControllerBase  {
         this.subscriptions.push(subscription);
         return subscription;
     }
-    ;
+
     /**
      *
      *
@@ -436,5 +435,22 @@ export class ControllerBase  {
         else
             return false;
     }
-    ;
+    get queryParameters(): Map<string, any> {
+        let result = new Map<string, any>();
+        Object.keys(this.connection.transport.request["query"]).forEach(k => {
+            result.set(k, this.connection.transport.request["query"][k]);
+        });
+        return result;
+    }
+    get headers():Map<string,string>
+    {
+        let headers = new Map<string, any>();
+        Object.keys(this.connection.transport.request["headers"]).forEach(k => {
+            headers.set(k, this.connection.transport.request["headers"][k]);
+        });
+        return headers;
+    }
+    get request():any{
+        return this.connection.transport.request;
+    }
 }

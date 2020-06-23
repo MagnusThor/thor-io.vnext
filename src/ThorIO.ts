@@ -126,7 +126,7 @@ export class ThorIO {
      * @memberOf ThorIO
      */
     addWebSocket(ws: any, req: any): void {
-        let transport = new WebSocketMessageTransport(ws);
+        let transport = new WebSocketMessageTransport(ws,req);
         this.addConnection(transport);
     }
     /**

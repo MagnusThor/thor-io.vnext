@@ -11,7 +11,7 @@ let Server = new ThorIO_1.ThorIO([
 ]);
 require("express-ws")(app);
 app.use("/", express.static("example"));
-app.ws("/", function (ws, req) {
+app.ws("/", (ws, req) => {
     Server.addWebSocket(ws, req);
 });
 var port = process.env.PORT || 1337;

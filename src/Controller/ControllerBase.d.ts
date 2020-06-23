@@ -35,4 +35,7 @@ export declare class ControllerBase {
     ___close(): void;
     ___subscribe(subscription: Subscription, topic: string, controller: string): Subscription;
     ___unsubscribe(subscription: Subscription): boolean;
+    get queryParameters(): Map<string, any>;
+    get headers(): Map<string, string>;
+    get request(): any;
 }

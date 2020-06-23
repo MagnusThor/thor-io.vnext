@@ -3,6 +3,7 @@ import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { WebSocketMessage } from '../Messages/WebSocketMessage';
 import { StringUtils } from '../Utils/StringUtils';
 import { IInterceptor } from '../Interfaces/IInterceptor';
+import { IncomingMessage } from 'http';
 
 /**
  *
@@ -13,6 +14,8 @@ import { IInterceptor } from '../Interfaces/IInterceptor';
  */
 export class WebSocketMessageTransport implements ITransport {
  
+    request: IncomingMessage;
+
     /**
      *
      *
@@ -66,9 +69,7 @@ export class WebSocketMessageTransport implements ITransport {
      */
     addEventListener(name: string, fn: any) {
         this.socket.addEventListener(name, fn);
-    }
-
-    
+    }    
     /**
      * Creates an instance of WebSocketMessageTransport.
      *
@@ -76,15 +77,13 @@ export class WebSocketMessageTransport implements ITransport {
      *
      * @memberOf WebSocketMessageTransport
      */
-    constructor(socket: any) {
+    constructor(socket: any,req:IncomingMessage) {
         this.id = StringUtils.newGuid();
+        this.request = req;        
         this.socket = socket;
         this.socket.addEventListener("message", (event: any) => {            
             this.onMessage(new WebSocketMessage(event.data, typeof(event.data) != "string" ));
-        });       
-    
-
-
+        });         
     }
     interceptors: Map<string, IInterceptor>;
     onClose: (ev:any) => void;

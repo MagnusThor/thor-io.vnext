@@ -1,6 +1,6 @@
 import { ITransportMessage } from "./ITransportMessage";
 import { IInterceptor } from "./IInterceptor";
-
+import { IncomingMessage } from 'http';
 /**
  *
  *
@@ -19,4 +19,5 @@ export interface ITransport {
     onClose: (e: any) => void;
     onOpen: (e: any) => void;
     interceptors: Map<string,IInterceptor>;
+    request:IncomingMessage | any ;
 }

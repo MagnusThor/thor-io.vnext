@@ -8,9 +8,8 @@ export class TestClient{
     
         constructor(){
          
-            this.factory = new Factory("ws://localhost:1337",["mycontroller"]);
+            this.factory = new Factory("ws://localhost:1337",["mycontroller"],{foo:"bar",mokey:"face"});
             
-
             this.factory.OnOpen = (controller: Controller) => {    
                 this.controllers = controller;               
 

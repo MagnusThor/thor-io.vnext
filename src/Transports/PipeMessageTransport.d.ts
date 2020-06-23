@@ -10,9 +10,10 @@ export declare class PipeMessageTransport implements ITransport {
     send(data: any): void;
     close(reason: number, message: any): void;
     addEventListener(name: string, fn: any): void;
-    readonly readyState: number;
+    get readyState(): number;
     ping(): void;
     constructor(socket: net.Socket);
+    request: any;
     interceptors: Map<string, IInterceptor>;
     onClose: () => void;
     onOpen: () => void;

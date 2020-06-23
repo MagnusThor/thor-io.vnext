@@ -3,16 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BufferUtils_1 = require("../Utils/BufferUtils");
 const thor_io_client_vnext_1 = require("thor-io.client-vnext");
 class TextMessage {
-    get JSON() {
-        return {
-            T: this.T,
-            D: JSON.stringify(this.D),
-            C: this.C,
-            I: this.I,
-            F: this.F
-        };
-    }
-    ;
     constructor(topic, data, controller, arrayBuffer, uuid, isFinal) {
         this.D = data;
         this.T = topic;
@@ -23,6 +13,16 @@ class TextMessage {
         if (arrayBuffer)
             this.isBinary = true;
     }
+    get JSON() {
+        return {
+            T: this.T,
+            D: JSON.stringify(this.D),
+            C: this.C,
+            I: this.I,
+            F: this.F
+        };
+    }
+    ;
     toString() {
         return JSON.stringify(this.JSON);
     }

@@ -4,6 +4,7 @@ import * as net from 'net';
 import { StringUtils } from '../Utils/StringUtils';
 import { TextMessage } from '../Messages/TextMessage';
 import { IInterceptor } from '../Interfaces/IInterceptor';
+import { IncomingMessage } from 'http';
 /**
  *
  *
@@ -15,7 +16,7 @@ export class PipeMessageTransport implements ITransport {
   
     /**
      *
-     *
+     *no
      * @type {string}
      * @memberOf PipeMessageTransport
      */
@@ -96,6 +97,7 @@ export class PipeMessageTransport implements ITransport {
         });
         
     }
+    request: any;
     interceptors: Map<string, IInterceptor>;
     onClose: () => void;
     onOpen: () => void;

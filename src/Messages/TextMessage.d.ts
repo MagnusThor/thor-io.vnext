@@ -7,7 +7,7 @@ export declare class TextMessage {
     isBinary: Boolean;
     I: string;
     F: boolean;
-    readonly JSON: any;
+    get JSON(): any;
     constructor(topic: string, data: any, controller: string, arrayBuffer?: Buffer, uuid?: string, isFinal?: boolean);
     toString(): string;
     static fromArrayBuffer(buffer: Buffer): TextMessage;

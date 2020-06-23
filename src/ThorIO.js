@@ -43,7 +43,7 @@ class ThorIO {
         return endpoint;
     }
     addWebSocket(ws, req) {
-        let transport = new WebSocketMessageTransport_1.WebSocketMessageTransport(ws);
+        let transport = new WebSocketMessageTransport_1.WebSocketMessageTransport(ws, req);
         this.addConnection(transport);
     }
     addConnection(transport) {

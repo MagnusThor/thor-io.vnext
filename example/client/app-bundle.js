@@ -94,7 +94,7 @@
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\nObject.defineProperty(exports, \"__esModule\", { value: true });\nconst thor_io_client_vnext_1 = __webpack_require__(/*! thor-io.client-vnext */ \"./node_modules/thor-io.client-vnext/index.js\");\nclass TestClient {\n    constructor() {\n        this.factory = new thor_io_client_vnext_1.Factory(\"ws://localhost:1337\", [\"mycontroller\"]);\n        this.factory.OnOpen = (controller) => {\n            this.controllers = controller;\n            console.log(controller);\n            controller.Connect();\n        };\n    }\n}\nexports.TestClient = TestClient;\ndocument.addEventListener(\"DOMContentLoaded\", () => {\n    let testClient = new TestClient();\n    window[\"testClient\"] = testClient;\n});\n\n\n//# sourceURL=webpack:///./example/client.js?");
+eval("\nObject.defineProperty(exports, \"__esModule\", { value: true });\nconst thor_io_client_vnext_1 = __webpack_require__(/*! thor-io.client-vnext */ \"./node_modules/thor-io.client-vnext/index.js\");\nclass TestClient {\n    constructor() {\n        this.factory = new thor_io_client_vnext_1.Factory(\"ws://localhost:1337\", [\"mycontroller\"], { foo: \"bar\", mokey: \"face\" });\n        this.factory.OnOpen = (controller) => {\n            this.controllers = controller;\n            console.log(controller);\n            controller.Connect();\n        };\n    }\n}\nexports.TestClient = TestClient;\ndocument.addEventListener(\"DOMContentLoaded\", () => {\n    let testClient = new TestClient();\n    window[\"testClient\"] = testClient;\n});\n\n\n//# sourceURL=webpack:///./example/client.js?");
 
 /***/ }),
 

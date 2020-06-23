@@ -11,7 +11,7 @@ export declare class Connection {
     controllerInstances: Map<string, ControllerBase>;
     clientInfo: ClientInfo;
     private methodInvoker;
-    readonly id: string;
+    get id(): string;
     constructor(transport: ITransport, connections: Map<string, Connection>, controllers: Array<Plugin<ControllerBase>>);
     private addError;
     hasController(alias: string): boolean;

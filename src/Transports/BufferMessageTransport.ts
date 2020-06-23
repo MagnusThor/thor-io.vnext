@@ -4,6 +4,7 @@ import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { BufferMessage } from '../Messages/BufferMessage';
 import { StringUtils } from '../Utils/StringUtils';
 import { IInterceptor } from '../Interfaces/IInterceptor';
+import { IncomingMessage } from 'http';
 /**
  *
  *
@@ -41,6 +42,7 @@ export class BufferMessageTransport implements ITransport {
             this.onMessage(bm);
         });
     }
+    request: IncomingMessage | any;
     interceptors: Map<string, IInterceptor>;
     onClose: () => void;
     onOpen: () => void;

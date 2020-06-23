@@ -19,6 +19,15 @@ export class MyController extends ControllerBase {
     }
 
     onopen(){
+        this.queryParameters.forEach ( (p,v) => {
+            console.log(p,v);
+        });
+       
+        this.headers.forEach ( (p,v) => {
+            console.log(p,v);
+        });
+       
+        
         console.log(`Created an instance of MyController for ${this.connection.id}`);
     }
 
