@@ -15,6 +15,7 @@ const TextMessage_1 = require("../Messages/TextMessage");
 const Connection_1 = require("../Connection");
 const Subscription_1 = require("../Subscription");
 const ErrorMessage_1 = require("../Messages/ErrorMessage");
+const url_1 = require("url");
 class ControllerBase {
     constructor(connection) {
         this.connection = connection;
@@ -147,17 +148,18 @@ class ControllerBase {
             return false;
     }
     get queryParameters() {
-        let result = new Map();
-        Object.keys(this.connection.transport.request["query"]).forEach(k => {
-            result.set(k, this.connection.transport.request["query"][k]);
-        });
-        return result;
+        return new url_1.URLSearchParams(this.request.url.replace("/?", ""));
     }
     get headers() {
         let headers = new Map();
-        Object.keys(this.connection.transport.request["headers"]).forEach(k => {
-            headers.set(k, this.connection.transport.request["headers"][k]);
-        });
+        try {
+            Object.keys(this.connection.transport.request["headers"]).forEach(k => {
+                headers.set(k, this.connection.transport.request["headers"][k]);
+            });
+        }
+        catch (_a) {
+            return headers;
+        }
         return headers;
     }
     get request() {

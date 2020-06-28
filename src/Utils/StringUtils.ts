@@ -11,4 +11,7 @@ export class StringUtils {
         };
         return s4() + s4() + "-" + s4() + "-" + s4() + "-" + s4() + "-" + s4() + s4() + s4();
     }
+    static getParamsFromString(query:string){
+
+    }
 }

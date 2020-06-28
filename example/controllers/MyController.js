@@ -23,11 +23,8 @@ let MyController = class MyController extends ControllerBase_1.ControllerBase {
         console.log(`Closed an instance of MyController for ${this.connection.id}`);
     }
     onopen() {
-        this.queryParameters.forEach((p, v) => {
-            console.log(p, v);
-        });
-        this.headers.forEach((p, v) => {
-            console.log(p, v);
+        this.queryParameters.forEach((v, k) => {
+            console.log(k, v);
         });
         console.log(`Created an instance of MyController for ${this.connection.id}`);
     }

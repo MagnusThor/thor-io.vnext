@@ -1,9 +1,16 @@
 "use strict";
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const Plugin_1 = require("./Plugin");
 const Connection_1 = require("./Connection");
 const WebSocketMessageTransport_1 = require("./Transports/WebSocketMessageTransport");
-const net = require("net");
+const net = __importStar(require("net"));
 class ThorIO {
     constructor(controllers, interceptors) {
         this.endpoints = new Array();

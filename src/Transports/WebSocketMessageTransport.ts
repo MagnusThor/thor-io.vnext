@@ -14,7 +14,7 @@ import { IncomingMessage } from 'http';
  */
 export class WebSocketMessageTransport implements ITransport {
  
-    request: IncomingMessage;
+    request: IncomingMessage | Request;
 
     /**
      *

@@ -4,6 +4,7 @@ import { TextMessage } from '../Messages/TextMessage';
 import { Connection } from '../Connection';
 import { Subscription } from '../Subscription';
 import { ErrorMessage } from '../Messages/ErrorMessage';
+import { URLSearchParams } from 'url';
 
 export interface ControllerBase {
     new(connection: Connection): ControllerBase;
@@ -435,22 +436,22 @@ export class ControllerBase {
         else
             return false;
     }
-    get queryParameters(): Map<string, any> {
-        let result = new Map<string, any>();
-        Object.keys(this.connection.transport.request["query"]).forEach(k => {
-            result.set(k, this.connection.transport.request["query"][k]);
-        });
-        return result;
+    get queryParameters(): URLSearchParams {    
+        return new URLSearchParams(this.request.url.replace("/?",""));
     }
-    get headers():Map<string,string>
-    {
+    get headers(): Map<string, string> {
         let headers = new Map<string, any>();
-        Object.keys(this.connection.transport.request["headers"]).forEach(k => {
-            headers.set(k, this.connection.transport.request["headers"][k]);
-        });
+        try {
+            Object.keys(this.connection.transport.request["headers"]).forEach(k => {
+                headers.set(k, this.connection.transport.request["headers"][k]);
+            });
+
+        } catch{
+            return headers;
+        }
         return headers;
     }
-    get request():any{
+    get request(): any {
         return this.connection.transport.request;
     }
 }

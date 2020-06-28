@@ -1,29 +1,57 @@
-let express = require("express");
+import path from 'path';
+import fs from 'fs';
+import http from 'http';
+import https from 'https';
+import express from 'express';
+import webSocket from 'ws';
 
-let app = express();
-
-import { ThorIO } from '../src/ThorIO';
-
-// import your controllers here...
-import { MyController } from '../example/controllers/MyController'
+import { MyController } from './controllers/MyController';
 import { BrokerController } from '../src/Controllers/BrokerController/Broker';
+import { ThorIO } from '..';
 
+console.clear();
 
-let Server = new ThorIO(
+let port = +process.env.PORT;
+let server: http.Server | https.Server;
+let app = express();
+let rtc = new ThorIO(
     [
         MyController,
         BrokerController
     ]
 );
 
-require("express-ws")(app);
 
-app.use("/", express.static("example"));
+let rootPath = path.resolve('.');
 
-app.ws("/", (ws: WebSocket, req: any) => { 
-    Server.addWebSocket(ws, req);
+let clientPath = path.join(rootPath, "example");
+
+
+if (fs.existsSync(clientPath)) {
+    console.log(`Serving client files from ${clientPath}.`);
+    app.use("/", express.static(clientPath));
+}
+else {
+    console.log(`Serving no client files.`);
+    app.get("/", (_, res) => res.send('Kollokvium WebSocket Server is running'));
+}
+
+port = port || 1337;
+server = http.createServer((req, res) => {
+    app(req, res);
 });
 
-var port = process.env.PORT || 1337;
-app.listen(port);
-console.log("thor-io is serving on", port.toString());
+
+const ws = new webSocket.Server({ server });
+ws.on('connection', (ws, req) => {
+
+
+
+
+
+    rtc.addWebSocket(ws, req);
+});
+
+server.listen(port);
+
+console.log(`Kollokvium version ${process.env.KOLLOKVIUM_VERSION} is listening on ${port}`);

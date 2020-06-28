@@ -9,6 +9,7 @@
     "removeComments": true,
     "noImplicitAny": false,
     "declaration": true,
+    "esModuleInterop": true,
     "lib": ["es6", "dom"]
   },
   "exclude": [

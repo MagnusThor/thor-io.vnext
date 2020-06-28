@@ -91,7 +91,7 @@ $RECYCLE.BIN/
 # Exclude local DocumentRevisions
 
 dev
-test
+example
 webpack.config.js
 package-lock.json
 

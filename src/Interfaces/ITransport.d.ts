@@ -6,10 +6,10 @@ export interface ITransport {
     id: string;
     socket: any;
     readyState: number;
-    send(data: any): any;
-    close(reason: number, message: any): any;
-    addEventListener(topic: string, fn: Function): any;
-    ping(): any;
+    send(data: any): void;
+    close(reason: number, message: any): void;
+    addEventListener(topic: string, fn: Function): void;
+    ping(): void;
     onMessage: (message: ITransportMessage) => void;
     onClose: (e: any) => void;
     onOpen: (e: any) => void;

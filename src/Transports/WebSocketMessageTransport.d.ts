@@ -4,7 +4,7 @@ import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { IInterceptor } from '../Interfaces/IInterceptor';
 import { IncomingMessage } from 'http';
 export declare class WebSocketMessageTransport implements ITransport {
-    request: IncomingMessage;
+    request: IncomingMessage | Request;
     socket: WebSocket;
     onMessage: (message: ITransportMessage) => void;
     id: string;

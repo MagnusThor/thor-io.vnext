@@ -4,7 +4,6 @@ import { CanInvoke } from '../../src/Decorators/CanInvoke';
 import { Connection } from '../../src/Connection';
 import { ControllerProperties } from '../../src/Decorators/ControllerProperties';
 import { ControllerBase } from "../../src/Controller/ControllerBase";
-
 @ControllerProperties("mycontroller")
 export class MyController extends ControllerBase {
     
@@ -19,15 +18,12 @@ export class MyController extends ControllerBase {
     }
 
     onopen(){
-        this.queryParameters.forEach ( (p,v) => {
-            console.log(p,v);
-        });
-       
-        this.headers.forEach ( (p,v) => {
-            console.log(p,v);
-        });
-       
-        
+        this.queryParameters.forEach ( (v,k) => {
+            console.log(k,v);
+        });       
+        // this.headers.forEach ( (p,v) => {
+        //     console.log(p,v);
+        // });     
         console.log(`Created an instance of MyController for ${this.connection.id}`);
     }
 
