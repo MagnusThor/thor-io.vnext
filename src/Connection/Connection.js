@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const TextMessage_1 = require("./Messages/TextMessage");
-const ClientInfo_1 = require("./Client/ClientInfo");
+const TextMessage_1 = require("../Messages/TextMessage");
+const ClientInfo_1 = require("./ClientInfo");
 class Connection {
     constructor(transport, connections, controllers) {
         this.transport = transport;
@@ -9,7 +9,7 @@ class Connection {
         this.controllers = controllers;
         this.connections = connections;
         this.controllerInstances = new Map();
-        this.errors = [];
+        this.errors = new Array();
         if (transport) {
             this.transport.onMessage = (event) => {
                 try {
@@ -36,14 +36,18 @@ class Connection {
         try {
             if (!controller.canInvokeMethod(method))
                 throw "method '" + method + "' cant be invoked.";
-            if (typeof (controller[method]) === "function") {
-                controller[method].apply(controller, [JSON.parse(data), method,
-                    controller.alias, buffer]);
+            if (typeof controller[method] === "function") {
+                controller[method].apply(controller, [
+                    JSON.parse(data),
+                    method,
+                    controller.alias,
+                    buffer,
+                ]);
             }
             else {
                 let prop = method;
                 let propValue = JSON.parse(data);
-                if (typeof (controller[prop]) === typeof (propValue))
+                if (typeof controller[prop] === typeof propValue)
                     controller[prop] = propValue;
             }
         }
@@ -71,7 +75,8 @@ class Connection {
             return match;
         }
         catch (error) {
-            return null;
+            this.addError(error);
+            return;
         }
     }
     addControllerInstance(controller) {
@@ -84,7 +89,8 @@ class Connection {
     resolveController(alias) {
         try {
             let resolvedController = this.controllers.find((resolve) => {
-                return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
+                return (resolve.alias === alias &&
+                    Reflect.getMetadata("seald", resolve.instance) === false);
             });
             return resolvedController;
         }
@@ -113,7 +119,9 @@ class Connection {
             }
         }
         catch (error) {
-            this.transport.close(1011, "Cannot locate the specified controller,it may be seald or the the alias in unknown '" + alias + "'. connection closed");
+            this.transport.close(1011, "Cannot locate the specified controller,it may be seald or the the alias in unknown '" +
+                alias +
+                "'. connection closed");
             return null;
         }
     }

@@ -8,15 +8,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Plugin_1 = require("./Plugin");
-const Connection_1 = require("./Connection");
 const WebSocketMessageTransport_1 = require("./Transports/WebSocketMessageTransport");
 const net = __importStar(require("net"));
+const Connection_1 = require("./Connection/Connection");
 class ThorIO {
-    constructor(controllers, interceptors) {
+    constructor(controllers) {
         this.endpoints = new Array();
         this.connections = new Map();
         this.controllers = new Array();
-        this.interceptors = interceptors;
         controllers.forEach((ctrl) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";
@@ -24,6 +23,9 @@ class ThorIO {
             let plugin = new Plugin_1.Plugin(ctrl);
             this.controllers.push(plugin);
         });
+    }
+    static createInstance(controllers) {
+        return new ThorIO(controllers);
     }
     createSealdControllers() {
         this.controllers.forEach((controller) => {

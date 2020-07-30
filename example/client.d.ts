@@ -1,6 +1,6 @@
-import { Controller } from 'thor-io.client-vnext/src/Controller';
+import { ClientFactory, Controller } from 'thor-io.client-vnext';
 export declare class TestClient {
-    factory: any;
-    controllers: Controller;
+    factory: ClientFactory;
+    controller: Controller;
     constructor();
 }

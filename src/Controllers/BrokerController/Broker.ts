@@ -1,10 +1,10 @@
 import { CanInvoke } from '../../Decorators/CanInvoke';
-import { Connection } from '../../Connection';
 import { ControllerProperties } from '../../Decorators/ControllerProperties';
 import { PeerConnection } from './Models/PeerConnection';
 import { Signal } from './Models/Signal';
 import { StringUtils } from '../../Utils/StringUtils';
 import { ControllerBase } from '../../Controller/ControllerBase';
+import { Connection } from '../../Connection/Connection';
 
 export interface IControllerBase{
         onopen(e:any):void;

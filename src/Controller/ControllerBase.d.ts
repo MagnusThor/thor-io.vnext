@@ -1,7 +1,7 @@
 /// <reference types="node" />
-import { Connection } from '../Connection';
 import { Subscription } from '../Subscription';
 import { URLSearchParams } from 'url';
+import { Connection } from '../Connection/Connection';
 export interface ControllerBase {
     new (connection: Connection): ControllerBase;
 }

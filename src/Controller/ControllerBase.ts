@@ -1,10 +1,11 @@
 import { CanInvoke } from '../Decorators/CanInvoke';
 import { CanSet } from '../Decorators/CanSet';
 import { TextMessage } from '../Messages/TextMessage';
-import { Connection } from '../Connection';
+
 import { Subscription } from '../Subscription';
 import { ErrorMessage } from '../Messages/ErrorMessage';
 import { URLSearchParams } from 'url';
+import { Connection } from '../Connection/Connection';
 
 export interface ControllerBase {
     new(connection: Connection): ControllerBase;

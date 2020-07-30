@@ -12,10 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const CanInvoke_1 = require("../Decorators/CanInvoke");
 const CanSet_1 = require("../Decorators/CanSet");
 const TextMessage_1 = require("../Messages/TextMessage");
-const Connection_1 = require("../Connection");
 const Subscription_1 = require("../Subscription");
 const ErrorMessage_1 = require("../Messages/ErrorMessage");
 const url_1 = require("url");
+const Connection_1 = require("../Connection/Connection");
 class ControllerBase {
     constructor(connection) {
         this.connection = connection;

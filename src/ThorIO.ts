@@ -1,10 +1,10 @@
 import { Plugin } from './Plugin';
-import { Connection } from './Connection';
 import { WebSocketMessageTransport } from "./Transports/WebSocketMessageTransport";
 import { ITransport } from "./Interfaces/ITransport";
 import * as net from 'net';
 import { ControllerBase } from "./Controller/ControllerBase";
-import { IInterceptor } from './Interfaces/IInterceptor';
+import { Connection } from './Connection/Connection';
+
 /**
  * Creates an hosting container / hug
  *
@@ -32,11 +32,17 @@ export class ThorIO {
      *
      *
      * @private
-     * @type {Array<any>}
+     * @type {Array<net.Server>}
      * @memberOf ThorIO
      */
-    private endpoints: Array<any>;
+    private endpoints: Array<net.Server>;
     interceptors: any;
+
+
+    static createInstance(controllers):ThorIO{
+        return new ThorIO(controllers)
+    }
+P
     /**
      * Creates an instance of ThorIO.
      *
@@ -44,13 +50,12 @@ export class ThorIO {
      *
      * @memberOf ThorIO
      */
-    constructor(controllers: Array<any>,interceptors?:Array<IInterceptor>) {
-        this.endpoints = new Array<any>();
+    constructor(controllers: Array<any>) {
+        this.endpoints = new Array<net.Server>();
         this.connections = new  Map<string,Connection>();
         this.controllers = new Array<Plugin<ControllerBase>>();
 
-        this.interceptors = interceptors; 
-
+    
         controllers.forEach((ctrl: ControllerBase) => {
             if (!Reflect.hasOwnMetadata("alias", ctrl)) {
                 throw "Faild to register on of the specified Controller's";

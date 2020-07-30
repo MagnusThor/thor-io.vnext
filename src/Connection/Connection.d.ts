@@ -1,7 +1,7 @@
-import { Plugin } from './Plugin';
-import { ClientInfo } from './Client/ClientInfo';
-import { ITransport } from './Interfaces/ITransport';
-import { ControllerBase } from './Controller/ControllerBase';
+import { Plugin } from "../Plugin";
+import { ITransport } from "../Interfaces/ITransport";
+import { ControllerBase } from "../Controller/ControllerBase";
+import { ClientInfo } from "./ClientInfo";
 export declare class Connection {
     transport: ITransport;
     connections: Map<string, Connection>;

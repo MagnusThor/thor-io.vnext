@@ -1,10 +1,4 @@
-// todo: refactor this, implememt PI for a sticky session?
-/**
- *
- *
- * @export
- * @class ClientInfo
- */
+
 export class ClientInfo {
     /**
      *

@@ -1,8 +1,6 @@
 export { ThorIO } from './src/ThorIO';
-export { Connection } from './src/Connection';
+export { Connection } from './src/Connection/Connection';
 export { ControllerBase } from './src/Controller/ControllerBase';
-export { ClientInfo } from './src/Client/ClientInfo';
-export { Listener } from './src/Listener';
 export { Subscription } from './src/Subscription';
 export { BufferUtils } from './src/Utils/BufferUtils';
 export { Plugin } from './src/Plugin';
@@ -19,6 +17,5 @@ export { ControllerProperties } from './src/Decorators/ControllerProperties';
 export { BrokerController } from './src/Controllers/BrokerController/Broker';
 export { Signal } from './src/Controllers/BrokerController/Models/Signal';
 export { PeerConnection } from './src/Controllers/BrokerController/Models/PeerConnection';
-export { InstantMessage } from './src/Controllers/BrokerController/Models/InstantMessage';
 export { ITransport } from './src/Interfaces/ITransport';
 export { ITransportMessage } from './src/Interfaces/ITransportMessage';
