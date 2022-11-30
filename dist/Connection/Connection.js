@@ -1,8 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Connection = void 0;
 const TextMessage_1 = require("../Messages/TextMessage");
 const ClientInfo_1 = require("./ClientInfo");
 class Connection {
+    methodInvoker(controller, method, data, buffer) {
+        try {
+            if (!controller.canInvokeMethod(method))
+                throw "method '" + method + "' cant be invoked.";
+            if (typeof controller[method] === "function") {
+                controller[method].apply(controller, [
+                    JSON.parse(data),
+                    method,
+                    controller.alias,
+                    buffer,
+                ]);
+            }
+            else {
+                let prop = method;
+                let propValue = JSON.parse(data);
+                if (typeof controller[prop] === typeof propValue)
+                    controller[prop] = propValue;
+            }
+        }
+        catch (ex) {
+            controller.invokeError(ex);
+        }
+    }
+    get id() {
+        return this.transport.id;
+    }
     constructor(transport, connections, controllers) {
         this.transport = transport;
         this.connections = connections;
@@ -31,32 +58,6 @@ class Connection {
                 }
             };
         }
-    }
-    methodInvoker(controller, method, data, buffer) {
-        try {
-            if (!controller.canInvokeMethod(method))
-                throw "method '" + method + "' cant be invoked.";
-            if (typeof controller[method] === "function") {
-                controller[method].apply(controller, [
-                    JSON.parse(data),
-                    method,
-                    controller.alias,
-                    buffer,
-                ]);
-            }
-            else {
-                let prop = method;
-                let propValue = JSON.parse(data);
-                if (typeof controller[prop] === typeof propValue)
-                    controller[prop] = propValue;
-            }
-        }
-        catch (ex) {
-            controller.invokeError(ex);
-        }
-    }
-    get id() {
-        return this.transport.id;
     }
     addError(error) {
         this.errors.push(error);

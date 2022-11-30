@@ -116,7 +116,7 @@ P
             let transport = new typeOfTransport(socket);
             this.addConnection(transport);
         });
-        endpoint.listen(port, host, ((listener: any) => {
+        endpoint.listen(port, host, (() => {
             // do op
         }));
         this.endpoints.push(endpoint);

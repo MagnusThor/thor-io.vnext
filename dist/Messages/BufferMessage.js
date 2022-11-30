@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BufferMessage = void 0;
 const TextMessage_1 = require("./TextMessage");
 class BufferMessage {
     constructor(data, binary) {

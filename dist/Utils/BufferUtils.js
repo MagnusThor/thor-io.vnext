@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BufferUtils = void 0;
 class BufferUtils {
     static stingToBuffer(str) {
         let len = str.length;

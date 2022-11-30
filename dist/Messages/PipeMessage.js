@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PipeMessage = void 0;
 class PipeMessage {
     constructor(data, binary) {
         this.data = data;

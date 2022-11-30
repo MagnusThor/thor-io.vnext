@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BrokerController = void 0;
 const CanInvoke_1 = require("../../Decorators/CanInvoke");
 const ControllerProperties_1 = require("../../Decorators/ControllerProperties");
 const PeerConnection_1 = require("./Models/PeerConnection");
@@ -55,31 +56,31 @@ let BrokerController = class BrokerController extends ControllerBase_1.Controlle
     }
 };
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], BrokerController.prototype, "instantMessage", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [PeerConnection_1.PeerConnection]),
     __metadata("design:returntype", void 0)
 ], BrokerController.prototype, "changeContext", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Signal_1.Signal]),
     __metadata("design:returntype", void 0)
 ], BrokerController.prototype, "contextSignal", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], BrokerController.prototype, "connectContext", null);
 BrokerController = __decorate([
-    ControllerProperties_1.ControllerProperties("contextBroker", false, 7500),
+    (0, ControllerProperties_1.ControllerProperties)("contextBroker", false, 7500),
     __metadata("design:paramtypes", [Connection_1.Connection])
 ], BrokerController);
 exports.BrokerController = BrokerController;

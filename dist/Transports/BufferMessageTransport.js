@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.BufferMessageTransport = void 0;
 const BufferMessage_1 = require("../Messages/BufferMessage");
 const StringUtils_1 = require("../Utils/StringUtils");
 class BufferMessageTransport {
