@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ControllerBase = void 0;
 const CanInvoke_1 = require("../Decorators/CanInvoke");
 const CanSet_1 = require("../Decorators/CanSet");
 const TextMessage_1 = require("../Messages/TextMessage");
@@ -167,163 +168,163 @@ class ControllerBase {
     }
 }
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", String)
 ], ControllerBase.prototype, "alias", void 0);
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", Array)
 ], ControllerBase.prototype, "subscriptions", void 0);
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", Connection_1.Connection)
 ], ControllerBase.prototype, "connection", void 0);
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", Date)
 ], ControllerBase.prototype, "lastPong", void 0);
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", Date)
 ], ControllerBase.prototype, "lastPing", void 0);
 __decorate([
-    CanSet_1.CanSet(false),
+    (0, CanSet_1.CanSet)(false),
     __metadata("design:type", Number)
 ], ControllerBase.prototype, "heartbeatInterval", void 0);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "enableHeartbeat", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "disbaleHeartbeat", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Boolean)
 ], ControllerBase.prototype, "canInvokeMethod", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Function]),
     __metadata("design:returntype", Array)
 ], ControllerBase.prototype, "findOn", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Array)
 ], ControllerBase.prototype, "getConnections", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "onopen", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "onclose", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Array, Function, Function]),
     __metadata("design:returntype", Array)
 ], ControllerBase.prototype, "find", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "invokeError", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "invokeToOthers", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "invokeToAll", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Function, Object, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "invokeTo", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, Object]),
     __metadata("design:returntype", ControllerBase)
 ], ControllerBase.prototype, "invoke", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", ControllerBase)
 ], ControllerBase.prototype, "publish", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "publishToAll", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Boolean)
 ], ControllerBase.prototype, "hasSubscription", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Subscription_1.Subscription)
 ], ControllerBase.prototype, "addSubscription", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "removeSubscription", null);
 __decorate([
-    CanInvoke_1.CanInvoke(false),
+    (0, CanInvoke_1.CanInvoke)(false),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Subscription_1.Subscription)
 ], ControllerBase.prototype, "getSubscription", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "___connect", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ControllerBase.prototype, "___close", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Subscription_1.Subscription, String, String]),
     __metadata("design:returntype", Subscription_1.Subscription)
 ], ControllerBase.prototype, "___subscribe", null);
 __decorate([
-    CanInvoke_1.CanInvoke(true),
+    (0, CanInvoke_1.CanInvoke)(true),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Subscription_1.Subscription]),
     __metadata("design:returntype", Boolean)

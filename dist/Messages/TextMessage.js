@@ -1,18 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TextMessage = void 0;
 const BufferUtils_1 = require("../Utils/BufferUtils");
 const thor_io_client_vnext_1 = require("thor-io.client-vnext");
 class TextMessage {
-    constructor(topic, data, controller, arrayBuffer, uuid, isFinal) {
-        this.D = data;
-        this.T = topic;
-        this.C = controller;
-        this.B = arrayBuffer;
-        this.I = uuid || thor_io_client_vnext_1.Utils.newGuid();
-        this.F = true;
-        if (arrayBuffer)
-            this.isBinary = true;
-    }
     get JSON() {
         return {
             T: this.T,
@@ -23,6 +14,16 @@ class TextMessage {
         };
     }
     ;
+    constructor(topic, data, controller, arrayBuffer, uuid, isFinal) {
+        this.D = data;
+        this.T = topic;
+        this.C = controller;
+        this.B = arrayBuffer;
+        this.I = uuid || thor_io_client_vnext_1.Utils.newGuid();
+        this.F = true;
+        if (arrayBuffer)
+            this.isBinary = true;
+    }
     toString() {
         return JSON.stringify(this.JSON);
     }

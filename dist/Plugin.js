@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Plugin = void 0;
 const StringUtils_1 = require("./Utils/StringUtils");
 class Plugin {
     constructor(controller) {
