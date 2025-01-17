@@ -1,129 +1,101 @@
-import { Plugin } from "../Plugin";
-import { TextMessage } from "../Messages/TextMessage";
-import { ITransport } from "../Interfaces/ITransport";
-import { ITransportMessage } from "../Interfaces/ITransportMessage";
-import { ControllerBase } from "../Controller/ControllerBase";
-import { ClientInfo } from "./ClientInfo";
+import { ControllerBase } from '../Controller/ControllerBase';
+import { ITransport } from '../Interfaces/ITransport';
+import { ITransportMessage } from '../Interfaces/ITransportMessage';
+import { TextMessage } from '../Messages/TextMessage';
+import { Plugin } from '../Server/Plugin';
+import { ClientInfo } from './ClientInfo';
 
-/**
- *
- *
- * @export
- * @class Connection
- */
 export class Connection {
+
   /**
-   *
-   *
+   * An array to store errors.
+   * @public
    * @type {Array<any>}
-   * @memberOf Connection
    */
-  public errors: Array<any>;
+  public errors: Array<any> = [];
+
   /**
-   *
-   *
+   * The ping pong interval.
+   * @public
    * @type {number}
-   * @memberOf Connection
    */
-  public pingPongInterval: number;
+  public pingPongInterval: number = 60;
+
   /**
-   *
-   *
-   * @type {Array<Controller>}
-   * @memberOf Connection
+   * A map to store the controller instances.
+   * @public
+   * @type {Map<string, ControllerBase>}
    */
-  //public controllerInstances: Array<ControllerBase>;
-  public controllerInstances: Map<string, ControllerBase>;
+  public controllerInstances: Map<string, ControllerBase> = new Map();
+
   /**
-   *
-   *
-   * @type {ClientInfo}
-   * @memberOf Connection
+   * Client information.
+   * @public
+   * @type {ClientInfo | undefined}
    */
-  public clientInfo: ClientInfo;
+  public clientInfo: ClientInfo | undefined;
+
   /**
-   *
-   *
+   * Tries to invoke a method or set/get a property on the controller.
    * @private
-   * @param {ControllerBase} controller
-   * @param {string} method
-   * @param {string} data
-   * @param {*} [buffer]
-   *
-   * @memberOf Connection
+   * @param {ControllerBase} controller The controller instance.
+   * @param {string} methodOrProperty The method or property name.
+   * @param {string} data The data to be passed to the method or property.
+   * @param {Buffer} [buffer] An optional buffer.
    */
-  private methodInvoker(
+  private tryInvokeMethod(
     controller: ControllerBase,
-    method: string,
+    methodOrProperty: string,
     data: string,
-    buffer?: any
+    buffer?: Buffer
   ) {
-    try {
-      if (!controller.canInvokeMethod(method))
-        throw "method '" + method + "' cant be invoked.";
-      if (typeof controller[method] === "function") {
-        controller[method].apply(controller, [
-          JSON.parse(data),
-          method,
-          controller.alias,
-          buffer,
-        ]);
-      } else {
-        let prop = method;
-        let propValue = JSON.parse(data);
-        if (typeof controller[prop] === typeof propValue)
-          controller[prop] = propValue;
-      }
-    } catch (ex) {
-      controller.invokeError(ex);
+    if (controller.canInvokeMethod(methodOrProperty)) {
+      controller.invokeMethod(methodOrProperty, data, buffer);
+    } else if (controller.canSetProperty(methodOrProperty)) {
+      controller.setProperty(methodOrProperty, JSON.parse(data));
+    } else if (controller.canGetProperty(methodOrProperty)) {
+      const { resultId } = JSON.parse(data) as { resultId: string };
+      controller.getProperty(methodOrProperty, resultId);
     }
   }
+
   /**
-   *
-   *
-   * @readonly
-   * @type {string}
-   * @memberOf Connection
+   * Getter for the connection ID.
+   * @public
+   * @returns {string} The connection ID.
    */
   get id(): string {
     return this.transport.id;
   }
+
   /**
-   * Creates an instance of Connection.
-   *
-   * @param {ITransport} transport
-   * @param {Array<Connection>} connections
-   * @param {Array<Plugin<ControllerBase>>} controllers
-   *
-   * @memberOf Connection
+   * Constructor for the Connection class.
+   * @param {ITransport} transport The transport instance.
+   * @param {Map<string, Connection>} connections A map of connections.
+   * @param {Map<string, Plugin<ControllerBase>>} controllers A map of controllers.
+   * @constructor
    */
   constructor(
     public transport: ITransport,
     public connections: Map<string, Connection>,
-    private controllers: Array<Plugin<ControllerBase>>
+    private controllers: Map<string, Plugin<ControllerBase>>
   ) {
-    this.connections = connections;
-    //this.controllerInstances = new Array<ControllerBase>();
-    this.controllerInstances = new Map<string, ControllerBase>();
-    this.errors = new Array<any>();
+    this.setupTransport(transport);
+  }
+
+  /**
+   * Sets up the transport event listeners.
+   * @private
+   * @param {ITransport} transport The transport instance.
+   */
+  private setupTransport(transport: ITransport) {
     if (transport) {
-      /**
-       *
-       *
-       * @param {ITransportMessage} event
-       */
       this.transport.onMessage = (event: ITransportMessage) => {
         try {
-          if (!event.binary) {
-            let message = event.toMessage();
-            let controller = this.locateController(message.C);
-            if (controller)
-              this.methodInvoker(controller, message.T, message.D);
-          } else {
-            let message = TextMessage.fromArrayBuffer(event.data);
-            let controller = this.locateController(message.C);
-            if (controller)
-              this.methodInvoker(controller, message.T, message.D, message.B);
+          const message = event.isBinary ? TextMessage.fromArrayBuffer(event.data) : event.toMessage();
+          const controller = this.tryCreateControllerInstance(message.C);
+          if (controller) {
+            this.tryInvokeMethod(controller, message.T, message.D, message.B);
           }
         } catch (error) {
           this.addError(error);
@@ -131,148 +103,122 @@ export class Connection {
       };
     }
   }
+
   /**
-   *
-   *
+   * Adds an error to the errors array.
    * @private
-   * @param {*} error
-   *
-   * @memberOf Connection
+   * @param {any} error The error to be added.
    */
   private addError(error: any) {
     this.errors.push(error);
   }
+
   /**
-   *
-   *
-   * @param {string} alias
-   * @returns {boolean}
-   *
-   * @memberOf Connection
+   * Checks if a controller with the given alias exists.
+   * @public
+   * @param {string} alias The controller alias.
+   * @returns {boolean} True if the controller exists, false otherwise.
    */
   hasController(alias: string): boolean {
-    /**
-     *
-     *
-     * @param {ControllerBase} pre
-     * @returns
-     */
-    // let match = this.controllerInstances.filter((pre: ControllerBase) => {
-    //     return pre.alias == alias;
-    // });
-    // return match.length >= 0;
     return this.controllerInstances.has(alias);
   }
+
   /**
-   *
-   *
-   * @param {string} alias
-   *
-   * @memberOf Connection
+   * Removes a controller from the controllerInstances.
+   * @public
+   * @param {string} alias The alias of the controller to be removed.
+   * @returns {boolean} True if the controller was removed successfully, false otherwise.
    */
-  removeController(alias: string): boolean {
-    // let index = this.controllerInstances.indexOf(this.getController(alias));
-    // if (index > -1)
-    //     this.controllerInstances.splice(index, 1);
+  tryRemoveControllerInstance(alias: string): boolean {
     return this.controllerInstances.delete(alias);
   }
+
   /**
-   *
-   *
-   * @param {string} alias
-   * @returns {ControllerBase}
-   *
-   * @memberOf Connection
+   * Gets a controller instance from the controllerInstances map.
+   * @public
+   * @param {string} alias The alias of the controller to be retrieved.
+   * @returns {ControllerBase | undefined} The controller instance if found, otherwise undefined.
    */
-  getController(alias: string): ControllerBase {
+  tryGetController(alias: string): ControllerBase | undefined {
     try {
-      let match = this.controllerInstances.get(alias);
-      if (!match) throw `cannot locate the requested controller ${alias}`;
+      const match = this.controllerInstances.get(alias);
+      if (!match) throw new Error(`Cannot locate the requested controller ${alias}`);
       return match;
     } catch (error) {
       this.addError(error);
-      return;
+      return undefined;
     }
   }
+
   /**
-   *
-   *
+   * Adds a controller instance to the controllerInstances map.
    * @private
-   * @param {ControllerBase} controller
-   * @returns {ControllerBase}
-   *
-   * @memberOf Connection
+   * @param {ControllerBase} controller The controller instance to be added.
+   * @returns {ControllerBase} The added controller instance.
    */
   private addControllerInstance(controller: ControllerBase): ControllerBase {
+    if (!controller.alias) throw `Cannot add Controller instance`;
     this.controllerInstances.set(controller.alias, controller);
     return controller;
   }
-  /**
-   *
-   *
-   * @private
-   *
-   * @memberOf Connection
-   */
-  private registerSealdController() {
-    throw "not yet implemented";
-  }
 
-  public resolveController(alias: string): Plugin<ControllerBase> {
-    try {
-      let resolvedController = this.controllers.find(
-        (resolve: Plugin<ControllerBase>) => {
-          return (
-            resolve.alias === alias &&
-            Reflect.getMetadata("seald", resolve.instance) === false
-          );
-        }
-      );
-      return resolvedController;
-    } catch {
-      throw `Cannot resolve ${alias},controller unknown.`;
+  /**
+   * Finds and resolves a controller by alias.
+   * @public
+   * @param {string} alias The alias of the controller to be resolved.
+   * @returns {ControllerBase} The resolved controller instance.
+   * @throws {Error} If the controller cannot be resolved.
+   */
+  public tryResolveController(alias: string): ControllerBase {
+    const plugin = this.controllers.get(alias);
+    if (!plugin) {
+      throw new Error(`Cannot resolve ${alias}, controller unknown.`);
     }
+    return plugin.getInstance();
   }
-  /**
-   *
-   *
-   * @param {string} alias
-   * @returns {ControllerBase}
-   *
-   * @memberOf Connection
-   */
-  locateController(alias: string): ControllerBase {
-    try {
-      let match = this.getController(alias);
-      if (match) {
-        return match;
-      } else {
-        // let resolvedController = this.controllers.find((resolve: Plugin<ControllerBase>) => {
-        //     return resolve.alias === alias && Reflect.getMetadata("seald", resolve.instance) === false;
-        // }).instance;
-        let resolved = this.resolveController(alias);
-        let controllerInstance = new resolved.instance(this);
-        this.addControllerInstance(controllerInstance);
-        controllerInstance.invoke(
-          new ClientInfo(this.id, controllerInstance.alias),
-          "___open",
-          controllerInstance.alias
-        );
-        if (controllerInstance.onopen) controllerInstance.onopen();
-        this.transport.onClose = (e: any) => {
-          if (controllerInstance.onclose) controllerInstance.onclose();
-        };
 
+  /**
+   * Locates a controller by alias. If registered, returns it; otherwise, creates an instance.
+   * @public
+   * @param {string} alias The alias of the controller to be located.
+   * @returns {ControllerBase | undefined} The located controller instance, or undefined if not found.
+   */
+  tryCreateControllerInstance(alias: string): ControllerBase | undefined {
+    try {
+      let instancedController = this.tryGetController(alias);
+      if (instancedController) {
+        return instancedController;
+      } else {
+        const resolvedController = this.tryResolveController(alias);
+        const controllerInstance = new resolvedController(this);
+        this.addControllerInstance(controllerInstance);
+        this.initializeControllerInstance(controllerInstance);
         return controllerInstance;
       }
     } catch (error) {
+      console.log(error);
       this.transport.close(
         1011,
-        "Cannot locate the specified controller,it may be seald or the the alias in unknown '" +
-          alias +
-          "'. connection closed"
+        `Cannot locate the specified controller, it may be sealed or the alias is unknown '${alias}'. Connection closed.`
       );
-      return null;
+      return undefined;
     }
+  }
+
+  /**
+   * Initializes a newly created controller instance.
+   * @private
+   * @param {ControllerBase} controllerInstance The controller instance to initialize.
+   */
+  private initializeControllerInstance(controllerInstance: ControllerBase) {
+    controllerInstance.invoke(
+      new ClientInfo(this.id, controllerInstance.alias!),
+      '___open',
+      controllerInstance.alias!
+    );
+    if (controllerInstance.onopen) controllerInstance.onopen();
+    this.transport.onClose = (e: any) => {
+      if (controllerInstance.onclose) controllerInstance.onclose();
+    };
   }
 }

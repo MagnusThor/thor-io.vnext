@@ -1,16 +1,19 @@
+import 'reflect-metadata';
+
 /**
+ * A decorator to attach custom metadata to a controller class.
  *
+ * @param alias The alias for the controller (used for routing or identification).
+ * @param heartbeatInterval Optional interval in milliseconds for the heartbeat. Defaults to -1.
  *
- * @export
- * @param {string} alias
- * @param {boolean} [seald]
- * @param {number} [heartbeatInterval]
- * @returns
+ * @returns A function that adds metadata to the target class.
  */
-export function ControllerProperties(alias: string, seald?: boolean, heartbeatInterval?: number) {
+export function ControllerProperties(alias: string, heartbeatInterval?: number) {
     return function (target: Function) {
-        Reflect.defineMetadata("seald", seald || false, target);
+        // Attach alias to the class
         Reflect.defineMetadata("alias", alias, target);
-        Reflect.defineMetadata("heartbeatInterval", heartbeatInterval || -1, target);
+        
+        // Attach heartbeat interval to the class (default to -1 if not provided)
+        Reflect.defineMetadata("heartbeatInterval", heartbeatInterval ?? -1, target);
     };
 }

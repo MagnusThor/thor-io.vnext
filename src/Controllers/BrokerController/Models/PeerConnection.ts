@@ -1,34 +1,9 @@
-/**
- *
- *
- * @export
- * @class PeerConnection
- */
 export class PeerConnection {
-    /**
-     *
-     *
-     * @type {string}
-     * @memberOf PeerConnection
-     */
-    context: string;
-    /**
-     *
-     *
-     * @type {string}
-     * @memberOf PeerConnection
-     */
-    peerId: string;
-    /**
-     * Creates an instance of PeerConnection.
-     *
-     * @param {string} [context]
-     * @param {string} [peerId]
-     *
-     * @memberOf PeerConnection
-     */
-    constructor(context?: string, peerId?: string) {
-        this.context = context;
-        this.peerId = peerId;
+    context: string;  // The context for the peer connection (e.g., a session or room).
+    peerId: string = ""; // The unique identifier for the peer. Defaults to an empty string.
+
+    constructor(context: string, peerId: string) {
+        this.context = context;  // Initializes the context of the connection.
+        this.peerId = peerId;    // Initializes the peer's unique identifier.
     }
 }

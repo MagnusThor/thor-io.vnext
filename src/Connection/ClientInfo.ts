@@ -1,33 +1,30 @@
-
 export class ClientInfo {
     /**
-     *
+     * The client identifier.
      *
      * @type {string}
-     * @memberOf ClientInfo
      */
     public CI: string;
+
     /**
-     *
+     * The controller identifier.
      *
      * @type {string}
-     * @memberOf ClientInfo
      */
     public C: string;
+
     /**
-     *
+     * The timestamp when the instance was created.
      *
      * @type {Date}
-     * @memberOf ClientInfo
      */
     public TS: Date;
+
     /**
      * Creates an instance of ClientInfo.
      *
-     * @param {string} ci
-     * @param {string} controller
-     *
-     * @memberOf ClientInfo
+     * @param {string} ci - The client identifier.
+     * @param {string} controller - The controller identifier.
      */
     constructor(ci: string, controller: string) {
         this.CI = ci;

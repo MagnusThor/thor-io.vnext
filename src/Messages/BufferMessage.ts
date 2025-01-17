@@ -1,5 +1,6 @@
-import { TextMessage } from './TextMessage';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
+import { TextMessage } from './TextMessage';
+
 /**
  *
  *
@@ -12,11 +13,11 @@ export class BufferMessage implements ITransportMessage {
      * Creates an instance of BufferMessage.
      *
      * @param {Buffer} data
-     * @param {boolean} binary
+     * @param {boolean} isBinary
      *
      * @memberOf BufferMessage
      */
-    constructor(public data: Buffer, public binary: boolean) {
+    constructor(public data: Buffer, public isBinary: boolean) {
     }
     /**
      *

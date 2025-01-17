@@ -1,71 +1,32 @@
-# thor-io.vnext
+**The Foundation for Next-Gen, Stateful Real-Time Communication**
 
-thor-io.vnext represents the next generation of thor-io. Thor-IO is a fundament for stateful real-time communication that runs on TCP/IP, WebSockets & WebRTC or whatever you need and desire.   Use it with Express or any Node middleware you like.  ThorIO has a built in WebRTC signaling.
+thor-io.vnext empowers you to build cutting-edge, real-time applications with unparalleled flexibility and performance. 
 
-  
-## install
+**Key Features:**
 
-`npm install thor-io.vnext`
-  
+* **Rock-Solid Foundation:** Built for demanding applications, thor-io.vnext provides a robust framework for stateful real-time communication.
+* **Unleash Your Creativity:** Seamlessly integrate with your preferred transport layer: TCP/IP, WebSockets, WebRTC, or any custom solution you envision.
+* **Effortless Integration:** Easily plug into your existing Node.js ecosystem – works flawlessly with Express and other popular middleware. 
+* **WebRTC Signaling Made Easy:** Leverage built-in WebRTC signaling capabilities to simplify the development of peer-to-peer applications.
 
-## how to use
+**What can you build with thor-io.vnext?**
 
-  
-  
+* **Real-time Collaboration:** Power collaborative tools like shared editors, whiteboards, and online design platforms.
+* **Immersive Experiences:** Create captivating online games, interactive simulations, and virtual/augmented reality applications.
+* **High-Performance Applications:** Build robust applications that demand real-time data synchronization, such as financial trading platforms and IoT solutions.
+* **And Much More!** The possibilities are limited only by your imagination.
 
-### set up server
+**Getting Started:**
 
-    #thor-io.vnext
+**Install**
+  ```bash
+   npm install thor-io.vnext
+```
 
+ **Documentation**
 
-**thor-io.vnext** represents the next generation of thor-io. Thor-IO is a fundament for stateful real-time communication for TCP/IP,WebSockets & WebRTC or whatever you need and desire. 
-
-## install
-
-`npm install thor-io.vnext`
-
-
-## how to use
-
-See gist's below 
-
-### Set up server 
-
-https://gist.github.com/MagnusThor/9564824dcc6385d736565973798cbef9
-
-###  Example controller
-  
- https://gist.github.com/MagnusThor/714d5e6e59d2e042111e3aefc94fe435 
- 
-
-## More info (dox)
-
-See https://github.com/MagnusThor/thor-io.vnext/wiki for a brief documnentation.
-
-
-## client library / package
-
-`npm install thor-io.client-vnext`
-
-
-## More info
- 
-
-See https://github.com/MagnusThor/thor-io.vnext/wiki for a brief documnentation.
-
-  
- 
-
-## client library / package$$
-  
-
-`npm install thor-io.client-vnext`
-
-### client example 
-
-
-https://gist.github.com/MagnusThor/0cf03ec8ad30118d4e8ff127d1a1348e
+ https://../doc 
 
 
 
-
+/Magnus Thor
