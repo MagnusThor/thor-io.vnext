@@ -7,5 +7,8 @@ class PeerConnection {
         this.context = context; // Initializes the context of the connection.
         this.peerId = peerId; // Initializes the peer's unique identifier.
     }
+    setLanguage(language) {
+        this.language = language;
+    }
 }
 exports.PeerConnection = PeerConnection;

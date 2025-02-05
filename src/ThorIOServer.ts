@@ -24,10 +24,6 @@ export class ThorIOServer {
      * An array of active net.Server instances representing endpoints.
      */
     private endpoints: Array<net.Server>;
-    /**
-     * (Optional) Interceptors for custom logic during communication.
-     */
-    interceptors: any;
 
     /**
      * Creates a new instance of ThorIOServer.

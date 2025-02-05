@@ -45,6 +45,19 @@ export class BrokerController extends ControllerBase {
         this.invoke(this.Peer, "contextCreated", this.alias);
     }
 
+    
+    @CanInvoke(true)
+    transcribe(data: {phrase: string,sourceLanguage:string}) {
+        if(!this.generateSubtitles()) {
+            return;
+        }
+        console.log(`Transcribing ${data.phrase} from ${data.sourceLanguage} to ${this.Peer.language}`);
+    }
+
+    private generateSubtitles(): boolean{
+        return this.Peer.language != undefined
+    }
+
     /**
      * Sends an instant message to peers.
      * @param {any} data The message data.
@@ -103,4 +116,6 @@ export class BrokerController extends ControllerBase {
         }) as Array<BrokerController>;
         return match ? match : new Array<BrokerController>();
     }
+
+    
 }

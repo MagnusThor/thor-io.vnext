@@ -80,7 +80,12 @@ export class Connection {
     public connections: Map<string, Connection>,
     private controllers: Map<string, Plugin<ControllerBase>>
   ) {
+    try {
     this.setupTransport(transport);
+      
+    } catch (error) {
+      console.log('Error in Connection constructor', error);
+    }
   }
 
   /**
@@ -196,7 +201,7 @@ export class Connection {
         return controllerInstance;
       }
     } catch (error) {
-      console.log(error);
+  
       this.transport.close(
         1011,
         `Cannot locate the specified controller, it may be sealed or the alias is unknown '${alias}'. Connection closed.`

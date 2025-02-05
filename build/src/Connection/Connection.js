@@ -61,7 +61,12 @@ class Connection {
          * @type {Map<string, ControllerBase>}
          */
         this.controllerInstances = new Map();
-        this.setupTransport(transport);
+        try {
+            this.setupTransport(transport);
+        }
+        catch (error) {
+            console.log('Error in Connection constructor', error);
+        }
     }
     /**
      * Sets up the transport event listeners.
@@ -175,7 +180,6 @@ class Connection {
             }
         }
         catch (error) {
-            console.log(error);
             this.transport.close(1011, `Cannot locate the specified controller, it may be sealed or the alias is unknown '${alias}'. Connection closed.`);
             return undefined;
         }

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plugin = void 0;
-const StringUtils_1 = require("./Utils/StringUtils");
+const StringUtils_1 = require("../Utils/StringUtils");
 /**
  * Represents a plugin with a specific type.
  * @template T The type of the plugin instance.

@@ -1,4 +1,4 @@
-import { StringUtils } from './Utils/StringUtils';
+import { StringUtils } from '../Utils/StringUtils';
 
 /**
  * Describes the structure of a plugin descriptor.
