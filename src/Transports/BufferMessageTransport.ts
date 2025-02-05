@@ -1,98 +1,107 @@
+import { IncomingMessage } from 'http';
 import * as net from 'net';
+
 import { ITransport } from '../Interfaces/ITransport';
 import { ITransportMessage } from '../Interfaces/ITransportMessage';
 import { BufferMessage } from '../Messages/BufferMessage';
 import { StringUtils } from '../Utils/StringUtils';
-import { IInterceptor } from '../Interfaces/IInterceptor';
-import { IncomingMessage } from 'http';
+
 /**
- *
+ * A transport implementation for handling buffer-based messages over a socket.
  *
  * @export
  * @class BufferMessageTransport
  * @implements {ITransport}
  */
 export class BufferMessageTransport implements ITransport {
- 
     /**
-     *
+     * Unique identifier for this transport instance.
      *
      * @type {string}
-     * @memberOf BufferMessageTransport
      */
     id: string;
+
     /**
+     * Event handler for receiving transport messages.
      *
-     *
-     *
-     * @memberOf BufferMessageTransport
+     * @type {(message: ITransportMessage) => void}
      */
-    onMessage: (messsage: ITransportMessage) => void;
+    onMessage: (message: ITransportMessage) => void = (message: BufferMessage) => { };
+
     /**
-     * Creates an instance of BufferMessageTransport.
+     * The underlying socket used for communication.
      *
-     * @param {net.Socket} socket
-     *
-     * @memberOf BufferMessageTransport
+     * @type {net.Socket}
      */
     constructor(public socket: net.Socket) {
         this.id = StringUtils.newGuid();
         this.socket.addListener("data", (buffer: Buffer) => {
-            let bm = new BufferMessage(buffer, false);
+            const bm = new BufferMessage(buffer, false);
             this.onMessage(bm);
         });
     }
-    request: IncomingMessage | any;
-    interceptors: Map<string, IInterceptor>;
-    onClose: () => void;
-    onOpen: () => void;
+
     /**
+     * The incoming HTTP request associated with the transport (if any).
      *
+     * @type {IncomingMessage | any}
+     */
+    request: IncomingMessage | any;
+
+
+    /**
+     * Event handler for when the transport connection is closed.
+     *
+     * @type {() => void}
+     */
+    onClose: () => void = () => { };
+
+    /**
+     * Event handler for when the transport connection is opened.
+     *
+     * @type {() => void}
+     */
+    onOpen: () => void = () => { };
+
+    /**
+     * The ready state of the transport connection.
      *
      * @readonly
-     *
-     * @memberOf BufferMessageTransport
+     * @type {number}
      */
     get readyState() {
-        return 1;
+        return 1; // Open
     }
+
     /**
+     * Sends a string message over the transport.
      *
-     *
-     * @param {string} data
-     *
-     * @memberOf BufferMessageTransport
+     * @param {string} data - The message to send.
      */
     send(data: string) {
-        let bm = new BufferMessage(new Buffer(data), false);
+        const bm = new BufferMessage(Buffer.from(data), false);
         this.socket.write(bm.toBuffer());
     }
+
     /**
+     * Adds an event listener to the underlying socket.
      *
-     *
-     * @param {string} name
-     * @param {Function} fn
-     *
-     * @memberOf BufferMessageTransport
+     * @param {string} name - The name of the event.
+     * @param {Function} fn - The callback function to invoke when the event occurs.
      */
     addEventListener(name: string, fn: any) {
         this.socket.addListener(name, fn);
     }
+
     /**
-     *
-     *
-     * @returns
-     *
-     * @memberOf BufferMessageTransport
+     * Sends a ping message (no-op for this transport).
      */
     ping() {
         return;
     }
+
     /**
-     *
-     *
-     *
-     * @memberOf BufferMessageTransport
+     * Closes the transport connection and destroys the socket.
      */
     close() {
         this.socket.destroy();

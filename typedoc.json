@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["index.ts"], // Your main TypeScript file
+  "out": "docs", // Output directory for the documentation
+  "readme": "README.md", // Include your README file
+  "theme": "default" // Generate Markdown output
+}
