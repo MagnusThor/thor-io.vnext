@@ -5,8 +5,10 @@ import { ControllerBase } from '../Controller/ControllerBase';
 import { ITransport } from '../Interfaces/ITransport';
 import { Plugin } from '../Server/Plugin';
 import {
-  WebSocketMessageTransport,
+    WebSocketMessageTransport,
 } from '../Transports/WebSocketMessageTransport';
+import { WebSocketMessage } from '../Messages/WebSocketMessage';
+import { TextMessage } from '../Messages/TextMessage';
 
 /**
  * ThorIOServer server class for managing connections and controllers.
@@ -15,11 +17,11 @@ export class ThorIOServer {
     /**
      * An array of plugins containing registered controllers.
      */
-    private controllers: Map<string, Plugin<ControllerBase>>;
+    public controllers: Map<string, Plugin<ControllerBase>>;
     /**
      * A Map of connections indexed by their ID.
      */
-    private connections: Map<string, Connection>;
+    public connections: Map<string, Connection>;
     /**
      * An array of active net.Server instances representing endpoints.
      */
@@ -118,4 +120,89 @@ export class ThorIOServer {
         });
         this.connections.set(transport.id, new Connection(transport, this.connections, this.controllers));
     }
+
+    /**
+     * Publishes a message to all connected clients that are subscribed to the specified topic.
+     * @template T - The type of data being published.
+     * @param data - The data to publish.
+     * @param topic - The topic to publish to.
+     * @param controller - The controller handling the message.
+     */
+    publishToAll<T>(data: T, topic: string, controller: string) {
+        let msg = new TextMessage(topic, data, controller);
+        this.connections.forEach(connection => {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                if (ctrl.getSubscription(topic)) {
+                    connection.transport.send(msg.toString());
+                }
+            }
+        });
+    }
+
+
+    publishTo<T>(connectionId: string, data: T, topic: string, controller: string) {
+        const connection = this.connections.get(connectionId);
+        if (connection!) {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                ctrl.publish(data, topic, controller);
+            }
+        }
+    }
+
+
+    /**
+     * Invokes a method on all connected clients for a specific controller and topic.
+     *
+     * @param data - The data to be sent to each controller's invoke method.
+     * @param topic - The topic or event name to be invoked.
+     * @param controller - The name of the controller to target on each connection.
+     * @param buffer - Optional binary data to be passed along with the invocation.
+     */
+    invokeToAll<T>(data: T, topic: string, controller: string, buffer?: any) {
+        this.connections.forEach((connection: Connection) => {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                ctrl.invoke(data, topic, controller, buffer);
+            }
+        });
+    }
+    /**
+     * Invokes a method on a connected client.
+     * @param connectionId - The unique identifier of the target client connection.
+     * @param data - The data payload to send to the client.
+     * @param topic - The topic or method name to invoke on the client.
+     * @param controller - The name of the controller handling the invocation.
+     * @param buffer - Optional buffer data to include with the invocation.
+     */
+    invokeOnClient<T>(connectionId: string, data: T, topic: string, controller: string, buffer?: any) {
+        const connection = this.connections.get(connectionId);
+        if (connection!) {
+            let targetController = connection.tryGetController(controller);
+            if (targetController) {
+                targetController.invoke(data, topic, controller, buffer);
+            }
+        }
+    }
+
+
+
+    /**
+     * Finds and returns an array of controllers of the specified type that match the given predicate.
+     *
+     * @template T - The type of the controller to find.
+     * @param controller - The name of the controller to search for.
+     * @param predicate - A function that takes a controller instance and returns a boolean indicating whether it matches the criteria.
+     * @returns An array of matching `ControllerBase` instances if any are found; otherwise, `undefined`.
+     */
+    findConnecion<T>(controller: string, predicate: (item: any) => boolean): ControllerBase[] | undefined {
+        let connections = Array.from(this.connections.values()).map((p: Connection) => {
+            return p.tryGetController(controller);
+        });
+        const result = connections.filter(predicate).filter((c): c is ControllerBase => c !== undefined);
+        return result.length > 0 ? result : undefined;
+    }
+
 }
+
