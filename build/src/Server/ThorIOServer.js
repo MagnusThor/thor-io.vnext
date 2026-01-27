@@ -38,6 +38,7 @@ const net = __importStar(require("net"));
 const Connection_1 = require("../Connection/Connection");
 const Plugin_1 = require("../Server/Plugin");
 const WebSocketMessageTransport_1 = require("../Transports/WebSocketMessageTransport");
+const TextMessage_1 = require("../Messages/TextMessage");
 /**
  * ThorIOServer server class for managing connections and controllers.
  */
@@ -126,6 +127,81 @@ class ThorIOServer {
             this.removeConnection(transport.id, reason);
         });
         this.connections.set(transport.id, new Connection_1.Connection(transport, this.connections, this.controllers));
+    }
+    /**
+     * Publishes a message to all connected clients that are subscribed to the specified topic.
+     * @template T - The type of data being published.
+     * @param data - The data to publish.
+     * @param topic - The topic to publish to.
+     * @param controller - The controller handling the message.
+     */
+    publishToAll(data, topic, controller) {
+        let msg = new TextMessage_1.TextMessage(topic, data, controller);
+        this.connections.forEach(connection => {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                if (ctrl.getSubscription(topic)) {
+                    connection.transport.send(msg.toString());
+                }
+            }
+        });
+    }
+    publishTo(connectionId, data, topic, controller) {
+        const connection = this.connections.get(connectionId);
+        if (connection) {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                ctrl.publish(data, topic, controller);
+            }
+        }
+    }
+    /**
+     * Invokes a method on all connected clients for a specific controller and topic.
+     *
+     * @param data - The data to be sent to each controller's invoke method.
+     * @param topic - The topic or event name to be invoked.
+     * @param controller - The name of the controller to target on each connection.
+     * @param buffer - Optional binary data to be passed along with the invocation.
+     */
+    invokeToAll(data, topic, controller, buffer) {
+        this.connections.forEach((connection) => {
+            const ctrl = connection.tryGetController(controller);
+            if (ctrl) {
+                ctrl.invoke(data, topic, controller, buffer);
+            }
+        });
+    }
+    /**
+     * Invokes a method on a connected client.
+     * @param connectionId - The unique identifier of the target client connection.
+     * @param data - The data payload to send to the client.
+     * @param topic - The topic or method name to invoke on the client.
+     * @param controller - The name of the controller handling the invocation.
+     * @param buffer - Optional buffer data to include with the invocation.
+     */
+    invokeOnClient(connectionId, data, topic, controller, buffer) {
+        const connection = this.connections.get(connectionId);
+        if (connection) {
+            let targetController = connection.tryGetController(controller);
+            if (targetController) {
+                targetController.invoke(data, topic, controller, buffer);
+            }
+        }
+    }
+    /**
+     * Finds and returns an array of controllers of the specified type that match the given predicate.
+     *
+     * @template T - The type of the controller to find.
+     * @param controller - The name of the controller to search for.
+     * @param predicate - A function that takes a controller instance and returns a boolean indicating whether it matches the criteria.
+     * @returns An array of matching `ControllerBase` instances if any are found; otherwise, `undefined`.
+     */
+    findConnecion(controller, predicate) {
+        let connections = Array.from(this.connections.values()).map((p) => {
+            return p.tryGetController(controller);
+        });
+        const result = connections.filter(predicate).filter((c) => c !== undefined);
+        return result.length > 0 ? result : undefined;
     }
 }
 exports.ThorIOServer = ThorIOServer;
